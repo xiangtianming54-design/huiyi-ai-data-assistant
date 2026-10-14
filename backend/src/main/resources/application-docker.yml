@@ -1,0 +1,30 @@
+# Docker Compose 编排环境：各组件通过容器服务名互访
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://mysql:3306/huiyi_demo?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+
+# Python Sidecar 服务地址（Compose 网络内服务名）
+python-service:
+  url: ${PYTHON_SERVICE_URL:http://python-service:8001}
+
+# LLM OpenAI 兼容 API（密钥一律走环境变量，禁止硬编码）
+llm:
+  base-url: ${LLM_BASE_URL}
+  api-key: ${LLM_API_KEY}
+  model: ${LLM_MODEL}
+  embedding-model: ${LLM_EMBEDDING_MODEL}

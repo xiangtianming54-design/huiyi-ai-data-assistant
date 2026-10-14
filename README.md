@@ -45,6 +45,9 @@ cp .env.example .env   # 填入 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL / LLM_EMB
 docker compose up -d
 ```
 
+> 说明：容器 MySQL 默认映射到宿主机 **3307** 端口（规避本机 MySQL 占用的 3306），
+> 可通过 `.env` 中 `MYSQL_HOST_PORT` 修改。
+
 ### 方式二：本地开发模式
 
 ```bash
@@ -57,7 +60,7 @@ python -m venv .venv && .venv\Scripts\activate   # Windows
 pip install -r requirements.txt
 uvicorn app.main:app --port 8001
 
-# 3. 启动 Java 主服务（端口 8080）
+# 3. 启动 Java 主服务（端口 8080；若与容器后端冲突可指定 SERVER_PORT=8081）
 cd backend
 mvn spring-boot:run
 ```

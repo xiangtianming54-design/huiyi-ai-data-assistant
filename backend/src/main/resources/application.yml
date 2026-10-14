@@ -3,6 +3,10 @@ spring:
     name: huiyi-backend
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 server:
   port: ${SERVER_PORT:8080}

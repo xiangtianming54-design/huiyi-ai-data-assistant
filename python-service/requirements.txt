@@ -1,5 +1,11 @@
-# P1 骨架阶段依赖，后续阶段按需追加（chromadb / sqlglot / pandas / PyMuPDF / python-docx / httpx / pytest）
+# 运行时依赖（Docker 镜像安装此文件）
 fastapi==0.115.6
 uvicorn[standard]==0.32.1
 pydantic==2.10.4
 pydantic-settings==2.7.0
+python-multipart==0.0.20
+PyMuPDF==1.24.14
+python-docx==1.1.2
+httpx==0.28.1
+# 1.5.x 起官方提供 cp313 wheel（0.5.x 的 chroma-hnswlib 在 Windows py3.13 需源码编译）
+chromadb==1.5.9

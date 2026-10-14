@@ -1,5 +1,6 @@
 package com.huiyi.assistant.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.common.result.ResultCode;
 import com.huiyi.assistant.model.dto.ParseResultDTO;
@@ -13,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -64,9 +66,28 @@ public class PythonServiceClient {
                     .retrieve()
                     .bodyToMono(ParseResultDTO.class)
                     .block(TIMEOUT);
+        } catch (WebClientResponseException e) {
+            // Python 已响应但返回错误状态：4xx 透传 detail 提示，5xx 视为服务异常
+            log.warn("Python 文档解析接口返回错误: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            if (e.getStatusCode().is4xxClientError()) {
+                throw new BizException(ResultCode.PARAM_ERROR.getCode(), extractDetail(e.getResponseBodyAsString()));
+            }
+            throw new BizException(ResultCode.PYTHON_SERVICE_UNAVAILABLE);
         } catch (WebClientException e) {
             log.error("调用 Python 文档解析接口失败: {}", e.getMessage());
             throw new BizException(ResultCode.PYTHON_SERVICE_UNAVAILABLE);
+        }
+    }
+
+    /**
+     * 从 Python 错误响应体中提取 detail 字段。
+     */
+    private String extractDetail(String responseBody) {
+        try {
+            String detail = new ObjectMapper().readTree(responseBody).path("detail").asText();
+            return detail.isEmpty() ? "文档解析请求被拒绝" : detail;
+        } catch (Exception e) {
+            return "文档解析请求被拒绝";
         }
     }
 }

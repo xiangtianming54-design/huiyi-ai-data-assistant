@@ -1,6 +1,8 @@
 package com.huiyi.assistant.model.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -35,6 +37,7 @@ public class KnowledgeDoc {
     /** 状态：UPLOADED/PARSED/READY/FAILED */
     private String status;
 
-    /** 创建时间 */
+    /** 创建时间（插入时自动填充） */
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 }

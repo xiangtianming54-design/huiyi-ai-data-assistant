@@ -1,5 +1,6 @@
 package com.huiyi.assistant.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.common.result.ResultCode;
 import com.huiyi.assistant.mapper.KnowledgeDocMapper;
@@ -11,8 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 /**
- * 知识库文档服务：上传解析、元数据管理。
+ * 知识库文档服务：上传解析、向量写入、元数据管理、删除。
  *
  * @author huiyi
  */
@@ -30,7 +33,7 @@ public class KnowledgeDocService {
     }
 
     /**
-     * 上传文档：转发 Python 解析分块，成功后保存元数据（status=PARSED）。
+     * 上传文档：解析分块 → 写入向量库 → 保存元数据（status=READY）。
      *
      * @param file 上传文件
      * @return 文档视图对象
@@ -47,15 +50,51 @@ public class KnowledgeDocService {
             throw new BizException(ResultCode.PYTHON_SERVICE_UNAVAILABLE);
         }
 
+        // 写入向量库，成功后文档才进入可检索状态
+        pythonServiceClient.upsertVectors(parseResult);
+
         KnowledgeDoc doc = new KnowledgeDoc();
         doc.setDocName(parseResult.getFilename());
         doc.setFileType(extractFileType(filename));
         doc.setFileSize(file.getSize());
         doc.setChunkCount(parseResult.getChunkCount());
-        doc.setStatus(DocStatusEnum.PARSED.name());
+        doc.setStatus(DocStatusEnum.READY.name());
         knowledgeDocMapper.insert(doc);
-        log.info("文档元数据已落库: docId={}, chunkCount={}", doc.getId(), doc.getChunkCount());
+        log.info("文档已就绪: docId={}, chunkCount={}", doc.getId(), doc.getChunkCount());
 
+        return toVO(doc);
+    }
+
+    /**
+     * 文档列表（按创建时间倒序）。
+     *
+     * @return 文档视图对象列表
+     */
+    public List<KnowledgeDocVO> listDocs() {
+        List<KnowledgeDoc> docs = knowledgeDocMapper.selectList(
+                new LambdaQueryWrapper<KnowledgeDoc>().orderByDesc(KnowledgeDoc::getCreatedAt));
+        return docs.stream().map(this::toVO).toList();
+    }
+
+    /**
+     * 删除文档：向量与元数据双删。
+     *
+     * @param docId 文档 ID
+     */
+    public void deleteDoc(Long docId) {
+        KnowledgeDoc doc = knowledgeDocMapper.selectById(docId);
+        if (doc == null) {
+            throw new BizException(ResultCode.PARAM_ERROR.getCode(), "文档不存在: " + docId);
+        }
+        pythonServiceClient.deleteVectorsByFilename(doc.getDocName());
+        knowledgeDocMapper.deleteById(docId);
+        log.info("文档已删除: docId={}, docName={}", docId, doc.getDocName());
+    }
+
+    /**
+     * 实体转视图对象。
+     */
+    private KnowledgeDocVO toVO(KnowledgeDoc doc) {
         return KnowledgeDocVO.builder()
                 .docId(doc.getId())
                 .docName(doc.getDocName())

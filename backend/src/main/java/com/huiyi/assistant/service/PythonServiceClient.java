@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.common.result.ResultCode;
 import com.huiyi.assistant.model.dto.ParseResultDTO;
+import com.huiyi.assistant.model.dto.VectorUpsertRequestDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
@@ -18,6 +19,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Map;
 
 /**
  * Python Sidecar 服务客户端：统一封装调用、超时与异常转换。
@@ -30,6 +32,9 @@ public class PythonServiceClient {
 
     /** 调用超时时间 */
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
+
+    /** 向量库 collection 名称（与 Python 端默认一致） */
+    private static final String COLLECTION_NAME = "huiyi_knowledge";
 
     private final WebClient pythonServiceWebClient;
 
@@ -58,23 +63,52 @@ public class PythonServiceClient {
             throw new BizException(ResultCode.SYSTEM_ERROR.getCode(), "读取上传文件失败");
         }
 
+        return post("/api/documents/parse",
+                spec -> spec.contentType(MediaType.MULTIPART_FORM_DATA).body(BodyInserters.fromMultipartData(parts)),
+                ParseResultDTO.class);
+    }
+
+    /**
+     * 调用 /api/vector/upsert 将分块写入向量库（幂等）。
+     *
+     * @param parseResult 解析结果（含分块列表）
+     */
+    public void upsertVectors(ParseResultDTO parseResult) {
+        VectorUpsertRequestDTO request = new VectorUpsertRequestDTO(COLLECTION_NAME, parseResult.getChunks());
+        post("/api/vector/upsert", spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(request), String.class);
+        log.info("向量写入完成: filename={}, chunks={}", parseResult.getFilename(), parseResult.getChunkCount());
+    }
+
+    /**
+     * 调用 /api/vector/delete 按来源文件名删除全部分块向量。
+     *
+     * @param filename 来源文件名
+     */
+    public void deleteVectorsByFilename(String filename) {
+        Map<String, String> body = Map.of("filename", filename, "collection_name", COLLECTION_NAME);
+        post("/api/vector/delete", spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(body), String.class);
+        log.info("向量删除完成: filename={}", filename);
+    }
+
+    /**
+     * 统一 POST 调用：超时控制 + 异常转换（4xx 透传 detail，5xx/网络异常报服务不可用）。
+     */
+    private <T> T post(String uri, java.util.function.Function<WebClient.RequestBodySpec, WebClient.RequestHeadersSpec<?>> requestBuilder,
+                       Class<T> responseType) {
         try {
-            return pythonServiceWebClient.post()
-                    .uri("/api/documents/parse")
-                    .contentType(MediaType.MULTIPART_FORM_DATA)
-                    .body(BodyInserters.fromMultipartData(parts))
+            return requestBuilder.apply(pythonServiceWebClient.post().uri(uri))
                     .retrieve()
-                    .bodyToMono(ParseResultDTO.class)
+                    .bodyToMono(responseType)
                     .block(TIMEOUT);
         } catch (WebClientResponseException e) {
             // Python 已响应但返回错误状态：4xx 透传 detail 提示，5xx 视为服务异常
-            log.warn("Python 文档解析接口返回错误: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            log.warn("Python 接口返回错误: uri={}, status={}, body={}", uri, e.getStatusCode(), e.getResponseBodyAsString());
             if (e.getStatusCode().is4xxClientError()) {
                 throw new BizException(ResultCode.PARAM_ERROR.getCode(), extractDetail(e.getResponseBodyAsString()));
             }
             throw new BizException(ResultCode.PYTHON_SERVICE_UNAVAILABLE);
         } catch (WebClientException e) {
-            log.error("调用 Python 文档解析接口失败: {}", e.getMessage());
+            log.error("调用 Python 接口失败: uri={}, error={}", uri, e.getMessage());
             throw new BizException(ResultCode.PYTHON_SERVICE_UNAVAILABLE);
         }
     }
@@ -85,9 +119,9 @@ public class PythonServiceClient {
     private String extractDetail(String responseBody) {
         try {
             String detail = new ObjectMapper().readTree(responseBody).path("detail").asText();
-            return detail.isEmpty() ? "文档解析请求被拒绝" : detail;
+            return detail.isEmpty() ? "请求被数据处理服务拒绝" : detail;
         } catch (Exception e) {
-            return "文档解析请求被拒绝";
+            return "请求被数据处理服务拒绝";
         }
     }
 }

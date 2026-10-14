@@ -58,6 +58,49 @@
               ]
             }
           }
+        },
+        {
+          "name": "文档列表",
+          "request": {
+            "method": "GET",
+            "url": "{{java_base}}/api/knowledge/docs"
+          }
+        },
+        {
+          "name": "删除文档",
+          "request": {
+            "method": "DELETE",
+            "url": "{{java_base}}/api/knowledge/docs/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "向量库",
+      "item": [
+        {
+          "name": "向量检索",
+          "request": {
+            "method": "POST",
+            "url": "{{python_base}}/api/vector/search",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"什么是有效订单？\",\n  \"top_k\": 5,\n  \"collection_name\": \"huiyi_knowledge\"\n}"
+            }
+          }
+        },
+        {
+          "name": "向量删除",
+          "request": {
+            "method": "POST",
+            "url": "{{python_base}}/api/vector/delete",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"business-glossary.md\",\n  \"collection_name\": \"huiyi_knowledge\"\n}"
+            }
+          }
         }
       ]
     }

@@ -25,3 +25,62 @@ class ParseResponse(BaseModel):
     filename: str
     chunk_count: int = Field(ge=0)
     chunks: list[Chunk]
+
+
+# ===== 向量库接口（/api/vector/*），契约与《开发文档》7.2 节一致 =====
+
+DEFAULT_COLLECTION = "huiyi_knowledge"
+
+
+class UpsertRequest(BaseModel):
+    """向量写入请求。"""
+
+    collection_name: str = Field(default=DEFAULT_COLLECTION)
+    chunks: list[Chunk]
+
+
+class UpsertResponse(BaseModel):
+    """向量写入响应。"""
+
+    success: bool
+    upserted_count: int = Field(ge=0)
+    collection_name: str
+
+
+class SearchRequest(BaseModel):
+    """向量检索请求。"""
+
+    query: str = Field(min_length=1)
+    top_k: int = Field(default=5, ge=1, le=20)
+    collection_name: str = Field(default=DEFAULT_COLLECTION)
+
+
+class SearchHit(BaseModel):
+    """检索命中项：id / text / metadata / score（cosine 相似度）。"""
+
+    id: str
+    text: str
+    metadata: dict
+    score: float
+
+
+class SearchResponse(BaseModel):
+    """向量检索响应。"""
+
+    success: bool
+    hits: list[SearchHit]
+
+
+class DeleteRequest(BaseModel):
+    """向量删除请求：按来源文件名删除全部分块。"""
+
+    filename: str = Field(min_length=1)
+    collection_name: str = Field(default=DEFAULT_COLLECTION)
+
+
+class DeleteResponse(BaseModel):
+    """向量删除响应。"""
+
+    success: bool
+    deleted_count: int = Field(ge=0)
+    filename: str

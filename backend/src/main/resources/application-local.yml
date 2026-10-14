@@ -1,7 +1,8 @@
 # 本地开发环境：基础设施（MySQL/Redis）由 docker compose 提供，Java/Python 在本机运行
 spring:
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/huiyi_demo?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    # 容器 MySQL 映射到宿主机 3307（规避本机 MySQL 占用的 3306）
+    url: ${DB_URL:jdbc:mysql://localhost:3307/huiyi_demo?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:huiyi123}
     driver-class-name: com.mysql.cj.jdbc.Driver

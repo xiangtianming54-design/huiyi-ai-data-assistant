@@ -9,7 +9,8 @@ services:
       MYSQL_DATABASE: huiyi_demo
       TZ: Asia/Shanghai
     ports:
-      - "3306:3306"
+      # 宿主机端口可通过 .env 的 MYSQL_HOST_PORT 覆盖（默认 3307，规避本机 MySQL 的 3306）
+      - "${MYSQL_HOST_PORT:-3307}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       - ./scripts/init_mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro

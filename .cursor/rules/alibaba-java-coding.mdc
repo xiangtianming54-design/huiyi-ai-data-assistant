@@ -1,0 +1,43 @@
+---
+description: 阿里巴巴Java开发手册工作规约——Java 开发前必须通读手册，开发中模糊时回读对应章节再继续
+alwaysApply: true
+---
+
+# 阿里巴巴Java开发手册工作规约
+
+手册位置：`C:\Users\33568\knowledge\alibaba-java-coding-guidelines.md`
+（基于《阿里巴巴Java开发手册终极版v1.3.0》，按编码场景分 11 章，约 15KB）
+
+## 强制工作方式（涉及 Java 编码时适用）
+
+1. **开发前**：开始任何 Java 编码任务（新功能 / 重构 / 修 bug）前，先用 Read 工具完整通读手册，再动手。
+2. **开发中**：对某条规范记忆模糊或不确定时，停止编码，按下方速查表定位并回读对应章节，确认后再继续。
+3. **生成后自查**：AI 生成或修改 Java 代码后，对照手册【强制】级条目逐项检查，违反必须当场修正。
+
+## 章节速查（模糊时按此定位回读）
+
+| 章节 | 何时回读 |
+|---|---|
+| 1 循环与性能 | 循环内字符串拼接 / 建对象 / try-catch；Map 遍历方式 |
+| 2 集合操作 | foreach 增删元素、集合初始化容量、Arrays.asList、去重 |
+| 3 控制语句与条件嵌套 | if-else 超 3 层、switch、卫语句 / 策略模式重构 |
+| 4 异常处理 | 捕获不处理、finally 中 return、NPE 预防 |
+| 5 日志规约 | 只用 SLF4J API、占位符 `{}`、日志级别控制 |
+| 6 单元测试 | BCDE 原则、覆盖率 70% / 核心 100%、测试代码位置 |
+| 7 命名与代码风格 | Service/DAO 方法前缀、DO/DTO/VO 命名、魔法值、格式 |
+| 8 OOP 规约 | POJO 包装类型、equals 空指针、构造方法禁业务逻辑 |
+| 9 MySQL 与 SQL | 表三字段、decimal、join 上限、count(*)、无外键 |
+| 10 安全规约 | 参数校验、SQL 注入、敏感数据脱敏、权限控制 |
+| 11 工程结构 | Web/Service/Manager/DAO 分层、依赖一致、DRY |
+
+## 高频踩坑【强制】速记（凭记忆也必须做对）
+
+- `foreach` 循环中禁止 `remove`/`add`，删除用 `Iterator`
+- 日志只用 SLF4J + 占位符，禁止字符串拼接
+- POJO 属性一律包装类型（`Integer` / `Long` / `BigDecimal`）
+- `equals` 用常量或确定有值对象调用，优先 `Objects.equals()`
+- 建表必备 `id` / `gmt_create` / `gmt_modified`；金额用 `decimal`，禁 `float` / `double`
+- 用户传入的任何参数必须做有效性校验；SQL 参数必须绑定，禁止字符串拼接 SQL
+- `if` / `else` / `for` / `while` 必须带大括号；`if-else` 嵌套不超过 3 层，超出用卫语句
+- 禁止魔法值；4 空格缩进；单行不超过 120 字符
+- 超过三个表禁止 `join`；不得使用外键与级联，外键概念在应用层解决

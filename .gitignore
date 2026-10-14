@@ -1,0 +1,45 @@
+# ===== 项目特有 =====
+chroma_store/
+*.sqlite3
+*.bin
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ===== Java =====
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# ===== Node / 前端 =====
+node_modules/
+dist/
+*.local
+
+# ===== 环境变量与本地配置（敏感信息不入库） =====
+.env
+.env.local
+!.env.example
+
+# ===== IDE =====
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# ===== 系统 =====
+.DS_Store
+Thumbs.db
+
+# ===== 日志 =====
+logs/
+*.log

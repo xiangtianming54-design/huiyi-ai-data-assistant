@@ -1,0 +1,4 @@
+# 开发与测试依赖（本地 / CI 使用，不进入生产镜像）
+-r requirements.txt
+pytest==8.3.4
+httpx==0.28.1

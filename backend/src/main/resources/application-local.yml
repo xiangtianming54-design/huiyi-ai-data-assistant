@@ -1,0 +1,32 @@
+# 本地开发环境：基础设施（MySQL/Redis）由 docker compose 提供，Java/Python 在本机运行
+spring:
+  datasource:
+    # 容器 MySQL 映射到宿主机 3307（规避本机 MySQL 占用的 3306）
+    url: ${DB_URL:jdbc:mysql://localhost:3307/huiyi_demo?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:huiyi123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    banner: false
+
+# Python Sidecar 服务地址
+python-service:
+  url: ${PYTHON_SERVICE_URL:http://localhost:8001}
+
+# LLM OpenAI 兼容 API（密钥一律走环境变量，禁止硬编码）
+llm:
+  base-url: ${LLM_BASE_URL:}
+  api-key: ${LLM_API_KEY:}
+  model: ${LLM_MODEL:}
+  embedding-model: ${LLM_EMBEDDING_MODEL:}

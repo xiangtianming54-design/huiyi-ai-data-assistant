@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  项目级 Maven 配置：覆盖全局 settings.xml 中不可用的内网 Nexus 镜像。
+  使用腾讯云公共镜像：宿主机与 Docker 构建容器内均可达（阿里云镜像的 CDN
+  节点在本机 Docker 网络下不可达，故不采用）。仅对本项目生效。
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <mirrors>
+    <mirror>
+      <id>tencent-public</id>
+      <mirrorOf>*</mirrorOf>
+      <name>Tencent Cloud Public Mirror</name>
+      <url>https://mirrors.cloud.tencent.com/nexus/repository/maven-public/</url>
+    </mirror>
+  </mirrors>
+
+</settings>

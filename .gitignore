@@ -43,3 +43,6 @@ Thumbs.db
 # ===== 日志 =====
 logs/
 *.log
+
+# 用户全局 gitignore 忽略了 scripts/ 目录，本项目的数据库脚本必须入库，予以反向包含
+!scripts/

@@ -1,0 +1,108 @@
+# HuiYi AI Data Assistant 一键编排
+# 使用：cp .env.example .env 并填入 LLM 相关配置后，docker compose up -d
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: huiyi-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 .env 中配置 MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: huiyi_demo
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./scripts/init_mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - huiyi-net
+
+  redis:
+    image: redis:7
+    container_name: huiyi-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - huiyi-net
+
+  python-service:
+    build: ./python-service
+    container_name: huiyi-python
+    environment:
+      CHROMA_PERSIST_DIR: /app/chroma_store
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_EMBEDDING_MODEL: ${LLM_EMBEDDING_MODEL:-}
+      TZ: Asia/Shanghai
+    ports:
+      - "8001:8001"
+    volumes:
+      - chroma-data:/app/chroma_store
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - huiyi-net
+
+  backend:
+    build: ./backend
+    container_name: huiyi-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      python-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+      DB_URL: jdbc:mysql://mysql:3306/huiyi_demo?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 .env 中配置 MYSQL_ROOT_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PYTHON_SERVICE_URL: http://python-service:8001
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_EMBEDDING_MODEL: ${LLM_EMBEDDING_MODEL:-}
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+    networks:
+      - huiyi-net
+
+  # ===== 前端（P6 阶段交付后开放） =====
+  # frontend:
+  #   build: ./frontend
+  #   container_name: huiyi-frontend
+  #   depends_on:
+  #     - backend
+  #   ports:
+  #     - "5173:5173"
+  #   networks:
+  #     - huiyi-net
+
+volumes:
+  mysql-data:
+  redis-data:
+  chroma-data:
+
+networks:
+  huiyi-net:
+    driver: bridge

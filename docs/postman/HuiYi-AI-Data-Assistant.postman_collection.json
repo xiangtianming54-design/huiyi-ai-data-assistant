@@ -1,0 +1,65 @@
+{
+  "info": {
+    "name": "HuiYi AI Data Assistant",
+    "description": "HuiYi AI Data Assistant API 集合（P2 阶段：健康检查 / 文档解析 / 知识库上传）",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "java_base", "value": "http://localhost:8080" },
+    { "key": "python_base", "value": "http://localhost:8001" }
+  ],
+  "item": [
+    {
+      "name": "健康检查",
+      "item": [
+        {
+          "name": "Java 健康检查",
+          "request": {
+            "method": "GET",
+            "url": "{{java_base}}/api/health"
+          }
+        },
+        {
+          "name": "Python 健康检查",
+          "request": {
+            "method": "GET",
+            "url": "{{python_base}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "知识库",
+      "item": [
+        {
+          "name": "上传知识文档（Java）",
+          "request": {
+            "method": "POST",
+            "url": "{{java_base}}/api/knowledge/upload",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "sample-data/knowledge/business-glossary.md" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "文档解析（Python 直连）",
+          "request": {
+            "method": "POST",
+            "url": "{{python_base}}/api/documents/parse",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "sample-data/knowledge/business-glossary.md" },
+                { "key": "chunk_size", "value": "500", "type": "text" },
+                { "key": "chunk_overlap", "value": "50", "type": "text" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

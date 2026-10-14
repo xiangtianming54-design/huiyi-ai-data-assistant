@@ -2,8 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# pip 源可通过构建参数覆盖（默认阿里云镜像，CI 可切回官方源）
-ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+# pip 源可通过构建参数覆盖（默认腾讯云镜像：宿主机与构建容器内均可达）
+ARG PIP_INDEX_URL=https://mirrors.cloud.tencent.com/pypi/simple/
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt -i ${PIP_INDEX_URL}

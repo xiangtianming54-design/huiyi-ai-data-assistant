@@ -138,7 +138,7 @@ huiyi-ai-data-assistant/
 - [x] **M5 端到端可演示**：五场景前端演示（截图见 [docs/images](docs/images)）
 - [x] **M6 开源就绪**：测试 / 文档 / Demo GIF / CI 齐备
 
-后续方向：多轮对话上下文、重排序与混合检索、知识库权限隔离、Agent / Tool Calling（见开发文档第 15 节）。
+后续方向：**统一对话入口**（已立项，见 docs/development.md「v0.2 规划」）、多轮对话上下文、重排序与混合检索、知识库权限隔离、Agent / Tool Calling（见开发文档第 15 节）。
 
 ## License
 

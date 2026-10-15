@@ -141,7 +141,9 @@ huiyi-ai-data-assistant/
 
 - [x] **v0.2 统一对话入口**：单一聊天入口按意图路由 —— 知识问答走 SSE 流式，数据查询在气泡内嵌 SQL/图表/明细富结果卡片（见 docs/development.md「v0.2 变更」）
 
-后续方向：多轮对话上下文、重排序与混合检索、知识库权限隔离、Agent / Tool Calling（见开发文档第 15 节）。
+- [x] **v0.3 多轮对话上下文**：查询改写将追问转为独立问题，RAG 与 Text-to-SQL 两链路共用（见 docs/development.md「v0.3 变更」）
+
+后续方向：意图识别升级（规则 → LLM/语义分类）、重排序与混合检索、知识库权限隔离、Agent / Tool Calling（见开发文档第 15 节）。
 
 ## License
 

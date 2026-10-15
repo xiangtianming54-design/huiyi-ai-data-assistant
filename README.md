@@ -105,6 +105,7 @@ curl http://localhost:8001/health       # Python Sidecar → {"status":"ok"}
 | `GET /api/knowledge/docs` | 知识库文档列表 |
 | `DELETE /api/knowledge/docs/{docId}` | 删除文档（向量与元数据双删） |
 | `POST /api/chat` | RAG 问答（非流式），返回回答、意图与引用来源 |
+| `POST /api/chat/intent` | 意图预检（v0.2），返回 knowledge_qa / data_query |
 | `POST /api/chat/stream` | RAG 问答（SSE 流式），逐 token 推送，结束推送 references |
 | `POST /api/analysis/query` | Text-to-SQL 数据分析：生成 SQL → 安全校验 → 只读执行 → 画像/图表推荐 → 总结 |
 | `GET /health`（8001） | Python Sidecar 健康检查 |
@@ -138,7 +139,9 @@ huiyi-ai-data-assistant/
 - [x] **M5 端到端可演示**：五场景前端演示（截图见 [docs/images](docs/images)）
 - [x] **M6 开源就绪**：测试 / 文档 / Demo GIF / CI 齐备
 
-后续方向：**统一对话入口**（已立项，见 docs/development.md「v0.2 规划」）、多轮对话上下文、重排序与混合检索、知识库权限隔离、Agent / Tool Calling（见开发文档第 15 节）。
+- [x] **v0.2 统一对话入口**：单一聊天入口按意图路由 —— 知识问答走 SSE 流式，数据查询在气泡内嵌 SQL/图表/明细富结果卡片（见 docs/development.md「v0.2 变更」）
+
+后续方向：多轮对话上下文、重排序与混合检索、知识库权限隔离、Agent / Tool Calling（见开发文档第 15 节）。
 
 ## License
 

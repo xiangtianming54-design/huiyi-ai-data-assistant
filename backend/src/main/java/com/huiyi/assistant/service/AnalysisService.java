@@ -57,15 +57,19 @@ public class AnalysisService {
 
     private final ChatSessionService chatSessionService;
 
+    private final QueryRewriteService queryRewriteService;
+
     public AnalysisService(TextToSqlService textToSqlService, SqlExecuteService sqlExecuteService,
                            PythonServiceClient pythonServiceClient, LlmService llmService,
-                           PromptTemplateLoader promptTemplateLoader, ChatSessionService chatSessionService) {
+                           PromptTemplateLoader promptTemplateLoader, ChatSessionService chatSessionService,
+                           QueryRewriteService queryRewriteService) {
         this.textToSqlService = textToSqlService;
         this.sqlExecuteService = sqlExecuteService;
         this.pythonServiceClient = pythonServiceClient;
         this.llmService = llmService;
         this.promptTemplateLoader = promptTemplateLoader;
         this.chatSessionService = chatSessionService;
+        this.queryRewriteService = queryRewriteService;
     }
 
     /**
@@ -76,9 +80,11 @@ public class AnalysisService {
      */
     public AnalysisResultVO query(AnalysisRequestDTO request) {
         String sessionId = chatSessionService.resolveSessionId(request.getSessionId());
+        // 多轮上下文：先结合历史将追问改写为独立问题（无历史时透传）
+        String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
         chatSessionService.saveUserMessage(sessionId, request.getQuestion(), IntentTypeEnum.DATA_QUERY);
 
-        AnalysisResultVO result = executeQuery(request.getQuestion());
+        AnalysisResultVO result = executeQuery(question);
         result.setSessionId(sessionId);
         chatSessionService.saveAssistantMessage(sessionId, result.getAnswer(),
                 IntentTypeEnum.DATA_QUERY, result.getSql(), List.of());

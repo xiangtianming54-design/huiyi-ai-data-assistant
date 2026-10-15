@@ -84,3 +84,37 @@ class DeleteResponse(BaseModel):
     success: bool
     deleted_count: int = Field(ge=0)
     filename: str
+
+
+# ===== SQL 校验与数据画像接口（/api/sql/*、/api/data/*），契约与《开发文档》7.2 节一致 =====
+
+
+class SqlValidateRequest(BaseModel):
+    """SQL 校验请求。"""
+
+    sql: str = Field(min_length=1)
+
+
+class SqlValidateResponse(BaseModel):
+    """SQL 校验响应：通过时返回修正后的 sql 与涉及表，拒绝时给出原因。"""
+
+    valid: bool
+    sql: str | None = None
+    tables: list[str] | None = None
+    reason: str | None = None
+
+
+class DataProfileRequest(BaseModel):
+    """数据画像请求：SQL 查询结果行集。"""
+
+    rows: list[dict]
+
+
+class DataProfileResponse(BaseModel):
+    """数据画像响应：行数、列、数值摘要、图表推荐、空结果标记。"""
+
+    row_count: int = Field(ge=0)
+    columns: list[str]
+    summary: dict
+    chart_type: str
+    empty: bool

@@ -40,14 +40,17 @@ public class ChatService {
 
     private final ChatSessionService chatSessionService;
 
+    private final QueryRewriteService queryRewriteService;
+
     public ChatService(IntentService intentService, RagService ragService,
                        LlmService llmService, AnalysisService analysisService,
-                       ChatSessionService chatSessionService) {
+                       ChatSessionService chatSessionService, QueryRewriteService queryRewriteService) {
         this.intentService = intentService;
         this.ragService = ragService;
         this.llmService = llmService;
         this.analysisService = analysisService;
         this.chatSessionService = chatSessionService;
+        this.queryRewriteService = queryRewriteService;
     }
 
     /**
@@ -68,7 +71,9 @@ public class ChatService {
      */
     public ChatResponseVO chat(ChatRequestDTO request) {
         String sessionId = chatSessionService.resolveSessionId(request.getSessionId());
-        IntentTypeEnum intent = intentService.detect(request.getQuestion());
+        // 多轮上下文：先结合历史将追问改写为独立问题（无历史时透传）
+        String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
+        IntentTypeEnum intent = intentService.detect(question);
         chatSessionService.saveUserMessage(sessionId, request.getQuestion(), intent);
 
         String answer;
@@ -76,12 +81,12 @@ public class ChatService {
         List<ReferenceVO> references;
         if (intent == IntentTypeEnum.DATA_QUERY) {
             // P5：data_query 意图接入 Text-to-SQL 链路
-            AnalysisResultVO result = analysisService.executeQuery(request.getQuestion());
+            AnalysisResultVO result = analysisService.executeQuery(question);
             answer = result.getAnswer();
             sqlText = result.getSql();
             references = List.of();
         } else {
-            RagService.RagAnswer ragAnswer = ragService.answer(request.getQuestion(), llmService);
+            RagService.RagAnswer ragAnswer = ragService.answer(question, llmService);
             answer = ragAnswer.answer();
             references = ragAnswer.references();
         }
@@ -103,7 +108,9 @@ public class ChatService {
      */
     public SseEmitter chatStream(ChatRequestDTO request) {
         String sessionId = chatSessionService.resolveSessionId(request.getSessionId());
-        IntentTypeEnum intent = intentService.detect(request.getQuestion());
+        // 多轮上下文：先结合历史将追问改写为独立问题（无历史时透传）
+        String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
+        IntentTypeEnum intent = intentService.detect(question);
         chatSessionService.saveUserMessage(sessionId, request.getQuestion(), intent);
 
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
@@ -115,12 +122,12 @@ public class ChatService {
         String sqlText = null;
         if (intent == IntentTypeEnum.DATA_QUERY) {
             // Text-to-SQL 为多段阻塞调用，结果作为整体一次性推送
-            AnalysisResultVO result = analysisService.executeQuery(request.getQuestion());
+            AnalysisResultVO result = analysisService.executeQuery(question);
             sqlText = result.getSql();
             tokenFlux = Flux.just(result.getAnswer());
             references = List.of();
         } else {
-            RagService.RagContext context = ragService.prepare(request.getQuestion());
+            RagService.RagContext context = ragService.prepare(question);
             references = context.references();
             tokenFlux = ragService.stream(context, llmService);
         }

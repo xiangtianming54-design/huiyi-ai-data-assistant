@@ -1,5 +1,6 @@
 package com.huiyi.assistant.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huiyi.assistant.mapper.ChatMessageMapper;
@@ -10,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,6 +51,23 @@ public class ChatSessionService {
             return sessionId;
         }
         return "s-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    }
+
+    /**
+     * 查询会话最近的消息（按时间正序）。
+     *
+     * @param sessionId 会话 ID
+     * @param limit 最大条数
+     * @return 消息列表（旧 → 新）
+     */
+    public List<ChatMessage> getRecentMessages(String sessionId, int limit) {
+        List<ChatMessage> messages = new ArrayList<>(chatMessageMapper.selectList(
+                new LambdaQueryWrapper<ChatMessage>()
+                        .eq(ChatMessage::getSessionId, sessionId)
+                        .orderByDesc(ChatMessage::getId)
+                        .last("LIMIT " + limit)));
+        Collections.reverse(messages);
+        return messages;
     }
 
     /**

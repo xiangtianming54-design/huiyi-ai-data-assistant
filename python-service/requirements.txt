@@ -9,3 +9,5 @@ python-docx==1.1.2
 httpx==0.28.1
 # 1.5.x 起官方提供 cp313 wheel（0.5.x 的 chroma-hnswlib 在 Windows py3.13 需源码编译）
 chromadb==1.5.9
+sqlglot==26.16.1
+pandas==2.2.3

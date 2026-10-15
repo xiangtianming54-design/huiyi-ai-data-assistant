@@ -76,6 +76,38 @@
       ]
     },
     {
+      "name": "智能问答",
+      "item": [
+        {
+          "name": "RAG 问答（非流式）",
+          "request": {
+            "method": "POST",
+            "url": "{{java_base}}/api/chat",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"s-001\",\n  \"question\": \"什么是有效订单？\"\n}"
+            }
+          }
+        },
+        {
+          "name": "RAG 问答（SSE 流式）",
+          "request": {
+            "method": "POST",
+            "url": "{{java_base}}/api/chat/stream",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "text/event-stream" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"什么是有效订单？\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "向量库",
       "item": [
         {

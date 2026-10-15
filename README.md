@@ -72,6 +72,28 @@ curl http://localhost:8080/api/health   # Java 主服务 → {"code":0,"message"
 curl http://localhost:8001/health       # Python Sidecar → {"status":"ok"}
 ```
 
+## API 概览
+
+| 端点 | 说明 |
+|---|---|
+| `GET /api/health` | Java 健康检查 |
+| `POST /api/knowledge/upload` | 上传知识文档（md/txt/pdf/docx），自动解析分块并写入向量库 |
+| `GET /api/knowledge/docs` | 知识库文档列表 |
+| `DELETE /api/knowledge/docs/{docId}` | 删除文档（向量与元数据双删） |
+| `POST /api/chat` | RAG 问答（非流式），返回回答、意图与引用来源 |
+| `POST /api/chat/stream` | RAG 问答（SSE 流式），逐 token 推送，结束推送 references |
+| `GET /health`（8001） | Python Sidecar 健康检查 |
+| `POST /api/documents/parse`（8001） | 文档解析分块 |
+| `POST /api/vector/search`（8001） | 向量 Top-K 检索 |
+
+示例：
+
+```bash
+curl -X POST http://localhost:8080/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question": "什么是有效订单？"}'
+```
+
 ## Tech Stack
 
 | 层 | 技术 |
@@ -100,7 +122,7 @@ huiyi-ai-data-assistant/
 
 - [x] **M1 骨架可运行**：双端健康检查 + Compose 一键启动
 - [x] **M2 知识库链路贯通**：上传 → 解析 → 分块 → 向量检索
-- [ ] **M3 RAG 问答可用**：引用来源 / SSE 流式 / 会话落库
+- [x] **M3 RAG 问答可用**：引用来源 / SSE 流式 / 会话落库
 - [ ] **M4 数据查询可用**：Text-to-SQL + 四道安全防线
 - [ ] **M5 端到端可演示**：五场景前端演示
 - [ ] **M6 开源就绪**：测试 / 文档 / Demo GIF / CI 齐备

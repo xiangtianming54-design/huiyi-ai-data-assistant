@@ -26,6 +26,9 @@ public class RagService {
     /** 检索条数 */
     private static final int TOP_K = 5;
 
+    /** 命中分数阈值：低于该分数视为未命中（bge-m3 相关片段通常 ≥ 0.5，无关片段约 0.3） */
+    private static final double SCORE_THRESHOLD = 0.5;
+
     /** RAG Prompt 模板位置 */
     private static final String RAG_PROMPT_LOCATION = "prompts/rag-system.md";
 
@@ -75,6 +78,12 @@ public class RagService {
             return new RagContext(SEARCH_DEGRADED_FALLBACK, null, List.of());
         }
 
+        // 按阈值过滤低分命中：分数不足视为知识库未命中，走确定性兜底（场景 5）
+        if (hits != null) {
+            hits = hits.stream()
+                    .filter(hit -> hit.getScore() != null && hit.getScore() >= SCORE_THRESHOLD)
+                    .collect(Collectors.toList());
+        }
         if (hits == null || hits.isEmpty()) {
             return new RagContext(NO_HIT_FALLBACK, null, List.of());
         }

@@ -38,6 +38,8 @@ public class LlmConfig {
         OpenAiApi openAiApi = OpenAiApi.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
+                // base-url 已含 /v1（与 Python embedding 共用同一配置），补全路径不再重复 /v1
+                .completionsPath("/chat/completions")
                 .restClientBuilder(RestClient.builder().requestFactory(requestFactory))
                 .build();
 

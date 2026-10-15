@@ -3,7 +3,7 @@
     <el-card class="chat-card" shadow="never">
       <template #header>
         <div class="chat-header">
-          <span>智能问答</span>
+          <span>智能助手</span>
           <el-button size="small" text type="primary" @click="store.reset()">新会话</el-button>
         </div>
       </template>
@@ -31,7 +31,7 @@
           type="textarea"
           :rows="2"
           resize="none"
-          placeholder="输入业务口径问题（例如：什么是有效订单？），Enter 发送"
+          placeholder="随便问：业务口径（什么是有效订单？）或数据分析（上个月销售额最高的 10 个商品是什么？），Enter 发送"
           @keydown.enter.exact.prevent="send"
         />
         <div class="chat-actions">
@@ -61,7 +61,8 @@ const scrollRef = ref<HTMLElement>()
 
 const exampleQuestions = [
   '什么是有效订单？',
-  '销售额的统计口径是什么？',
+  '上个月销售额最高的 10 个商品是什么？',
+  '华东地区各渠道的有效订单量是多少？',
   '公司年假有多少天？'
 ]
 

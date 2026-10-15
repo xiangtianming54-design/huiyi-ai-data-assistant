@@ -42,6 +42,13 @@ export const knowledgeApi = {
   }
 }
 
+export const chatApi = {
+  /** 意图预检：knowledge_qa 走 SSE 流式，data_query 走分析接口 */
+  intent(question: string) {
+    return http.post<Result<{ intent: string }>>('/chat/intent', { question })
+  }
+}
+
 export const analysisApi = {
   query(question: string, sessionId?: string) {
     return http.post<Result<AnalysisResult>>('/analysis/query', { question, sessionId })

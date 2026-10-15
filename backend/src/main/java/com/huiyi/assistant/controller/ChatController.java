@@ -3,6 +3,7 @@ package com.huiyi.assistant.controller;
 import com.huiyi.assistant.common.result.Result;
 import com.huiyi.assistant.model.dto.ChatRequestDTO;
 import com.huiyi.assistant.model.vo.ChatResponseVO;
+import com.huiyi.assistant.model.vo.IntentResponseVO;
 import com.huiyi.assistant.service.ChatService;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
@@ -36,6 +37,17 @@ public class ChatController {
     @PostMapping
     public Result<ChatResponseVO> chat(@Validated @RequestBody ChatRequestDTO request) {
         return Result.ok(chatService.chat(request));
+    }
+
+    /**
+     * 意图预检：判断问题将走知识问答还是数据查询链路。
+     *
+     * @param request 问答请求（仅使用 question 字段）
+     * @return 意图编码
+     */
+    @PostMapping("/intent")
+    public Result<IntentResponseVO> detectIntent(@Validated @RequestBody ChatRequestDTO request) {
+        return Result.ok(new IntentResponseVO(chatService.detectIntent(request.getQuestion()).getCode()));
     }
 
     /**

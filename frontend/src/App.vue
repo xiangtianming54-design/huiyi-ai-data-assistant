@@ -8,15 +8,11 @@
       <el-menu :default-active="$route.path" router class="app-menu">
         <el-menu-item index="/chat">
           <el-icon><ChatDotRound /></el-icon>
-          <span>智能问答</span>
+          <span>智能助手</span>
         </el-menu-item>
         <el-menu-item index="/knowledge">
           <el-icon><FolderOpened /></el-icon>
           <span>知识库管理</span>
-        </el-menu-item>
-        <el-menu-item index="/analysis">
-          <el-icon><DataAnalysis /></el-icon>
-          <span>数据分析</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -27,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChatDotRound, DataAnalysis, FolderOpened } from '@element-plus/icons-vue'
+import { ChatDotRound, FolderOpened } from '@element-plus/icons-vue'
 </script>
 
 <style>

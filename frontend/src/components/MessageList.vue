@@ -6,8 +6,9 @@
       class="message-row"
       :class="message.role"
     >
-      <div class="message-bubble">
-        <MarkdownRenderer v-if="message.role === 'assistant'" :content="message.content" />
+      <div class="message-bubble" :class="{ 'analysis-bubble': message.analysis }">
+        <AnalysisResultCard v-if="message.analysis" :result="message.analysis" />
+        <MarkdownRenderer v-else-if="message.role === 'assistant'" :content="message.content" />
         <template v-else>{{ message.content }}</template>
         <span v-if="message.streaming" class="cursor-blink">▍</span>
         <div v-if="message.references?.length" class="message-references">
@@ -28,6 +29,7 @@
 </template>
 
 <script setup lang="ts">
+import AnalysisResultCard from './AnalysisResultCard.vue'
 import MarkdownRenderer from './MarkdownRenderer.vue'
 import type { ChatMessage } from '../stores/chat'
 
@@ -59,6 +61,12 @@ defineProps<{ messages: ChatMessage[] }>()
   border-radius: 10px;
   line-height: 1.7;
   word-break: break-word;
+}
+
+/* 数据查询富结果需要更大展示空间 */
+.message-bubble.analysis-bubble {
+  max-width: 92%;
+  min-width: 60%;
 }
 
 .message-row.user .message-bubble {

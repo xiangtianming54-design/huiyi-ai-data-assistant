@@ -79,9 +79,15 @@ docs/             架构 / API / 演示 / 开发文档 + Postman 集合 + 截图
 4. **Prompt 工程**：模板文件化（classpath）+ `{{var}}` 占位替换工具；Text-to-SQL 输出约定 JSON，三级提取兜底（JSON → 代码块 → 裸 SELECT），不抛栈
 5. **响应式流式**：SSE 事件协议（session/token/references/error），前端 ReadableStream 解析，Pinia 中必须经响应式代理写入（裸对象引用不触发更新）
 
-## v0.2 规划（已立项）
+## v0.2 变更（2026-10-15 已发布）
 
-**统一对话入口**：当前前端「智能问答」与「数据分析」为两个页面，且数据类问题在问答页只能得到纯文本回答。v0.2 合并为单一对话入口：意图分析后知识类走 SSE 流式（现状保留），数据类在聊天气泡内嵌富结果卡片（总结 + SQL 折叠块 + 图表 + 明细表）。技术方案采用**前端双通道**（knowledge_qa → /api/chat/stream；data_query → /api/analysis/query），后端零改动；意图识别保持规则版并外置到配置文件，后续再评估 LLM 意图识别。预估 2-3h。（2026-10-15 评审确认，排期待定）
+**统一对话入口**：原「智能问答」与「数据分析」两个页面合并为单一「智能助手」入口。实现方案（方案 A）：
+
+- 后端新增 `POST /api/chat/intent` 意图预检接口；意图关键词从硬编码外置到 `app.intent.*` 配置
+- 前端 chat store 先预检意图：`knowledge_qa` → SSE 流式（不变）；`data_query` → `/api/analysis/query`，气泡内嵌 `AnalysisResultCard` 富结果卡片（总结 + SQL 折叠块 + ECharts 图表 + 分页明细表）
+- 侧边栏移除「数据分析」，`/analysis` 路由 302 到 `/chat`；回归脚本 `scripts/e2e-v02.js` 覆盖四场景
+
+后续评估：LLM 意图识别（当前规则版）、多轮对话上下文。
 
 ## 常见坑（本仓库已踩过）
 

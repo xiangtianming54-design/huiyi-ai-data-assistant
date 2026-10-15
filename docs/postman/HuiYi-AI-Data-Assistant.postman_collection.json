@@ -91,6 +91,18 @@
           }
         },
         {
+          "name": "意图预检",
+          "request": {
+            "method": "POST",
+            "url": "{{java_base}}/api/chat/intent",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"上个月销售额最高的 10 个商品是什么？\"\n}"
+            }
+          }
+        },
+        {
           "name": "RAG 问答（SSE 流式）",
           "request": {
             "method": "POST",

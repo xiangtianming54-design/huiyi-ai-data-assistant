@@ -51,6 +51,16 @@ public class ChatService {
     }
 
     /**
+     * 意图预检：供前端统一对话入口路由（知识问答走 SSE，数据查询走分析接口）。
+     *
+     * @param question 用户问题
+     * @return 意图类型
+     */
+    public IntentTypeEnum detectIntent(String question) {
+        return intentService.detect(question);
+    }
+
+    /**
      * 非流式问答。
      *
      * @param request 问答请求

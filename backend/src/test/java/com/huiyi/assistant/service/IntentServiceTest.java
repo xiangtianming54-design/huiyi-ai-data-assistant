@@ -1,5 +1,6 @@
 package com.huiyi.assistant.service;
 
+import com.huiyi.assistant.config.IntentProperties;
 import com.huiyi.assistant.model.enums.IntentTypeEnum;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -14,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 class IntentServiceTest {
 
-    private final IntentService intentService = new IntentService();
+    private final IntentService intentService = new IntentService(new IntentProperties());
 
     @ParameterizedTest
     @ValueSource(strings = {

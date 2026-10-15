@@ -53,8 +53,9 @@ INSERT INTO products (id, product_code, product_name, category, price, status) V
 (19, 'P0019', '真丝围巾',             '服装配饰', 269.00, 'ACTIVE'),
 (20, 'P0020', '防紫外线太阳镜',       '服装配饰', 219.00, 'ACTIVE');
 
--- ===== 600 订单（确定性取模分布） =====
+-- ===== 600 订单（确定性取模分布，维度间已去相关） =====
 -- order_date: 2026-07-15 起，MOD(n*37, 92) 天偏移 → 覆盖 2026-07-15 ~ 2026-10-14
+-- region 用 FLOOR(n/4) 分段、channel 用 MOD(n,4) 循环，避免取模序列相关导致维度塌缩
 -- 状态: 75% PAID，少量 SHIPPED/COMPLETED/CREATED/REFUNDED/CANCELLED
 INSERT INTO sales_orders
   (order_no, order_date, product_id, region_id, channel_id, quantity, unit_price, total_amount, status)
@@ -67,11 +68,11 @@ SELECT
   CONCAT('SO', LPAD(n, 6, '0'))                              AS order_no,
   DATE_ADD('2026-07-15', INTERVAL MOD(n * 37, 92) DAY)       AS order_date,
   p.id                                                       AS product_id,
-  MOD(n * 7, 8) + 1                                          AS region_id,
-  MOD(n * 11, 4) + 1                                         AS channel_id,
-  MOD(n * 5, 10) + 1                                         AS quantity,
+  MOD(FLOOR((n - 1) / 4), 8) + 1                             AS region_id,
+  MOD(n - 1, 4) + 1                                          AS channel_id,
+  MOD((n - 1) * 5, 10) + 1                                   AS quantity,
   p.price                                                    AS unit_price,
-  ROUND(p.price * (MOD(n * 5, 10) + 1), 2)                   AS total_amount,
+  ROUND(p.price * (MOD((n - 1) * 5, 10) + 1), 2)             AS total_amount,
   CASE MOD(n, 20)
     WHEN 0 THEN 'REFUNDED'
     WHEN 1 THEN 'CANCELLED'

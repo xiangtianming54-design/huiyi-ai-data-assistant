@@ -38,6 +38,11 @@ public class AnalysisService {
     /** 空结果话术 */
     private static final String EMPTY_RESULT = "查询完成，但没有符合条件的数据。";
 
+    /** 数据修改意图关键词：问题层面直接拦截，不进入 LLM 生成（四道防线之意图层） */
+    private static final List<String> MODIFICATION_KEYWORDS = List.of(
+            "删除", "修改", "更新", "清空", "插入",
+            "delete", "update", "insert", "drop", "truncate", "alter");
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final TextToSqlService textToSqlService;
@@ -87,6 +92,12 @@ public class AnalysisService {
      * @return 组装好的分析结果
      */
     public AnalysisResultVO executeQuery(String question) {
+        // 0. 意图层拦截：数据修改意图直接拒绝，不进入 LLM 生成（场景 4）
+        if (containsModificationIntent(question)) {
+            log.warn("数据修改意图被拦截: question={}", question);
+            return finish(question, null, List.of(), null, SAFE_REFUSAL);
+        }
+
         // 1. Text-to-SQL
         String sql = textToSqlService.generateSql(question);
         if (sql == null) {
@@ -135,6 +146,14 @@ public class AnalysisService {
                 "profile", toJson(profile),
                 "rows", toJson(rows.stream().limit(SUMMARY_ROWS_LIMIT).toList())));
         return llmService.chat(prompt);
+    }
+
+    /**
+     * 判断问题是否包含数据修改意图（大小写不敏感）。
+     */
+    private boolean containsModificationIntent(String question) {
+        String lower = question.toLowerCase();
+        return MODIFICATION_KEYWORDS.stream().anyMatch(lower::contains);
     }
 
     /**

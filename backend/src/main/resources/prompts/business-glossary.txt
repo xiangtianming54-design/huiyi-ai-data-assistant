@@ -1,6 +1,6 @@
-1. 销售额默认只统计 status = 'PAID' 的订单的 total_amount 之和。如需统计全口径销售额（含已发货、已完成），需在问题中明确说明。
+1. 销售额默认只统计 status = 'PAID' 的订单的 total_amount 之和，即 WHERE status = 'PAID'。特别注意：不要与有效订单的状态集合（PAID/SHIPPED/COMPLETED）混淆；仅当问题明确要求全口径时才包含 SHIPPED、COMPLETED。
 2. 有效订单是指支付成功且未退款的订单，即订单状态为 PAID（已支付）、SHIPPED（已发货）或 COMPLETED（已完成）的订单。CREATED（已创建）、REFUNDED（已退款）、CANCELLED（已取消）不计入有效订单。
 3. 订单状态取值：CREATED 已创建、PAID 已支付、SHIPPED 已发货、COMPLETED 已完成、REFUNDED 已退款、CANCELLED 已取消。
-4. 「上个月」「本月」等相对日期基于当前日期计算，使用 order_date 字段过滤。
+4. 「上个月」「本月」等相对日期基于当前日期计算，使用 order_date 字段过滤；仅当问题明确提及时间范围时才添加日期过滤条件，问题未提及时间时不要添加任何日期条件。「上个月」的标准写法：order_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH), '%Y-%m-01') AND order_date < DATE_FORMAT(CURDATE(), '%Y-%m-01')；「本月」的标准写法：order_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')。
 5. 渠道分为：线上商城、直播带货、线下门店、分销代理，维护在 channels 表。
 6. 地区按大区划分（华东、华北、华南、华中、西南、西北、东北、港澳台），维护在 regions 表。

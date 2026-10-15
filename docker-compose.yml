@@ -89,16 +89,16 @@ services:
     networks:
       - huiyi-net
 
-  # ===== 前端（P6 阶段交付后开放） =====
-  # frontend:
-  #   build: ./frontend
-  #   container_name: huiyi-frontend
-  #   depends_on:
-  #     - backend
-  #   ports:
-  #     - "5173:5173"
-  #   networks:
-  #     - huiyi-net
+  # ===== 前端（Vue3 构建产物 + nginx 托管，/api 反代到 backend） =====
+  frontend:
+    build: ./frontend
+    container_name: huiyi-frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+    networks:
+      - huiyi-net
 
 volumes:
   mysql-data:

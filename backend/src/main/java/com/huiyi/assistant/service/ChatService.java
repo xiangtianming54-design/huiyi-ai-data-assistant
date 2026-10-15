@@ -97,6 +97,8 @@ public class ChatService {
         chatSessionService.saveUserMessage(sessionId, request.getQuestion(), intent);
 
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
+        // 首个事件告知前端会话 ID，便于多轮续话
+        sendEvent(emitter, "session", sessionId);
 
         Flux<String> tokenFlux;
         List<ReferenceVO> references;

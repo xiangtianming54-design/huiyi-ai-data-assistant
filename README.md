@@ -45,6 +45,8 @@ cp .env.example .env   # 填入 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL / LLM_EMB
 docker compose up -d
 ```
 
+启动后访问 **http://localhost:5173**（前端），即可体验知识库上传、智能问答与数据分析。
+
 > 说明：容器 MySQL 默认映射到宿主机 **3307** 端口（规避本机 MySQL 占用的 3306），
 > 可通过 `.env` 中 `MYSQL_HOST_PORT` 修改。
 
@@ -63,6 +65,11 @@ uvicorn app.main:app --port 8001
 # 3. 启动 Java 主服务（端口 8080；若与容器后端冲突可指定 SERVER_PORT=8081）
 cd backend
 mvn spring-boot:run
+
+# 4. 启动前端开发服务器（端口 5173，代理 /api 到 8080）
+cd frontend
+npm install
+npm run dev
 ```
 
 ### 健康检查
@@ -101,7 +108,7 @@ curl -X POST http://localhost:8080/api/chat \
 |---|---|
 | 后端主服务 | Java 17 / Spring Boot 3 / SpringAI / MyBatis-Plus / MySQL / Redis |
 | Python Sidecar | Python 3.11 / FastAPI / Chroma / pandas / sqlglot / PyMuPDF |
-| 前端 | Vue3 / TypeScript / Vite / Element Plus / ECharts（P6 交付） |
+| 前端 | Vue3 / TypeScript / Vite / Element Plus / ECharts |
 | LLM | OpenAI 兼容 API（chat + embedding） |
 | 部署 | Docker / Docker Compose / GitHub Actions |
 
@@ -125,7 +132,7 @@ huiyi-ai-data-assistant/
 - [x] **M2 知识库链路贯通**：上传 → 解析 → 分块 → 向量检索
 - [x] **M3 RAG 问答可用**：引用来源 / SSE 流式 / 会话落库
 - [x] **M4 数据查询可用**：Text-to-SQL + 四道安全防线
-- [ ] **M5 端到端可演示**：五场景前端演示
+- [x] **M5 端到端可演示**：五场景前端演示（截图见 [docs/images](docs/images)）
 - [ ] **M6 开源就绪**：测试 / 文档 / Demo GIF / CI 齐备
 
 ## License

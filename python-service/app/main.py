@@ -3,7 +3,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app.api import document, vector
+from app.api import analysis, document, sql_guard, vector
 from app.core.config import settings
 from app.services.document_parser import DocumentParseError, UnsupportedFileTypeError
 from app.services.embedding import EmbeddingError
@@ -16,6 +16,8 @@ app = FastAPI(
 
 app.include_router(document.router)
 app.include_router(vector.router)
+app.include_router(sql_guard.router)
+app.include_router(analysis.router)
 
 
 @app.exception_handler(UnsupportedFileTypeError)

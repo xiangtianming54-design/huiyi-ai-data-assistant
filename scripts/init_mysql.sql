@@ -6,6 +6,11 @@
 
 USE huiyi_demo;
 
+-- Text-to-SQL 执行专用只读账号（四道 SQL 防线之一：数据库层只读约束）
+CREATE USER IF NOT EXISTS 'huiyi_ro'@'%' IDENTIFIED BY 'huiyi_ro123';
+GRANT SELECT ON huiyi_demo.* TO 'huiyi_ro'@'%';
+FLUSH PRIVILEGES;
+
 -- 6.1 商品表
 CREATE TABLE IF NOT EXISTS products (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,

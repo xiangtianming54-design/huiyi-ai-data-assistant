@@ -108,6 +108,35 @@
       ]
     },
     {
+      "name": "数据分析",
+      "item": [
+        {
+          "name": "Text-to-SQL 查询",
+          "request": {
+            "method": "POST",
+            "url": "{{java_base}}/api/analysis/query",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"上个月销售额最高的 10 个商品是什么？\"\n}"
+            }
+          }
+        },
+        {
+          "name": "SQL 安全校验（Python 直连）",
+          "request": {
+            "method": "POST",
+            "url": "{{python_base}}/api/sql/validate",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sql\": \"DELETE FROM sales_orders\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "向量库",
       "item": [
         {

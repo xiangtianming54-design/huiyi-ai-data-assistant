@@ -3,7 +3,9 @@ package com.huiyi.assistant.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.common.result.ResultCode;
+import com.huiyi.assistant.model.dto.DataProfileResponseDTO;
 import com.huiyi.assistant.model.dto.ParseResultDTO;
+import com.huiyi.assistant.model.dto.SqlValidateResponseDTO;
 import com.huiyi.assistant.model.dto.VectorSearchRequestDTO;
 import com.huiyi.assistant.model.dto.VectorSearchResponseDTO;
 import com.huiyi.assistant.model.dto.VectorUpsertRequestDTO;
@@ -21,6 +23,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -104,6 +107,30 @@ public class PythonServiceClient {
         Map<String, String> body = Map.of("filename", filename, "collection_name", COLLECTION_NAME);
         post("/api/vector/delete", spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(body), String.class);
         log.info("向量删除完成: filename={}", filename);
+    }
+
+    /**
+     * 调用 /api/sql/validate 进行 SQL 安全校验。
+     *
+     * @param sql 待校验 SQL
+     * @return 校验结果（valid/sql/tables 或 reason）
+     */
+    public SqlValidateResponseDTO validateSql(String sql) {
+        return post("/api/sql/validate",
+                spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(Map.of("sql", sql)),
+                SqlValidateResponseDTO.class);
+    }
+
+    /**
+     * 调用 /api/data/profile 进行数据画像与图表推荐。
+     *
+     * @param rows 查询结果行集
+     * @return 画像结果（row_count/columns/summary/chart_type/empty）
+     */
+    public DataProfileResponseDTO profileData(List<Map<String, Object>> rows) {
+        return post("/api/data/profile",
+                spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(Map.of("rows", rows)),
+                DataProfileResponseDTO.class);
     }
 
     /**

@@ -27,5 +27,9 @@ class Settings(BaseSettings):
     llm_model: str = ""
     llm_embedding_model: str = ""
 
+    # SQL 安全校验：表白名单（逗号分隔）与自动追加的 LIMIT
+    sql_allowed_tables: str = "sales_orders,products,regions,channels"
+    sql_default_limit: int = 200
+
 
 settings = Settings()

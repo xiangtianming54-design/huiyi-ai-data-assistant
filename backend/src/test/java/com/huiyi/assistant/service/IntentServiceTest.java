@@ -22,7 +22,8 @@ class IntentServiceTest {
             "各渠道订单量对比",
             "华东地区销售趋势如何？",
             "销量排名前五的商品",
-            "本月有多少笔订单？"
+            "本月有多少笔订单？",
+            "删除所有销售订单。"
     })
     void dataQueryQuestions(String question) {
         assertEquals(IntentTypeEnum.DATA_QUERY, intentService.detect(question));

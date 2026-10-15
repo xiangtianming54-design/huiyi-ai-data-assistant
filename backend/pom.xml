@@ -20,6 +20,7 @@
     <properties>
         <java.version>17</java.version>
         <mybatis-plus.version>3.5.9</mybatis-plus.version>
+        <spring-ai.version>1.0.3</spring-ai.version>
     </properties>
 
     <dependencies>
@@ -48,6 +49,18 @@
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
             <version>${mybatis-plus.version}</version>
+        </dependency>
+        <!-- SpringAI OpenAI 兼容接入（ChatModel 手工装配，见 LlmConfig） -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-openai</artifactId>
+            <version>${spring-ai.version}</version>
+        </dependency>
+        <!-- SpringAI ChatClient 流式 API -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-client-chat</artifactId>
+            <version>${spring-ai.version}</version>
         </dependency>
         <!-- MySQL 驱动 -->
         <dependency>

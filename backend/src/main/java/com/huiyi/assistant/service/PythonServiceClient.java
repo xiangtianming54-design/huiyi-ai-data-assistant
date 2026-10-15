@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.common.result.ResultCode;
 import com.huiyi.assistant.model.dto.ParseResultDTO;
+import com.huiyi.assistant.model.dto.VectorSearchRequestDTO;
+import com.huiyi.assistant.model.dto.VectorSearchResponseDTO;
 import com.huiyi.assistant.model.dto.VectorUpsertRequestDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
@@ -77,6 +79,20 @@ public class PythonServiceClient {
         VectorUpsertRequestDTO request = new VectorUpsertRequestDTO(COLLECTION_NAME, parseResult.getChunks());
         post("/api/vector/upsert", spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(request), String.class);
         log.info("向量写入完成: filename={}, chunks={}", parseResult.getFilename(), parseResult.getChunkCount());
+    }
+
+    /**
+     * 调用 /api/vector/search 进行 Top-K 检索。
+     *
+     * @param query 查询文本
+     * @param topK 返回条数
+     * @return 检索响应（含命中列表）
+     */
+    public VectorSearchResponseDTO searchVectors(String query, int topK) {
+        VectorSearchRequestDTO request = new VectorSearchRequestDTO(query, topK, COLLECTION_NAME);
+        return post("/api/vector/search",
+                spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(request),
+                VectorSearchResponseDTO.class);
     }
 
     /**

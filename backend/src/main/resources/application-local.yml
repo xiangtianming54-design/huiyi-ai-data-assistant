@@ -24,6 +24,14 @@ mybatis-plus:
 python-service:
   url: ${PYTHON_SERVICE_URL:http://localhost:8001}
 
+# Text-to-SQL
+app:
+  sql:
+    allowed-tables: sales_orders,products,regions,channels
+    ro-url: ${RO_DB_URL:jdbc:mysql://localhost:3307/huiyi_demo?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    ro-username: ${RO_DB_USERNAME:huiyi_ro}
+    ro-password: ${RO_DB_PASSWORD:huiyi_ro123}
+
 # LLM OpenAI 兼容 API（密钥一律走环境变量，禁止硬编码）
 llm:
   base-url: ${LLM_BASE_URL:}

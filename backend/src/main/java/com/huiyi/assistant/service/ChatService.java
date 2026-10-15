@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huiyi.assistant.model.dto.ChatRequestDTO;
 import com.huiyi.assistant.model.enums.IntentTypeEnum;
+import com.huiyi.assistant.model.vo.AnalysisResultVO;
 import com.huiyi.assistant.model.vo.ChatResponseVO;
 import com.huiyi.assistant.model.vo.ReferenceVO;
 import lombok.extern.slf4j.Slf4j;
@@ -27,10 +28,6 @@ public class ChatService {
     /** SSE 连接超时 */
     private static final long SSE_TIMEOUT_MS = Duration.ofSeconds(90).toMillis();
 
-    /** 数据查询意图占位话术（P5 接入 Text-to-SQL 后移除） */
-    private static final String DATA_QUERY_PLACEHOLDER =
-            "数据查询能力建设中（P5 阶段上线），当前您可以先问我业务口径类问题，例如「什么是有效订单？」。";
-
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final IntentService intentService;
@@ -39,13 +36,17 @@ public class ChatService {
 
     private final LlmService llmService;
 
+    private final AnalysisService analysisService;
+
     private final ChatSessionService chatSessionService;
 
     public ChatService(IntentService intentService, RagService ragService,
-                       LlmService llmService, ChatSessionService chatSessionService) {
+                       LlmService llmService, AnalysisService analysisService,
+                       ChatSessionService chatSessionService) {
         this.intentService = intentService;
         this.ragService = ragService;
         this.llmService = llmService;
+        this.analysisService = analysisService;
         this.chatSessionService = chatSessionService;
     }
 
@@ -61,9 +62,13 @@ public class ChatService {
         chatSessionService.saveUserMessage(sessionId, request.getQuestion(), intent);
 
         String answer;
+        String sqlText = null;
         List<ReferenceVO> references;
         if (intent == IntentTypeEnum.DATA_QUERY) {
-            answer = DATA_QUERY_PLACEHOLDER;
+            // P5：data_query 意图接入 Text-to-SQL 链路
+            AnalysisResultVO result = analysisService.executeQuery(request.getQuestion());
+            answer = result.getAnswer();
+            sqlText = result.getSql();
             references = List.of();
         } else {
             RagService.RagAnswer ragAnswer = ragService.answer(request.getQuestion(), llmService);
@@ -71,7 +76,7 @@ public class ChatService {
             references = ragAnswer.references();
         }
 
-        chatSessionService.saveAssistantMessage(sessionId, answer, intent, null, references);
+        chatSessionService.saveAssistantMessage(sessionId, answer, intent, sqlText, references);
         return ChatResponseVO.builder()
                 .sessionId(sessionId)
                 .answer(answer)
@@ -95,14 +100,20 @@ public class ChatService {
 
         Flux<String> tokenFlux;
         List<ReferenceVO> references;
+        String sqlText = null;
         if (intent == IntentTypeEnum.DATA_QUERY) {
-            tokenFlux = Flux.just(DATA_QUERY_PLACEHOLDER);
+            // Text-to-SQL 为多段阻塞调用，结果作为整体一次性推送
+            AnalysisResultVO result = analysisService.executeQuery(request.getQuestion());
+            sqlText = result.getSql();
+            tokenFlux = Flux.just(result.getAnswer());
             references = List.of();
         } else {
             RagService.RagContext context = ragService.prepare(request.getQuestion());
             references = context.references();
             tokenFlux = ragService.stream(context, llmService);
         }
+
+        final String finalSqlText = sqlText;
 
         StringBuilder fullAnswer = new StringBuilder();
         List<ReferenceVO> finalReferences = references;
@@ -125,7 +136,7 @@ public class ChatService {
                     sendEvent(emitter, "references", toJson(finalReferences));
                     emitter.complete();
                     chatSessionService.saveAssistantMessage(sessionId, fullAnswer.toString(),
-                            intent, null, finalReferences);
+                            intent, finalSqlText, finalReferences);
                 });
         return emitter;
     }

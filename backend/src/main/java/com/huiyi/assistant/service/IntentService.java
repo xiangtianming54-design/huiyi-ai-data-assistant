@@ -16,7 +16,9 @@ public class IntentService {
     /** 强数据查询关键词：单独命中即判定 data_query */
     private static final List<String> STRONG_DATA_KEYWORDS = List.of(
             "排名", "销售额", "订单量", "趋势", "最高", "最低", "对比", "占比", "汇总", "统计",
-            "top", "TOP", "Top");
+            "top", "TOP", "Top",
+            // 数据修改动词：路由到数据链路后由 SQL 安全防线拦截（场景 4）
+            "删除", "修改", "更新", "清空");
 
     /** 弱数据查询关键词：需与业务名词共现（避免「年假有多少天」误判） */
     private static final List<String> WEAK_DATA_KEYWORDS = List.of("多少", "几个", "哪家");

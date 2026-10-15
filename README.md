@@ -82,6 +82,7 @@ curl http://localhost:8001/health       # Python Sidecar → {"status":"ok"}
 | `DELETE /api/knowledge/docs/{docId}` | 删除文档（向量与元数据双删） |
 | `POST /api/chat` | RAG 问答（非流式），返回回答、意图与引用来源 |
 | `POST /api/chat/stream` | RAG 问答（SSE 流式），逐 token 推送，结束推送 references |
+| `POST /api/analysis/query` | Text-to-SQL 数据分析：生成 SQL → 安全校验 → 只读执行 → 画像/图表推荐 → 总结 |
 | `GET /health`（8001） | Python Sidecar 健康检查 |
 | `POST /api/documents/parse`（8001） | 文档解析分块 |
 | `POST /api/vector/search`（8001） | 向量 Top-K 检索 |
@@ -123,7 +124,7 @@ huiyi-ai-data-assistant/
 - [x] **M1 骨架可运行**：双端健康检查 + Compose 一键启动
 - [x] **M2 知识库链路贯通**：上传 → 解析 → 分块 → 向量检索
 - [x] **M3 RAG 问答可用**：引用来源 / SSE 流式 / 会话落库
-- [ ] **M4 数据查询可用**：Text-to-SQL + 四道安全防线
+- [x] **M4 数据查询可用**：Text-to-SQL + 四道安全防线
 - [ ] **M5 端到端可演示**：五场景前端演示
 - [ ] **M6 开源就绪**：测试 / 文档 / Demo GIF / CI 齐备
 

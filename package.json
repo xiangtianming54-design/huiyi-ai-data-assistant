@@ -1,0 +1,15 @@
+{
+  "name": "huiyi-ai-data-assistant",
+  "private": true,
+  "version": "0.1.0",
+  "description": "会意 · 企业经营数据智能分析助手（仓库级脚本依赖：架构图渲染与 e2e 验证）",
+  "scripts": {
+    "e2e": "node scripts/e2e-m5.js",
+    "render:arch": "node scripts/render-architecture.js",
+    "make:gif": "python scripts/make-demo-gif.py"
+  },
+  "devDependencies": {
+    "mermaid": "^11.12.0",
+    "playwright-core": "^1.49.1"
+  }
+}

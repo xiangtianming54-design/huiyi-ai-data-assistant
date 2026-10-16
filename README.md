@@ -103,20 +103,22 @@ curl http://localhost:8001/health       # Python Sidecar → {"status":"ok"}
 | 端点 | 说明 |
 |---|---|
 | `GET /api/health` | Java 健康检查 |
-| `POST /api/knowledge/upload` | 上传知识文档（md/txt/pdf/docx），自动解析分块并写入向量库 |
-| `GET /api/knowledge/docs` | 知识库文档列表 |
-| `DELETE /api/knowledge/docs/{docId}` | 删除文档（向量与元数据双删） |
-| `POST /api/chat` | RAG 问答（非流式），返回回答、意图与引用来源 |
-| `POST /api/chat/intent` | 意图预检（v0.2），返回 knowledge_qa / data_query |
-| `POST /api/chat/stream` | RAG 问答（SSE 流式），逐 token 推送，结束推送 references |
-| `POST /api/analysis/query` | Text-to-SQL 数据分析：生成 SQL → 安全校验 → 只读执行 → 画像/图表推荐 → 总结 |
+| `POST /api/v1/auth/register` | 注册并签发 Token |
+| `POST /api/v1/auth/login` | 登录 |
+| `POST /api/v1/auth/refresh` | 刷新 Token |
+| `POST /api/v1/auth/password` | 修改密码（撤销 refresh，token_version+1） |
+| `GET /api/v1/me` | 当前用户与工作区 |
+| `POST /api/v1/workspaces` | 创建工作区（创建者成为 OWNER） |
+| `GET /api/v1/workspaces/{id}/knowledge/docs` | 知识库文档列表（分页） |
+| `POST /api/v1/workspaces/{id}/knowledge/upload` | 上传知识文档 |
+| `POST /api/v1/workspaces/{id}/chat/stream` | RAG 问答（SSE） |
+| `POST /api/v1/workspaces/{id}/analysis/query` | Text-to-SQL 数据分析 |
 | `GET /health`（8001） | Python Sidecar 健康检查 |
-| `POST /api/documents/parse`（8001） | 文档解析分块 |
-| `POST /api/vector/search`（8001） | 向量 Top-K 检索 |
-| `POST /api/sql/validate`（8001） | SQL 安全校验 |
-| `POST /api/data/profile`（8001） | 数据画像与图表推荐 |
+| `POST /api/vector/search`（8001） | 向量检索（知识库必须带 `workspace_id`） |
 
-完整契约见 [docs/api.md](docs/api.md)，Postman 集合见 [docs/postman](docs/postman)。
+完整契约见 [docs/api.md](docs/api.md)、[docs/openapi-v1.yaml](docs/openapi-v1.yaml)，Postman 集合见 [docs/postman](docs/postman)。
+
+E2E：`node scripts/e2e-m5.js`（五场景，先注册登录）；`node scripts/e2e-v07.js`（认证与隔离）。Chroma 旧数据重建：`python -m app.tools.rebuild_knowledge_index --mapping mapping.json`。
 
 ## 目录结构
 
@@ -154,7 +156,9 @@ huiyi-ai-data-assistant/
 - [x] **v0.6 混合检索与会话压缩**：知识库向量 + BM25 RRF 融合；改写保留近 10 轮，更早对话 LLM 摘要（见 [docs/v0.6-design.md](docs/v0.6-design.md)）
 - [x] **v0.6.1 Baseline Hardening**：稳定基线、补齐发布流程（见 [docs/baseline.md](docs/baseline.md)、[docs/roadmap.md](docs/roadmap.md)）
 
-按企业迭代文档演进（未开始）：**v0.7.0** 用户/工作区/RBAC → **v0.8.0** 可观测与成本 → **v0.9.0** Tool Harness / Agent Runtime → **v1.0.0** 稳定助手 → v1.1 评测 → v1.2 知识面 → v1.3 生产 → v1.4+ 平台。不把未做能力写成当前功能。
+- [ ] **v0.7.0 Enterprise Foundation**：认证、工作区、RBAC、资源隔离、审计、Flyway（本分支开发中）
+
+按企业迭代文档演进：**v0.7.0** 用户/工作区/RBAC → **v0.8.0** 可观测与成本 → **v0.9.0** Tool Harness / Agent Runtime → **v1.0.0** 稳定助手。不把未做能力写成当前功能。
 
 ## License
 

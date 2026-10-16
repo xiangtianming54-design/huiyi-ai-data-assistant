@@ -1,0 +1,291 @@
+openapi: 3.0.3
+info:
+  title: HuiYi AI Data Assistant API
+  version: 0.7.0
+  description: v0.7 Enterprise Foundation。旧路径 /api/chat|/api/knowledge|/api/analysis 已移除。
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/health:
+    get:
+      summary: 健康检查
+      security: []
+      responses:
+        "200":
+          description: ok
+  /api/v1/auth/register:
+    post:
+      summary: 注册
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "200":
+          description: 签发 Token
+  /api/v1/auth/login:
+    post:
+      summary: 登录
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: 签发 Token
+  /api/v1/auth/refresh:
+    post:
+      summary: 刷新 Token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: 轮换 refresh 并签发 access
+  /api/v1/auth/logout:
+    post:
+      summary: 登出
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: 撤销 refresh token
+  /api/v1/auth/password:
+    post:
+      summary: 修改密码
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: 撤销 refresh，token_version+1
+  /api/v1/me:
+    get:
+      summary: 当前用户
+      responses:
+        "200":
+          description: 用户与 ACTIVE 工作区
+  /api/v1/workspaces:
+    get:
+      summary: 我的工作区
+      responses:
+        "200":
+          description: ACTIVE 成员关系下的 ACTIVE 工作区
+    post:
+      summary: 创建工作区
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWorkspaceRequest"
+      responses:
+        "200":
+          description: 创建者成为 OWNER
+  /api/v1/workspaces/{workspaceId}:
+    get:
+      summary: 工作区详情
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+      responses:
+        "200":
+          description: 详情
+  /api/v1/workspaces/{workspaceId}/members:
+    get:
+      summary: 成员列表（分页）
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, default: 20 } }
+        - { name: keyword, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: role, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: "{ items, page, pageSize, total }"
+    post:
+      summary: 添加或恢复成员
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddMemberRequest"
+      responses:
+        "200":
+          description: ok
+  /api/v1/workspaces/{workspaceId}/members/{memberId}/role:
+    patch:
+      summary: 修改成员角色
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - { name: memberId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: ok
+  /api/v1/workspaces/{workspaceId}/members/{memberId}/status:
+    patch:
+      summary: 修改成员状态
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - { name: memberId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: ok
+  /api/v1/workspaces/{workspaceId}/knowledge/upload:
+    post:
+      summary: 上传知识文档
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "200":
+          description: READY 文档
+  /api/v1/workspaces/{workspaceId}/knowledge/docs:
+    get:
+      summary: 知识文档列表（分页）
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, default: 20 } }
+      responses:
+        "200":
+          description: "{ items, page, pageSize, total }"
+  /api/v1/workspaces/{workspaceId}/knowledge/docs/{docId}:
+    delete:
+      summary: 归档文档
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - { name: docId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: ARCHIVED
+  /api/v1/workspaces/{workspaceId}/chat:
+    post:
+      summary: RAG 问答（非流式）
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: 回答
+  /api/v1/workspaces/{workspaceId}/chat/stream:
+    post:
+      summary: RAG 问答（SSE）
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+      responses:
+        "200":
+          description: text/event-stream
+  /api/v1/workspaces/{workspaceId}/chat/sessions:
+    get:
+      summary: 会话列表（分页）
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+      responses:
+        "200":
+          description: 当前用户会话
+    post:
+      summary: 创建会话
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+      responses:
+        "200":
+          description: session
+  /api/v1/workspaces/{workspaceId}/analysis/query:
+    post:
+      summary: Text-to-SQL 分析
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: SQL + 表格 + 总结
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    workspaceId:
+      name: workspaceId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string, minLength: 10 }
+        displayName: { type: string }
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string }
+    RefreshRequest:
+      type: object
+      properties:
+        refreshToken: { type: string }
+    ChangePasswordRequest:
+      type: object
+      required: [oldPassword, newPassword]
+      properties:
+        oldPassword: { type: string }
+        newPassword: { type: string, minLength: 10 }
+    CreateWorkspaceRequest:
+      type: object
+      required: [name, code]
+      properties:
+        name: { type: string }
+        code: { type: string }
+    AddMemberRequest:
+      type: object
+      required: [username, role]
+      properties:
+        username: { type: string }
+        role: { type: string, enum: [OWNER, ADMIN, EDITOR, VIEWER] }
+    ChatRequest:
+      type: object
+      required: [question]
+      properties:
+        sessionId: { type: string }
+        question: { type: string }
+security:
+  - bearerAuth: []

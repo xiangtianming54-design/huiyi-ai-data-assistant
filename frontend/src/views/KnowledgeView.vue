@@ -69,7 +69,7 @@ async function loadDocs() {
   loading.value = true
   try {
     const response = await knowledgeApi.list()
-    docs.value = response.data.data
+    docs.value = response.data.data?.items ?? []
   } finally {
     loading.value = false
   }

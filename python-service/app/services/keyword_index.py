@@ -30,6 +30,12 @@ class KeywordIndex:
         self._root = Path(persist_dir) / "keyword_index"
         self._root.mkdir(parents=True, exist_ok=True)
 
+    def replace(self, collection_name: str, chunks: list[Chunk]) -> None:
+        """整表替换，供知识索引重建使用。"""
+        self._save(collection_name, {})
+        if chunks:
+            self.upsert(collection_name, chunks)
+
     def upsert(self, collection_name: str, chunks: list[Chunk]) -> None:
         docs = self._load(collection_name)
         for chunk in chunks:

@@ -1,11 +1,14 @@
 package com.huiyi.assistant.auth;
 
+import com.huiyi.assistant.audit.AuditAction;
+import com.huiyi.assistant.audit.AuditService;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.config.AuthProperties;
 import com.huiyi.assistant.mapper.RefreshTokenMapper;
 import com.huiyi.assistant.mapper.UserMapper;
 import com.huiyi.assistant.mapper.WorkspaceMapper;
 import com.huiyi.assistant.mapper.WorkspaceMemberMapper;
+import com.huiyi.assistant.model.dto.ChangePasswordRequest;
 import com.huiyi.assistant.model.dto.LoginRequest;
 import com.huiyi.assistant.model.dto.RegisterRequest;
 import com.huiyi.assistant.model.entity.RefreshToken;
@@ -26,6 +29,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AuthService {
@@ -43,10 +47,12 @@ public class AuthService {
     private final WorkspaceMapper workspaceMapper;
     private final WorkspaceMemberMapper workspaceMemberMapper;
     private final RefreshTokenMapper refreshTokenMapper;
+    private final AuditService auditService;
 
     public AuthService(AuthProperties properties, PasswordService passwordService, JwtTokenService jwtTokenService,
                        LoginAttemptService loginAttemptService, UserMapper userMapper, WorkspaceMapper workspaceMapper,
-                       WorkspaceMemberMapper workspaceMemberMapper, RefreshTokenMapper refreshTokenMapper) {
+                       WorkspaceMemberMapper workspaceMemberMapper, RefreshTokenMapper refreshTokenMapper,
+                       AuditService auditService) {
         this.properties = properties;
         this.passwordService = passwordService;
         this.jwtTokenService = jwtTokenService;
@@ -55,6 +61,7 @@ public class AuthService {
         this.workspaceMapper = workspaceMapper;
         this.workspaceMemberMapper = workspaceMemberMapper;
         this.refreshTokenMapper = refreshTokenMapper;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -91,24 +98,38 @@ public class AuthService {
             member.setJoinedAt(LocalDateTime.now());
             workspaceMemberMapper.insert(member);
         }
-        return issueTokens(user, defaultWorkspace.getId());
+        AuthTokensVO tokens = issueTokens(user, defaultWorkspace.getId());
+        auditService.record(AuditAction.AUTH_REGISTER, "SUCCESS", user.getId(), user.getUsername(),
+                defaultWorkspace.getId(), "user", String.valueOf(user.getId()), Map.of());
+        return tokens;
     }
 
     public AuthTokensVO login(LoginRequest request) {
         String username = request.getUsername() == null ? "" : request.getUsername().trim();
         if (loginAttemptService.isLocked(username)) {
+            auditService.record(AuditAction.RATE_LIMITED, "DENIED", null, username, null,
+                    "user", username, Map.of("reason", "locked"));
             throw new BizException(401, LOGIN_ERROR);
         }
         User user = userMapper.selectByUsername(username);
         if (user == null || !STATUS_ACTIVE.equals(user.getStatus())
                 || !passwordService.matches(request.getPassword(), user.getPasswordHash())) {
             loginAttemptService.recordFailure(username);
+            auditService.record(AuditAction.AUTH_LOGIN_FAILED, "FAILED", user == null ? null : user.getId(),
+                    username, null, "user", username, Map.of("reason", "mismatch"));
+            if (loginAttemptService.isLocked(username)) {
+                auditService.record(AuditAction.RATE_LIMITED, "DENIED", null, username, null,
+                        "user", username, Map.of("reason", "locked"));
+            }
             throw new BizException(401, LOGIN_ERROR);
         }
         loginAttemptService.clear(username);
         Workspace defaultWorkspace = workspaceMapper.selectByCode(properties.getDefaultWorkspaceCode());
         Long defaultId = defaultWorkspace == null ? null : defaultWorkspace.getId();
-        return issueTokens(user, defaultId);
+        AuthTokensVO tokens = issueTokens(user, defaultId);
+        auditService.record(AuditAction.AUTH_LOGIN_SUCCESS, "SUCCESS", user.getId(), user.getUsername(),
+                defaultId, "user", String.valueOf(user.getId()), Map.of());
+        return tokens;
     }
 
     @Transactional
@@ -128,7 +149,7 @@ public class AuthService {
         refreshTokenMapper.updateById(patchRevoked(stored, nextHash));
         persistRefresh(user.getId(), nextHash);
         Workspace defaultWorkspace = workspaceMapper.selectByCode(properties.getDefaultWorkspaceCode());
-        return AuthTokensVO.builder()
+        AuthTokensVO tokens = AuthTokensVO.builder()
                 .userId(user.getId())
                 .username(user.getUsername())
                 .displayName(user.getDisplayName())
@@ -136,12 +157,32 @@ public class AuthService {
                 .refreshToken(nextRaw)
                 .defaultWorkspaceId(defaultWorkspace == null ? null : defaultWorkspace.getId())
                 .build();
+        auditService.record(AuditAction.AUTH_REFRESH, "SUCCESS", user.getId(), user.getUsername(),
+                tokens.getDefaultWorkspaceId(), "token", String.valueOf(user.getId()), Map.of());
+        return tokens;
     }
 
     public void logout(String refreshToken) {
         if (StringUtils.hasText(refreshToken)) {
             refreshTokenMapper.revokeByHash(hashToken(refreshToken));
         }
+        auditService.record(AuditAction.AUTH_LOGOUT, "SUCCESS", null, null, null, "token", null, Map.of());
+    }
+
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userMapper.selectById(userId);
+        if (user == null || !STATUS_ACTIVE.equals(user.getStatus())) {
+            throw new BizException(401, LOGIN_ERROR);
+        }
+        if (!passwordService.matches(request.getOldPassword(), user.getPasswordHash())) {
+            throw new BizException(400, "原密码不正确");
+        }
+        passwordService.validate(request.getNewPassword());
+        user.setPasswordHash(passwordService.hash(request.getNewPassword()));
+        user.setTokenVersion(user.getTokenVersion() == null ? 1 : user.getTokenVersion() + 1);
+        userMapper.updateById(user);
+        refreshTokenMapper.revokeAllActive(userId);
     }
 
     public MeVO me(Long userId) {

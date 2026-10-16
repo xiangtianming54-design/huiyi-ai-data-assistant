@@ -7,6 +7,7 @@ import com.huiyi.assistant.model.dto.ChangeStatusRequest;
 import com.huiyi.assistant.model.dto.CreateWorkspaceRequest;
 import com.huiyi.assistant.model.entity.Workspace;
 import com.huiyi.assistant.model.vo.MemberVO;
+import com.huiyi.assistant.model.vo.PageResult;
 import com.huiyi.assistant.security.AuthUser;
 import com.huiyi.assistant.workspace.WorkspaceService;
 import jakarta.validation.Valid;
@@ -49,11 +50,14 @@ public class WorkspaceController {
     }
 
     @GetMapping("/{workspaceId}/members")
-    public Result<List<MemberVO>> members(@AuthenticationPrincipal AuthUser user,
-                                          @PathVariable Long workspaceId,
-                                          @RequestParam(required = false) String status,
-                                          @RequestParam(required = false) String role) {
-        return Result.ok(workspaceService.listMembers(user, workspaceId, status, role));
+    public Result<PageResult<MemberVO>> members(@AuthenticationPrincipal AuthUser user,
+                                                @PathVariable Long workspaceId,
+                                                @RequestParam(required = false, defaultValue = "1") Integer page,
+                                                @RequestParam(required = false, defaultValue = "20") Integer pageSize,
+                                                @RequestParam(required = false) String keyword,
+                                                @RequestParam(required = false) String status,
+                                                @RequestParam(required = false) String role) {
+        return Result.ok(workspaceService.listMembers(user, workspaceId, page, pageSize, status, role, keyword));
     }
 
     @PostMapping("/{workspaceId}/members")

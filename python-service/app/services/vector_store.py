@@ -8,7 +8,7 @@
 import chromadb
 
 from app.core.config import settings
-from app.core.schema import Chunk, SearchHit
+from app.core.schema import Chunk, ChunkMetadata, SearchHit
 from app.services.embedding import EmbeddingService
 from app.services.hybrid_search import rrf_merge
 from app.services.keyword_index import KeywordIndex
@@ -124,6 +124,57 @@ class VectorStore:
         collection.delete(ids=ids)
         self._keyword.delete_by_doc(collection_name, workspace_id, doc_id)
         return len(ids)
+
+    def rebuild_assign_workspace(self, collection_name: str, assignments: dict[str, int | str]) -> dict:
+        """给缺 workspace_id 的旧 chunk 补齐后重建 collection；无法映射的分块丢弃。"""
+        collection = self._collection(collection_name)
+        existing = collection.get(include=["documents", "metadatas"])
+        ids = existing.get("ids", [])
+        documents = existing.get("documents") or []
+        metadatas = existing.get("metadatas") or []
+        lookup = {str(key): str(value) for key, value in assignments.items()}
+        kept: list[Chunk] = []
+        assigned = 0
+        dropped = 0
+        for chunk_id, text, raw_meta in zip(ids, documents, metadatas):
+            metadata = dict(raw_meta or {})
+            workspace = metadata.get("workspace_id")
+            if not workspace:
+                workspace = lookup.get(str(metadata.get("doc_id") or "")) or lookup.get(
+                    str(metadata.get("filename") or "")
+                )
+                if workspace:
+                    metadata["workspace_id"] = str(workspace)
+                    assigned += 1
+            if not metadata.get("workspace_id"):
+                dropped += 1
+                continue
+            kept.append(
+                Chunk(
+                    id=chunk_id,
+                    text=text or " ",
+                    metadata=ChunkMetadata(
+                        filename=str(metadata.get("filename") or "unknown"),
+                        chunk_index=int(metadata.get("chunk_index") or 0),
+                        source_type=str(metadata.get("source_type") or "md"),
+                        workspace_id=str(metadata["workspace_id"]),
+                        doc_id=str(metadata["doc_id"]) if metadata.get("doc_id") is not None else None,
+                    ),
+                )
+            )
+        try:
+            self._client.delete_collection(collection_name)
+        except Exception:
+            pass
+        if kept:
+            self.upsert(kept, collection_name)
+        self._keyword.replace(collection_name, kept)
+        return {
+            "kept": len(kept),
+            "assigned": assigned,
+            "dropped": dropped,
+            "missing_workspace": dropped,
+        }
 
     def delete_by_chunk_ids(self, workspace_id: int, chunk_ids: list[str], collection_name: str) -> int:
         """按工作区 + chunk id 删除，忽略不属于该工作区的 id。"""

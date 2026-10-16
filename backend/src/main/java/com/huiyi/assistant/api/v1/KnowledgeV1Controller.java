@@ -4,6 +4,7 @@ import com.huiyi.assistant.common.result.Result;
 import com.huiyi.assistant.context.WorkspaceContext;
 import com.huiyi.assistant.model.dto.ChangeStatusRequest;
 import com.huiyi.assistant.model.vo.KnowledgeDocVO;
+import com.huiyi.assistant.model.vo.PageResult;
 import com.huiyi.assistant.security.AuthUser;
 import com.huiyi.assistant.service.KnowledgeDocService;
 import com.huiyi.assistant.workspace.WorkspaceService;
@@ -18,8 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/workspaces/{workspaceId}/knowledge")
@@ -41,9 +40,12 @@ public class KnowledgeV1Controller {
     }
 
     @GetMapping("/docs")
-    public Result<List<KnowledgeDocVO>> list(@AuthenticationPrincipal AuthUser user, @PathVariable Long workspaceId) {
+    public Result<PageResult<KnowledgeDocVO>> list(@AuthenticationPrincipal AuthUser user,
+                                                   @PathVariable Long workspaceId,
+                                                   @RequestParam(required = false, defaultValue = "1") Integer page,
+                                                   @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
         workspaceService.requireMember(user, workspaceId);
-        return Result.ok(knowledgeDocService.listDocs(workspaceId));
+        return Result.ok(knowledgeDocService.listDocs(workspaceId, page, pageSize));
     }
 
     @GetMapping("/docs/{docId}")

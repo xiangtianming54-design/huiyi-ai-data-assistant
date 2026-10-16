@@ -2,6 +2,7 @@ package com.huiyi.assistant.api.v1;
 
 import com.huiyi.assistant.auth.AuthService;
 import com.huiyi.assistant.common.result.Result;
+import com.huiyi.assistant.model.dto.ChangePasswordRequest;
 import com.huiyi.assistant.model.dto.LoginRequest;
 import com.huiyi.assistant.model.dto.RefreshRequest;
 import com.huiyi.assistant.model.dto.RegisterRequest;
@@ -52,5 +53,12 @@ public class AuthController {
     @GetMapping("/me")
     public Result<MeVO> me(@AuthenticationPrincipal AuthUser user) {
         return Result.ok(authService.me(user.userId()));
+    }
+
+    @PostMapping("/auth/password")
+    public Result<Void> changePassword(@AuthenticationPrincipal AuthUser user,
+                                       @Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(user.userId(), request);
+        return Result.ok();
     }
 }

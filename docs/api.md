@@ -5,6 +5,9 @@
 - Java 主服务（8080）所有响应均为统一返回体 `{"code":0,"message":"ok","data":...}`；`code != 0` 时 `message` 为可读错误信息
 - Python Sidecar（8001）为内部服务，直接返回业务 JSON；错误返回 `{"detail": "..."}` + 相应 HTTP 状态码
 - Postman 集合：[`docs/postman/HuiYi-AI-Data-Assistant.postman_collection.json`](postman/HuiYi-AI-Data-Assistant.postman_collection.json)
+- OpenAPI：[`docs/openapi-v1.yaml`](openapi-v1.yaml)
+- 除健康检查与注册/登录/refresh/logout 外，Java 接口需 `Authorization: Bearer <accessToken>`
+- 旧路径 `/api/chat`、`/api/knowledge`、`/api/analysis` 已移除，返回 404
 
 ---
 
@@ -18,10 +21,37 @@ GET /api/health
 
 响应：`{"code":0,"message":"ok"}`
 
+### 注册 / 登录 / Refresh / 登出 / 改密
+
+```http
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+POST /api/v1/auth/refresh
+POST /api/v1/auth/logout
+POST /api/v1/auth/password
+GET  /api/v1/me
+```
+
+登录失败统一返回「用户名或密码错误，或账号暂时不可用。」，不区分用户不存在、密码错误或停用。修改密码后撤销全部 refresh token，并将 `token_version` 加一。
+
+### 工作区与成员
+
+```http
+POST /api/v1/workspaces
+GET  /api/v1/workspaces
+GET  /api/v1/workspaces/{workspaceId}
+GET  /api/v1/workspaces/{workspaceId}/members?page=1&pageSize=20&keyword=&status=ACTIVE&role=EDITOR
+POST /api/v1/workspaces/{workspaceId}/members
+PATCH /api/v1/workspaces/{workspaceId}/members/{memberId}/role
+PATCH /api/v1/workspaces/{workspaceId}/members/{memberId}/status
+```
+
+成员列表响应：`{ items, page, pageSize, total }`。成员不停物理删除，只改状态。
+
 ### 上传知识文档
 
 ```http
-POST /api/knowledge/upload
+POST /api/v1/workspaces/{workspaceId}/knowledge/upload
 Content-Type: multipart/form-data
 ```
 
@@ -45,28 +75,29 @@ Content-Type: multipart/form-data
 }
 ```
 
-流程：解析分块 → 向量写入 → 元数据落库（`status=READY`）。
+流程：解析分块 → 向量写入（metadata 含 `workspace_id`）→ 元数据落库（`status=READY`）。VIEWER 不能上传。
 
 ### 文档列表
 
 ```http
-GET /api/knowledge/docs
+GET /api/v1/workspaces/{workspaceId}/knowledge/docs?page=1&pageSize=20
 ```
 
-响应：`data` 为文档数组（字段同上传响应，按创建时间倒序）。
+响应：`data` 为 `{ items, page, pageSize, total }`。
 
-### 删除文档
+### 归档文档
 
 ```http
-DELETE /api/knowledge/docs/{docId}
+DELETE /api/v1/workspaces/{workspaceId}/knowledge/docs/{docId}
+PATCH /api/v1/workspaces/{workspaceId}/knowledge/docs/{docId}/status
 ```
 
-向量与元数据双删。响应：`{"code":0,"message":"ok"}`
+文档状态改为 `ARCHIVED`，并按 `workspace_id + doc_id` 删除向量。不物理删库记录。
 
 ### RAG 问答（非流式）
 
 ```http
-POST /api/chat
+POST /api/v1/workspaces/{workspaceId}/chat
 Content-Type: application/json
 ```
 
@@ -98,10 +129,24 @@ Content-Type: application/json
 
 `intent` 取值：`knowledge_qa`（知识问答）/ `data_query`（数据查询，走 Text-to-SQL 链路）。
 
+### 会话
+
+```http
+POST /api/v1/workspaces/{workspaceId}/chat/sessions
+GET  /api/v1/workspaces/{workspaceId}/chat/sessions?page=1&pageSize=20
+GET  /api/v1/workspaces/{workspaceId}/chat/sessions/{sessionId}
+GET  /api/v1/workspaces/{workspaceId}/chat/sessions/{sessionId}/messages
+PATCH /api/v1/workspaces/{workspaceId}/chat/sessions/{sessionId}/status
+POST /api/v1/workspaces/{workspaceId}/chat/intent
+POST /api/v1/workspaces/{workspaceId}/chat/ask
+```
+
+会话必须属于当前用户与当前工作区。
+
 ### RAG 问答（SSE 流式）
 
 ```http
-POST /api/chat/stream
+POST /api/v1/workspaces/{workspaceId}/chat/stream
 Accept: text/event-stream
 ```
 
@@ -120,7 +165,7 @@ event:references  data:[{"source":"business-glossary.md","score":0.74}]
 ### 数据分析（Text-to-SQL）
 
 ```http
-POST /api/analysis/query
+POST /api/v1/workspaces/{workspaceId}/analysis/query
 Content-Type: application/json
 ```
 
@@ -195,7 +240,7 @@ Content-Type: multipart/form-data
 POST /api/vector/upsert
 ```
 
-请求：`{"collection_name":"huiyi_knowledge","chunks":[{id,text,metadata}]}`，同 id 覆盖（幂等）。
+请求：`{"collection_name":"huiyi_knowledge","workspace_id":1,"chunks":[{id,text,metadata}]}`，同 id 覆盖（幂等）。知识库 collection 必须带 `workspace_id`。
 
 响应：`{"success":true,"upserted_count":2,"collection_name":"huiyi_knowledge"}`
 
@@ -205,7 +250,7 @@ POST /api/vector/upsert
 POST /api/vector/search
 ```
 
-请求：`{"query":"什么是有效订单？","top_k":5,"collection_name":"huiyi_knowledge"}`
+请求：`{"query":"什么是有效订单？","top_k":5,"collection_name":"huiyi_knowledge","workspace_id":1}`
 
 响应：`{"success":true,"hits":[{"id":"...","text":"...","metadata":{...},"score":0.74}]}`  
 `huiyi_knowledge` 为向量 + BM25 的 RRF 混合结果，`score` 为该命中的向量 cosine（仅关键词命中时为 0）。其它 collection 仍为纯向量。
@@ -216,9 +261,11 @@ POST /api/vector/search
 POST /api/vector/delete
 ```
 
-请求：`{"filename":"business-glossary.md","collection_name":"huiyi_knowledge"}`
+请求：`{"workspace_id":1,"doc_id":12,"collection_name":"huiyi_knowledge"}`
 
-响应：`{"success":true,"deleted_count":2,"filename":"business-glossary.md"}`
+响应：`{"success":true,"deleted_count":2}`。知识库禁止只按文件名删除。
+
+重建旧索引（一次性）：`python -m app.tools.rebuild_knowledge_index --mapping mapping.json`
 
 ### 文本相似度
 

@@ -1,30 +1,101 @@
 {
   "info": {
-    "name": "HuiYi AI Data Assistant",
-    "description": "HuiYi AI Data Assistant API 集合（P2 阶段：健康检查 / 文档解析 / 知识库上传）",
+    "name": "HuiYi AI Data Assistant v0.7",
+    "description": "v0.7 Enterprise Foundation：先 Register/Login，再把 accessToken 填到 collection 变量。",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "java_base", "value": "http://localhost:8080" },
-    { "key": "python_base", "value": "http://localhost:8001" }
+    { "key": "python_base", "value": "http://localhost:8001" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "workspaceId", "value": "1" }
   ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
   "item": [
     {
       "name": "健康检查",
       "item": [
         {
           "name": "Java 健康检查",
-          "request": {
-            "method": "GET",
-            "url": "{{java_base}}/api/health"
-          }
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{java_base}}/api/health" }
         },
         {
           "name": "Python 健康检查",
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{python_base}}/health" }
+        }
+      ]
+    },
+    {
+      "name": "认证",
+      "item": [
+        {
+          "name": "注册",
           "request": {
-            "method": "GET",
-            "url": "{{python_base}}/health"
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"alice\",\n  \"password\": \"strong-password\",\n  \"displayName\": \"Alice\"\n}" },
+            "url": "{{java_base}}/api/v1/auth/register"
           }
+        },
+        {
+          "name": "登录",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"alice\",\n  \"password\": \"strong-password\"\n}" },
+            "url": "{{java_base}}/api/v1/auth/login"
+          }
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" },
+            "url": "{{java_base}}/api/v1/auth/refresh"
+          }
+        },
+        {
+          "name": "修改密码",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"oldPassword\": \"strong-password\",\n  \"newPassword\": \"strong-password\"\n}" },
+            "url": "{{java_base}}/api/v1/auth/password"
+          }
+        },
+        {
+          "name": "当前用户",
+          "request": { "method": "GET", "url": "{{java_base}}/api/v1/me" }
+        }
+      ]
+    },
+    {
+      "name": "工作区",
+      "item": [
+        {
+          "name": "创建工作区",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Finance Team\",\n  \"code\": \"finance-team\"\n}" },
+            "url": "{{java_base}}/api/v1/workspaces"
+          }
+        },
+        {
+          "name": "我的工作区",
+          "request": { "method": "GET", "url": "{{java_base}}/api/v1/workspaces" }
+        },
+        {
+          "name": "成员列表",
+          "request": { "method": "GET", "url": "{{java_base}}/api/v1/workspaces/{{workspaceId}}/members?page=1&pageSize=20" }
         }
       ]
     },
@@ -32,46 +103,19 @@
       "name": "知识库",
       "item": [
         {
-          "name": "上传知识文档（Java）",
+          "name": "上传知识文档",
           "request": {
             "method": "POST",
-            "url": "{{java_base}}/api/knowledge/upload",
+            "url": "{{java_base}}/api/v1/workspaces/{{workspaceId}}/knowledge/upload",
             "body": {
               "mode": "formdata",
-              "formdata": [
-                { "key": "file", "type": "file", "src": "sample-data/knowledge/business-glossary.md" }
-              ]
-            }
-          }
-        },
-        {
-          "name": "文档解析（Python 直连）",
-          "request": {
-            "method": "POST",
-            "url": "{{python_base}}/api/documents/parse",
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                { "key": "file", "type": "file", "src": "sample-data/knowledge/business-glossary.md" },
-                { "key": "chunk_size", "value": "500", "type": "text" },
-                { "key": "chunk_overlap", "value": "50", "type": "text" }
-              ]
+              "formdata": [{ "key": "file", "type": "file", "src": "sample-data/knowledge/business-glossary.md" }]
             }
           }
         },
         {
           "name": "文档列表",
-          "request": {
-            "method": "GET",
-            "url": "{{java_base}}/api/knowledge/docs"
-          }
-        },
-        {
-          "name": "删除文档",
-          "request": {
-            "method": "DELETE",
-            "url": "{{java_base}}/api/knowledge/docs/1"
-          }
+          "request": { "method": "GET", "url": "{{java_base}}/api/v1/workspaces/{{workspaceId}}/knowledge/docs?page=1&pageSize=20" }
         }
       ]
     },
@@ -82,51 +126,30 @@
           "name": "RAG 问答（非流式）",
           "request": {
             "method": "POST",
-            "url": "{{java_base}}/api/chat",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"sessionId\": \"s-001\",\n  \"question\": \"什么是有效订单？\"\n}"
-            }
+            "body": { "mode": "raw", "raw": "{\n  \"question\": \"什么是有效订单？\"\n}" },
+            "url": "{{java_base}}/api/v1/workspaces/{{workspaceId}}/chat"
           }
         },
         {
-          "name": "意图预检",
+          "name": "统一问答",
           "request": {
             "method": "POST",
-            "url": "{{java_base}}/api/chat/intent",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"question\": \"上个月销售额最高的 10 个商品是什么？\"\n}"
-            }
+            "body": { "mode": "raw", "raw": "{\n  \"question\": \"什么是有效订单？上个月销售额最高的 3 个商品是什么？\"\n}" },
+            "url": "{{java_base}}/api/v1/workspaces/{{workspaceId}}/chat/ask"
           }
         },
         {
-          "name": "统一问答（复合问题）",
+          "name": "RAG 问答（SSE）",
           "request": {
             "method": "POST",
-            "url": "{{java_base}}/api/chat/ask",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"question\": \"什么是有效订单？上个月销售额最高的 3 个商品是什么？\"\n}"
-            }
-          }
-        },
-        {
-          "name": "RAG 问答（SSE 流式）",
-          "request": {
-            "method": "POST",
-            "url": "{{java_base}}/api/chat/stream",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Accept", "value": "text/event-stream" }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"question\": \"什么是有效订单？\"\n}"
-            }
+            "body": { "mode": "raw", "raw": "{\n  \"question\": \"什么是有效订单？\"\n}" },
+            "url": "{{java_base}}/api/v1/workspaces/{{workspaceId}}/chat/stream"
           }
         }
       ]
@@ -138,53 +161,9 @@
           "name": "Text-to-SQL 查询",
           "request": {
             "method": "POST",
-            "url": "{{java_base}}/api/analysis/query",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"question\": \"上个月销售额最高的 10 个商品是什么？\"\n}"
-            }
-          }
-        },
-        {
-          "name": "SQL 安全校验（Python 直连）",
-          "request": {
-            "method": "POST",
-            "url": "{{python_base}}/api/sql/validate",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"sql\": \"DELETE FROM sales_orders\"\n}"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "向量库",
-      "item": [
-        {
-          "name": "向量检索",
-          "request": {
-            "method": "POST",
-            "url": "{{python_base}}/api/vector/search",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"query\": \"什么是有效订单？\",\n  \"top_k\": 5,\n  \"collection_name\": \"huiyi_knowledge\"\n}"
-            }
-          }
-        },
-        {
-          "name": "向量删除",
-          "request": {
-            "method": "POST",
-            "url": "{{python_base}}/api/vector/delete",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"filename\": \"business-glossary.md\",\n  \"collection_name\": \"huiyi_knowledge\"\n}"
-            }
+            "body": { "mode": "raw", "raw": "{\n  \"question\": \"上个月销售额最高的 10 个商品是什么？\"\n}" },
+            "url": "{{java_base}}/api/v1/workspaces/{{workspaceId}}/analysis/query"
           }
         }
       ]

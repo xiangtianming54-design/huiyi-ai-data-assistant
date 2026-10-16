@@ -1,5 +1,6 @@
 package com.huiyi.assistant.workspace;
 
+import com.huiyi.assistant.audit.AuditService;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.mapper.UserMapper;
 import com.huiyi.assistant.mapper.WorkspaceMapper;
@@ -27,13 +28,14 @@ class WorkspaceServiceTest {
     @Mock WorkspaceMapper workspaceMapper;
     @Mock WorkspaceMemberMapper workspaceMemberMapper;
     @Mock UserMapper userMapper;
+    @Mock AuditService auditService;
 
     WorkspaceService workspaceService;
     AuthUser actor;
 
     @BeforeEach
     void setUp() {
-        workspaceService = new WorkspaceService(workspaceMapper, workspaceMemberMapper, userMapper);
+        workspaceService = new WorkspaceService(workspaceMapper, workspaceMemberMapper, userMapper, auditService);
         actor = new AuthUser(10L, "alice", 0);
     }
 
@@ -66,6 +68,7 @@ class WorkspaceServiceTest {
         when(workspaceMemberMapper.selectByWorkspaceAndUser(1L, 10L)).thenReturn(null);
         BizException ex = assertThrows(BizException.class, () -> workspaceService.requireMember(actor, 1L));
         assertEquals(403, ex.getCode());
+        verify(auditService).accessDenied(10L, "alice", 1L, "不是该工作区的有效成员");
     }
 
     @Test

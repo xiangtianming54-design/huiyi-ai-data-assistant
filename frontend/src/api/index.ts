@@ -31,6 +31,13 @@ export interface AnalysisResult {
   answer: string
 }
 
+export interface PageResult<T> {
+  items: T[]
+  page: number
+  pageSize: number
+  total: number
+}
+
 export const knowledgeApi = {
   upload(file: File) {
     const formData = new FormData()
@@ -38,7 +45,7 @@ export const knowledgeApi = {
     return http.post<Result<KnowledgeDoc>>(workspacePath('/knowledge/upload'), formData)
   },
   list() {
-    return http.get<Result<KnowledgeDoc[]>>(workspacePath('/knowledge/docs'))
+    return http.get<Result<PageResult<KnowledgeDoc>>>(workspacePath('/knowledge/docs'))
   },
   remove(docId: number) {
     return http.delete<Result<void>>(workspacePath(`/knowledge/docs/${docId}`))

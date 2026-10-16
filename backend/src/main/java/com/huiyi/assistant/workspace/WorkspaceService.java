@@ -1,6 +1,8 @@
 package com.huiyi.assistant.workspace;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.huiyi.assistant.audit.AuditAction;
+import com.huiyi.assistant.audit.AuditService;
 import com.huiyi.assistant.auth.AuthService;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.context.WorkspaceContext;
@@ -11,6 +13,7 @@ import com.huiyi.assistant.model.entity.User;
 import com.huiyi.assistant.model.entity.Workspace;
 import com.huiyi.assistant.model.entity.WorkspaceMember;
 import com.huiyi.assistant.model.vo.MemberVO;
+import com.huiyi.assistant.model.vo.PageResult;
 import com.huiyi.assistant.security.AuthUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -30,12 +34,14 @@ public class WorkspaceService {
     private final WorkspaceMapper workspaceMapper;
     private final WorkspaceMemberMapper workspaceMemberMapper;
     private final UserMapper userMapper;
+    private final AuditService auditService;
 
     public WorkspaceService(WorkspaceMapper workspaceMapper, WorkspaceMemberMapper workspaceMemberMapper,
-                            UserMapper userMapper) {
+                            UserMapper userMapper, AuditService auditService) {
         this.workspaceMapper = workspaceMapper;
         this.workspaceMemberMapper = workspaceMemberMapper;
         this.userMapper = userMapper;
+        this.auditService = auditService;
     }
 
     public WorkspaceContext requireMember(AuthUser user, Long workspaceId) {
@@ -45,11 +51,11 @@ public class WorkspaceService {
         }
         Workspace workspace = workspaceMapper.selectById(workspaceId);
         if (workspace == null || !AuthService.STATUS_ACTIVE.equals(workspace.getStatus())) {
-            throw new BizException(403, "工作区不可用");
+            deny(user, workspaceId, "工作区不可用");
         }
         WorkspaceMember member = workspaceMemberMapper.selectByWorkspaceAndUser(workspaceId, user.userId());
         if (member == null || !AuthService.STATUS_ACTIVE.equals(member.getStatus())) {
-            throw new BizException(403, "不是该工作区的有效成员");
+            deny(user, workspaceId, "不是该工作区的有效成员");
         }
         return new WorkspaceContext(user.userId(), workspaceId, member.getId(), member.getRoleCode(),
                 member.getStatus(), account.getStatus());
@@ -58,7 +64,7 @@ public class WorkspaceService {
     public WorkspaceContext requireManageMembers(AuthUser user, Long workspaceId) {
         WorkspaceContext context = requireMember(user, workspaceId);
         if (!context.canManageMembers()) {
-            throw new BizException(403, "没有权限管理成员");
+            deny(user, workspaceId, "没有权限管理成员");
         }
         return context;
     }
@@ -66,7 +72,7 @@ public class WorkspaceService {
     public WorkspaceContext requireKnowledgeWrite(AuthUser user, Long workspaceId) {
         WorkspaceContext context = requireMember(user, workspaceId);
         if (!context.canUploadKnowledge()) {
-            throw new BizException(403, "只读成员不能上传或归档知识库");
+            deny(user, workspaceId, "只读成员不能上传或归档知识库");
         }
         return context;
     }
@@ -93,6 +99,8 @@ public class WorkspaceService {
         member.setStatus(AuthService.STATUS_ACTIVE);
         member.setJoinedAt(LocalDateTime.now());
         workspaceMemberMapper.insert(member);
+        auditService.record(AuditAction.WORKSPACE_CREATED, "SUCCESS", user.userId(), user.username(),
+                workspace.getId(), "workspace", String.valueOf(workspace.getId()), Map.of("code", normalized));
         return workspace;
     }
 
@@ -112,7 +120,8 @@ public class WorkspaceService {
                 .toList();
     }
 
-    public List<MemberVO> listMembers(AuthUser user, Long workspaceId, String status, String role) {
+    public PageResult<MemberVO> listMembers(AuthUser user, Long workspaceId, Integer page, Integer pageSize,
+                                            String status, String role, String keyword) {
         requireMember(user, workspaceId);
         LambdaQueryWrapper<WorkspaceMember> wrapper = new LambdaQueryWrapper<WorkspaceMember>()
                 .eq(WorkspaceMember::getWorkspaceId, workspaceId);
@@ -122,10 +131,15 @@ public class WorkspaceService {
         if (StringUtils.hasText(role)) {
             wrapper.eq(WorkspaceMember::getRoleCode, role);
         }
-        return workspaceMemberMapper.selectList(wrapper).stream()
-                .map(member -> toMemberVO(member))
+        String needle = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+        List<MemberVO> members = workspaceMemberMapper.selectList(wrapper).stream()
+                .map(this::toMemberVO)
                 .filter(vo -> vo != null && !"migrated".equals(vo.getUsername()))
+                .filter(vo -> needle.isEmpty()
+                        || (vo.getUsername() != null && vo.getUsername().toLowerCase(Locale.ROOT).contains(needle))
+                        || (vo.getDisplayName() != null && vo.getDisplayName().toLowerCase(Locale.ROOT).contains(needle)))
                 .toList();
+        return PageResult.of(members, page, pageSize);
     }
 
     @Transactional
@@ -149,6 +163,7 @@ public class WorkspaceService {
             member.setJoinedAt(LocalDateTime.now());
             member.setChangedBy(user.userId());
             workspaceMemberMapper.insert(member);
+            auditMember(AuditAction.MEMBER_ADDED, user, workspaceId, target.getId(), roleCode);
             return;
         }
         existing.setStatus(AuthService.STATUS_ACTIVE);
@@ -156,6 +171,7 @@ public class WorkspaceService {
         existing.setChangedAt(LocalDateTime.now());
         existing.setChangedBy(user.userId());
         workspaceMemberMapper.updateById(existing);
+        auditMember(AuditAction.MEMBER_ADDED, user, workspaceId, target.getId(), roleCode);
     }
 
     @Transactional
@@ -177,6 +193,7 @@ public class WorkspaceService {
         target.setChangedAt(LocalDateTime.now());
         target.setChangedBy(user.userId());
         workspaceMemberMapper.updateById(target);
+        auditMember(AuditAction.MEMBER_ROLE_CHANGED, user, workspaceId, target.getUserId(), roleCode);
     }
 
     @Transactional
@@ -198,6 +215,18 @@ public class WorkspaceService {
         target.setChangedAt(LocalDateTime.now());
         target.setChangedBy(user.userId());
         workspaceMemberMapper.updateById(target);
+        auditService.record(AuditAction.MEMBER_STATUS_CHANGED, "SUCCESS", user.userId(), user.username(),
+                workspaceId, "member", String.valueOf(memberId), Map.of("status", next));
+    }
+
+    private void deny(AuthUser user, Long workspaceId, String reason) {
+        auditService.accessDenied(user.userId(), user.username(), workspaceId, reason);
+        throw new BizException(403, reason);
+    }
+
+    private void auditMember(String action, AuthUser user, Long workspaceId, Long targetUserId, String role) {
+        auditService.record(action, "SUCCESS", user.userId(), user.username(), workspaceId,
+                "member", String.valueOf(targetUserId), Map.of("role", role));
     }
 
     private long countActiveOwners(Long workspaceId) {

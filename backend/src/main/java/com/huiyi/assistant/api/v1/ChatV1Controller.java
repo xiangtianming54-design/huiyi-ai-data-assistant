@@ -1,5 +1,7 @@
 package com.huiyi.assistant.api.v1;
 
+import com.huiyi.assistant.audit.AuditAction;
+import com.huiyi.assistant.audit.AuditService;
 import com.huiyi.assistant.common.result.Result;
 import com.huiyi.assistant.context.WorkspaceContext;
 import com.huiyi.assistant.context.WorkspaceContextHolder;
@@ -10,6 +12,7 @@ import com.huiyi.assistant.model.entity.ChatSession;
 import com.huiyi.assistant.model.vo.ChatAskResponseVO;
 import com.huiyi.assistant.model.vo.ChatResponseVO;
 import com.huiyi.assistant.model.vo.IntentResponseVO;
+import com.huiyi.assistant.model.vo.PageResult;
 import com.huiyi.assistant.security.AuthUser;
 import com.huiyi.assistant.service.ChatService;
 import com.huiyi.assistant.service.ChatSessionService;
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -35,12 +39,14 @@ public class ChatV1Controller {
     private final WorkspaceService workspaceService;
     private final ChatService chatService;
     private final ChatSessionService chatSessionService;
+    private final AuditService auditService;
 
     public ChatV1Controller(WorkspaceService workspaceService, ChatService chatService,
-                            ChatSessionService chatSessionService) {
+                            ChatSessionService chatSessionService, AuditService auditService) {
         this.workspaceService = workspaceService;
         this.chatService = chatService;
         this.chatSessionService = chatSessionService;
+        this.auditService = auditService;
     }
 
     @PostMapping("/chat/sessions")
@@ -50,9 +56,13 @@ public class ChatV1Controller {
     }
 
     @GetMapping("/chat/sessions")
-    public Result<List<ChatSession>> listSessions(@AuthenticationPrincipal AuthUser user, @PathVariable Long workspaceId) {
+    public Result<PageResult<ChatSession>> listSessions(@AuthenticationPrincipal AuthUser user,
+                                                        @PathVariable Long workspaceId,
+                                                        @RequestParam(required = false, defaultValue = "1") Integer page,
+                                                        @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
         WorkspaceContext context = workspaceService.requireMember(user, workspaceId);
-        return Result.ok(chatSessionService.listMine(context.workspaceId(), context.userId()));
+        return Result.ok(PageResult.of(chatSessionService.listMine(context.workspaceId(), context.userId()),
+                page, pageSize));
     }
 
     @GetMapping("/chat/sessions/{sessionId}")
@@ -83,6 +93,7 @@ public class ChatV1Controller {
     @PostMapping("/chat")
     public Result<ChatResponseVO> chat(@AuthenticationPrincipal AuthUser user, @PathVariable Long workspaceId,
                                        @Valid @RequestBody ChatRequestDTO request) {
+        auditAsked(user, workspaceId, request);
         return withContext(user, workspaceId, () -> Result.ok(chatService.chat(request)));
     }
 
@@ -96,6 +107,7 @@ public class ChatV1Controller {
     @PostMapping("/chat/ask")
     public Result<ChatAskResponseVO> ask(@AuthenticationPrincipal AuthUser user, @PathVariable Long workspaceId,
                                          @Valid @RequestBody ChatRequestDTO request) {
+        auditAsked(user, workspaceId, request);
         return withContext(user, workspaceId, () -> Result.ok(chatService.ask(request)));
     }
 
@@ -103,6 +115,7 @@ public class ChatV1Controller {
     public SseEmitter stream(@AuthenticationPrincipal AuthUser user, @PathVariable Long workspaceId,
                              @Valid @RequestBody ChatRequestDTO request) {
         WorkspaceContext context = workspaceService.requireMember(user, workspaceId);
+        auditAsked(user, workspaceId, request);
         WorkspaceContextHolder.set(context);
         try {
             return chatService.chatStream(request);
@@ -120,5 +133,11 @@ public class ChatV1Controller {
         } finally {
             WorkspaceContextHolder.clear();
         }
+    }
+
+    private void auditAsked(AuthUser user, Long workspaceId, ChatRequestDTO request) {
+        auditService.record(AuditAction.CHAT_ASKED, "SUCCESS", user.userId(), user.username(), workspaceId,
+                "chat", request.getSessionId(),
+                java.util.Map.of("question", request.getQuestion() == null ? "" : request.getQuestion()));
     }
 }

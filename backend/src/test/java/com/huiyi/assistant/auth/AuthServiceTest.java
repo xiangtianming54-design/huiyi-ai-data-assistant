@@ -1,5 +1,7 @@
 package com.huiyi.assistant.auth;
 
+import com.huiyi.assistant.audit.AuditAction;
+import com.huiyi.assistant.audit.AuditService;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.config.AuthProperties;
 import com.huiyi.assistant.mapper.RefreshTokenMapper;
@@ -40,6 +42,7 @@ class AuthServiceTest {
     @Mock WorkspaceMemberMapper workspaceMemberMapper;
     @Mock RefreshTokenMapper refreshTokenMapper;
     @Mock LoginAttemptService loginAttemptService;
+    @Mock AuditService auditService;
 
     AuthProperties properties;
     PasswordService passwordService;
@@ -60,7 +63,7 @@ class AuthServiceTest {
         passwordService = new PasswordService();
         jwtTokenService = new JwtTokenService(properties);
         authService = new AuthService(properties, passwordService, jwtTokenService, loginAttemptService,
-                userMapper, workspaceMapper, workspaceMemberMapper, refreshTokenMapper);
+                userMapper, workspaceMapper, workspaceMemberMapper, refreshTokenMapper, auditService);
     }
 
     @Test
@@ -118,6 +121,21 @@ class AuthServiceTest {
         assertEquals(10L, tokens.getUserId());
         verify(loginAttemptService).clear("alice");
         verify(refreshTokenMapper).insert(any(RefreshToken.class));
+    }
+
+    @Test
+    void loginFailureIsAuditedWithoutPassword() {
+        when(loginAttemptService.isLocked("alice")).thenReturn(false);
+        when(userMapper.selectByUsername("alice")).thenReturn(activeUser());
+        assertThrows(BizException.class, () -> authService.login(new LoginRequest("alice", "wrong-password-x")));
+        verify(auditService).record(org.mockito.ArgumentMatchers.eq(AuditAction.AUTH_LOGIN_FAILED),
+                org.mockito.ArgumentMatchers.eq("FAILED"),
+                org.mockito.ArgumentMatchers.eq(10L),
+                org.mockito.ArgumentMatchers.eq("alice"),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq("user"),
+                org.mockito.ArgumentMatchers.eq("alice"),
+                org.mockito.ArgumentMatchers.any());
     }
 
     @Test

@@ -2,6 +2,7 @@
 // 用法：node scripts/e2e-v02.js（需全栈已启动：docker compose up -d）
 const { chromium } = require('playwright-core');
 const path = require('path');
+const { registerAndEnter } = require('./e2e-login');
 
 const BASE = process.env.E2E_BASE_URL || 'http://localhost:5173';
 const SHOTS = path.resolve(__dirname, '..', 'docs', 'images');
@@ -11,6 +12,8 @@ const SHOTS = path.resolve(__dirname, '..', 'docs', 'images');
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const shot = (name) => page.screenshot({ path: path.join(SHOTS, name), fullPage: false });
   const report = {};
+
+  await registerAndEnter(page, BASE);
 
   // 旧路由重定向检查
   await page.goto(BASE + '/analysis', { waitUntil: 'domcontentloaded' });

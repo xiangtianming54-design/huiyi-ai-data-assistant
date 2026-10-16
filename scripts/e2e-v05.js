@@ -1,11 +1,12 @@
 // v0.5 复合问题浏览器验证：一句话两问 → 知识气泡 + 数据富结果卡片
 const { chromium } = require('playwright-core');
 const path = require('path');
+const { registerAndEnter } = require('./e2e-login');
 
 (async () => {
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  await page.goto('http://localhost:5173/chat', { waitUntil: 'networkidle' });
+  await registerAndEnter(page, 'http://localhost:5173');
 
   await page.locator('textarea').fill('什么是有效订单？上个月销售额最高的 3 个商品是什么？');
   await page.getByRole('button', { name: '发送' }).click();

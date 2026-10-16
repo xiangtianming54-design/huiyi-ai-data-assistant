@@ -35,6 +35,17 @@ class FlywayMigrationFilesTest {
     }
 
     @Test
+    void flywayBaselinesExistingNonEmptySchema() throws IOException {
+        for (String file : List.of(
+                "src/main/resources/application-local.yml",
+                "src/main/resources/application-docker.yml")) {
+            String yaml = Files.readString(Path.of(file), StandardCharsets.UTF_8);
+            assertTrue(yaml.contains("baseline-on-migrate: true"), file + " must baseline existing demo schema");
+            assertTrue(yaml.contains("baseline-version: 0"), file + " must still run V1 on demo schema");
+        }
+    }
+
+    @Test
     void initMysqlNoLongerCreatesApplicationTables() throws IOException {
         String init = Files.readString(Path.of("../scripts/init_mysql.sql"), StandardCharsets.UTF_8);
         assertFalse(init.contains("CREATE TABLE IF NOT EXISTS knowledge_docs"),

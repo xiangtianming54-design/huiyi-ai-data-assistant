@@ -1,11 +1,46 @@
 // M5 五场景端到端浏览器验证（先注册登录，再走 v1 工作区对话）
 // 用法：npm i playwright-core && node scripts/e2e-m5.js（需全栈已启动：docker compose up -d）
 const { chromium } = require('playwright-core');
+const fs = require('fs');
 const path = require('path');
 const { registerAndEnter } = require('./e2e-login');
 
 const BASE = process.env.E2E_BASE_URL || 'http://localhost:5173';
+const API = process.env.E2E_API_URL || 'http://localhost:8080';
 const SHOTS = path.resolve(__dirname, '..', 'docs', 'images');
+const GLOSSARY = path.resolve(__dirname, '..', 'sample-data', 'knowledge', 'business-glossary.md');
+
+async function bootstrapOwnerWorkspace(page) {
+  const refreshToken = await page.evaluate(() => localStorage.getItem('huiyi_refresh'));
+  const refreshed = await fetch(API + '/api/v1/auth/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken }),
+  }).then((res) => res.json());
+  const token = refreshed.data.accessToken;
+  const created = await fetch(API + '/api/v1/workspaces', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify({ name: 'E2E Demo', code: 'e2e-demo-' + Date.now() }),
+  }).then((res) => res.json());
+  const workspaceId = created.data.id;
+  const form = new FormData();
+  form.append('file', new Blob([fs.readFileSync(GLOSSARY)]), 'business-glossary.md');
+  const uploaded = await fetch(API + `/api/v1/workspaces/${workspaceId}/knowledge/upload`, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token },
+    body: form,
+  }).then((res) => res.json());
+  if (uploaded.code !== 0) {
+    throw new Error('upload failed: ' + JSON.stringify(uploaded));
+  }
+  await page.evaluate(({ workspaceId, refresh }) => {
+    localStorage.setItem('huiyi_workspace_id', String(workspaceId));
+    localStorage.setItem('huiyi_refresh', refresh);
+  }, { workspaceId, refresh: refreshed.data.refreshToken });
+  await page.goto(BASE + '/chat', { waitUntil: 'networkidle' });
+  await page.locator('textarea').waitFor({ timeout: 30000 });
+}
 
 (async () => {
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
@@ -18,6 +53,7 @@ const SHOTS = path.resolve(__dirname, '..', 'docs', 'images');
   };
 
   await registerAndEnter(page, BASE);
+  await bootstrapOwnerWorkspace(page);
 
   // ===== 场景 1：口径问答（RAG + 引用来源） =====
   await ask('什么是有效订单？');

@@ -22,7 +22,10 @@ def upsert(
     request: UpsertRequest,
     store: VectorStore = Depends(get_vector_store),
 ) -> UpsertResponse:
-    count = store.upsert(request.chunks, request.collection_name)
+    if request.workspace_id is not None:
+        count = store.upsert_workspace_chunks(request.workspace_id, request.chunks, request.collection_name)
+    else:
+        count = store.upsert(request.chunks, request.collection_name)
     return UpsertResponse(success=True, upserted_count=count, collection_name=request.collection_name)
 
 
@@ -31,16 +34,24 @@ def search(
     request: SearchRequest,
     store: VectorStore = Depends(get_vector_store),
 ) -> SearchResponse:
-    hits = store.search(request.query, request.top_k, request.collection_name)
+    if request.workspace_id is not None:
+        hits = store.search_by_workspace(request.query, request.workspace_id, request.top_k, request.collection_name)
+    else:
+        hits = store.search(request.query, request.top_k, request.collection_name)
     return SearchResponse(success=True, hits=hits)
 
 
-@router.post("/delete", response_model=DeleteResponse, summary="按文件名删除向量")
+@router.post("/delete", response_model=DeleteResponse, summary="按工作区文档或 chunk 删除向量")
 def delete(
     request: DeleteRequest,
     store: VectorStore = Depends(get_vector_store),
 ) -> DeleteResponse:
-    count = store.delete_by_filename(request.filename, request.collection_name)
+    if request.workspace_id is not None and request.chunk_ids:
+        count = store.delete_by_chunk_ids(request.workspace_id, request.chunk_ids, request.collection_name)
+    elif request.workspace_id is not None and request.doc_id is not None:
+        count = store.delete_by_doc(request.workspace_id, request.doc_id, request.collection_name)
+    else:
+        count = store.delete_by_filename(request.filename or "", request.collection_name)
     return DeleteResponse(success=True, deleted_count=count, filename=request.filename)
 
 

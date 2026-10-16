@@ -1,5 +1,6 @@
 # ===== 项目特有 =====
 chroma_store/
+.worktrees/
 *.sqlite3
 *.bin
 

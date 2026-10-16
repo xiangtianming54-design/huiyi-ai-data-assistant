@@ -10,12 +10,24 @@ from app.services.vector_store import VectorStore, get_vector_store
 GLOSSARY_CHUNK = Chunk(
     id="business-glossary-md-chunk-0000",
     text="有效订单是指支付成功且未退款的订单，即状态为 PAID、SHIPPED 或 COMPLETED 的订单。",
-    metadata=ChunkMetadata(filename="business-glossary.md", chunk_index=0, source_type="md"),
+    metadata=ChunkMetadata(
+        filename="business-glossary.md",
+        chunk_index=0,
+        source_type="md",
+        workspace_id="1",
+        doc_id="1",
+    ),
 )
 CHANNEL_CHUNK = Chunk(
     id="business-glossary-md-chunk-0001",
     text="销售渠道分为线上商城、直播带货、线下门店、分销代理四类。",
-    metadata=ChunkMetadata(filename="business-glossary.md", chunk_index=1, source_type="md"),
+    metadata=ChunkMetadata(
+        filename="business-glossary.md",
+        chunk_index=1,
+        source_type="md",
+        workspace_id="1",
+        doc_id="1",
+    ),
 )
 
 
@@ -53,7 +65,7 @@ def client(store):
 class TestUpsertAndSearch:
     def test_search_returns_most_relevant_chunk(self, store):
         store.upsert([GLOSSARY_CHUNK, CHANNEL_CHUNK], "huiyi_knowledge")
-        hits = store.search("什么是有效订单？", top_k=2, collection_name="huiyi_knowledge")
+        hits = store.search("什么是有效订单？", top_k=2, collection_name="huiyi_knowledge", workspace_id=1)
         assert hits
         assert hits[0].id == GLOSSARY_CHUNK.id
         assert "有效订单" in hits[0].text
@@ -63,27 +75,27 @@ class TestUpsertAndSearch:
     def test_upsert_is_idempotent(self, store):
         store.upsert([GLOSSARY_CHUNK, CHANNEL_CHUNK], "huiyi_knowledge")
         store.upsert([GLOSSARY_CHUNK, CHANNEL_CHUNK], "huiyi_knowledge")
-        hits = store.search("订单", top_k=10, collection_name="huiyi_knowledge")
+        hits = store.search("订单", top_k=10, collection_name="huiyi_knowledge", workspace_id=1)
         ids = [hit.id for hit in hits]
         assert len(ids) == len(set(ids)), "同 id 重复 upsert 不应产生重复向量"
         assert hits, "至少应命中含订单的口径分块"
 
     def test_search_empty_collection_returns_no_hits(self, store):
-        assert store.search("任意问题", top_k=5, collection_name="huiyi_knowledge") == []
+        assert store.search("任意问题", top_k=5, collection_name="huiyi_knowledge", workspace_id=1) == []
 
     def test_upsert_empty_chunks_returns_zero(self, store):
         assert store.upsert([], "huiyi_knowledge") == 0
 
 
 class TestDelete:
-    def test_delete_by_filename(self, store):
+    def test_delete_by_doc(self, store):
         store.upsert([GLOSSARY_CHUNK, CHANNEL_CHUNK], "huiyi_knowledge")
-        deleted = store.delete_by_filename("business-glossary.md", "huiyi_knowledge")
+        deleted = store.delete_by_doc(1, 1, "huiyi_knowledge")
         assert deleted == 2
-        assert store.search("什么是有效订单？", top_k=5, collection_name="huiyi_knowledge") == []
+        assert store.search("什么是有效订单？", top_k=5, collection_name="huiyi_knowledge", workspace_id=1) == []
 
     def test_delete_nonexistent_returns_zero(self, store):
-        assert store.delete_by_filename("not-exist.md", "huiyi_knowledge") == 0
+        assert store.delete_by_doc(1, 999, "huiyi_knowledge") == 0
 
 
 class TestPersistence:
@@ -92,7 +104,7 @@ class TestPersistence:
         VectorStore(persist_dir, FakeEmbeddingService()).upsert([GLOSSARY_CHUNK], "huiyi_knowledge")
         # 模拟服务重启：同一目录重建 client，数据仍在
         new_store = VectorStore(persist_dir, FakeEmbeddingService())
-        hits = new_store.search("什么是有效订单？", top_k=1, collection_name="huiyi_knowledge")
+        hits = new_store.search("什么是有效订单？", top_k=1, collection_name="huiyi_knowledge", workspace_id=1)
         assert hits and hits[0].id == GLOSSARY_CHUNK.id
 
 
@@ -122,7 +134,7 @@ class TestVectorApi:
 
         upsert_resp = client.post(
             "/api/vector/upsert",
-            json={"collection_name": "huiyi_knowledge", "chunks": chunks},
+            json={"collection_name": "huiyi_knowledge", "workspace_id": 1, "chunks": chunks},
         )
         assert upsert_resp.status_code == 200
         assert upsert_resp.json() == {
@@ -133,7 +145,7 @@ class TestVectorApi:
 
         search_resp = client.post(
             "/api/vector/search",
-            json={"query": "什么是有效订单？", "top_k": 5, "collection_name": "huiyi_knowledge"},
+            json={"query": "什么是有效订单？", "top_k": 5, "collection_name": "huiyi_knowledge", "workspace_id": 1},
         )
         assert search_resp.status_code == 200
         body = search_resp.json()
@@ -144,13 +156,13 @@ class TestVectorApi:
 
         delete_resp = client.post(
             "/api/vector/delete",
-            json={"filename": "business-glossary.md", "collection_name": "huiyi_knowledge"},
+            json={"workspace_id": 1, "doc_id": 1, "collection_name": "huiyi_knowledge"},
         )
         assert delete_resp.status_code == 200
         assert delete_resp.json()["deleted_count"] == 2
 
         search_again = client.post(
             "/api/vector/search",
-            json={"query": "什么是有效订单？", "top_k": 5, "collection_name": "huiyi_knowledge"},
+            json={"query": "什么是有效订单？", "top_k": 5, "collection_name": "huiyi_knowledge", "workspace_id": 1},
         )
         assert search_again.json()["hits"] == []

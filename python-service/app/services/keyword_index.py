@@ -33,11 +33,15 @@ class KeywordIndex:
     def upsert(self, collection_name: str, chunks: list[Chunk]) -> None:
         docs = self._load(collection_name)
         for chunk in chunks:
+            metadata = chunk.metadata.model_dump(exclude_none=True)
             docs[chunk.id] = {
                 "id": chunk.id,
                 "text": chunk.text,
-                "metadata": chunk.metadata.model_dump(),
+                "metadata": metadata,
                 "filename": chunk.metadata.filename,
+                "workspace_id": str(chunk.metadata.workspace_id) if chunk.metadata.workspace_id is not None else "",
+                "doc_id": str(chunk.metadata.doc_id) if chunk.metadata.doc_id is not None else "",
+                "chunk_id": chunk.id,
             }
         self._save(collection_name, docs)
 
@@ -49,11 +53,40 @@ class KeywordIndex:
         self._save(collection_name, docs)
         return len(remove)
 
-    def search(self, collection_name: str, query: str, top_k: int) -> list[dict]:
+    def delete_by_doc(self, collection_name: str, workspace_id: int, doc_id: int) -> int:
+        docs = self._load(collection_name)
+        workspace = str(workspace_id)
+        document = str(doc_id)
+        remove = [
+            key for key, doc in docs.items()
+            if str(doc.get("workspace_id") or "") == workspace and str(doc.get("doc_id") or "") == document
+        ]
+        for key in remove:
+            del docs[key]
+        self._save(collection_name, docs)
+        return len(remove)
+
+    def delete_by_chunk_ids(self, collection_name: str, workspace_id: int, chunk_ids: list[str]) -> int:
+        docs = self._load(collection_name)
+        workspace = str(workspace_id)
+        wanted = set(chunk_ids)
+        remove = [
+            key for key, doc in docs.items()
+            if key in wanted and str(doc.get("workspace_id") or "") == workspace
+        ]
+        for key in remove:
+            del docs[key]
+        self._save(collection_name, docs)
+        return len(remove)
+
+    def search(self, collection_name: str, query: str, top_k: int, workspace_id: int | None = None) -> list[dict]:
         query_tokens = tokenize(query)
         if not query_tokens or top_k <= 0:
             return []
         docs = list(self._load(collection_name).values())
+        if workspace_id is not None:
+            workspace = str(workspace_id)
+            docs = [doc for doc in docs if str(doc.get("workspace_id") or "") == workspace]
         if not docs:
             return []
         tokenized = [tokenize(doc["text"]) for doc in docs]

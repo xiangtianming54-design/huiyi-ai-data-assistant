@@ -41,20 +41,31 @@ class VectorStore:
             ids=[chunk.id for chunk in chunks],
             embeddings=embeddings,
             documents=[chunk.text for chunk in chunks],
-            metadatas=[chunk.metadata.model_dump() for chunk in chunks],
+            metadatas=[chunk.metadata.model_dump(exclude_none=True) for chunk in chunks],
         )
         self._keyword.upsert(collection_name, chunks)
         return len(chunks)
 
-    def search(self, query: str, top_k: int, collection_name: str) -> list[SearchHit]:
+    def upsert_workspace_chunks(self, workspace_id: int, chunks: list[Chunk], collection_name: str) -> int:
+        """写入前补齐并校验 workspace_id，禁止混合工作区。"""
+        workspace = str(workspace_id)
+        for chunk in chunks:
+            current = chunk.metadata.workspace_id
+            if current is None:
+                chunk.metadata.workspace_id = workspace
+            elif str(current) != workspace:
+                raise ValueError("不允许混合多个 workspace")
+        return self.upsert(chunks, collection_name)
+
+    def search(self, query: str, top_k: int, collection_name: str, workspace_id: int | None = None) -> list[SearchHit]:
         """知识库 collection 走向量+关键词 RRF；其它 collection 仍只做向量。"""
         fetch = top_k * 2 if collection_name == settings.chroma_collection else top_k
-        vector_hits = self._vector_search(query, fetch, collection_name)
+        vector_hits = self._vector_search(query, fetch, collection_name, workspace_id=workspace_id)
         if collection_name != settings.chroma_collection:
             return vector_hits[:top_k]
         qualified = [hit for hit in vector_hits if hit.score >= VECTOR_SCORE_THRESHOLD]
         try:
-            keyword_raw = self._keyword.search(collection_name, query, fetch)
+            keyword_raw = self._keyword.search(collection_name, query, fetch, workspace_id=workspace_id)
         except Exception:
             return qualified[:top_k]
         if not keyword_raw:
@@ -75,13 +86,17 @@ class VectorStore:
                 )
         return [by_id[doc_id] for doc_id, _ in merged_ids if doc_id in by_id]
 
+    def search_by_workspace(self, query: str, workspace_id: int, top_k: int, collection_name: str) -> list[SearchHit]:
+        """在检索阶段按 workspace_id 过滤，禁止先全库 Top-K 再过滤。"""
+        return self.search(query, top_k, collection_name, workspace_id=workspace_id)
+
     def similarity(self, text_a: str, text_b: str) -> float:
         """两条文本的 cosine 相似度，范围 [0, 1]（向量夹角，负值截断为 0）。"""
         vectors = self._embedding.embed([text_a, text_b])
         return cosine(vectors[0], vectors[1])
 
     def delete_by_filename(self, filename: str, collection_name: str) -> int:
-        """按 metadata.filename 删除文档全部分块，返回删除数量。"""
+        """按 metadata.filename 删除（仅非知识库 collection）。"""
         collection = self._collection(collection_name)
         existing = collection.get(where={"filename": filename}, include=[])
         ids = existing.get("ids", [])
@@ -91,17 +106,67 @@ class VectorStore:
         self._keyword.delete_by_filename(collection_name, filename)
         return len(ids)
 
-    def _vector_search(self, query: str, top_k: int, collection_name: str) -> list[SearchHit]:
-        """query embed → top_k 检索，score 为 cosine 相似度。"""
+    def delete_by_doc(self, workspace_id: int, doc_id: int, collection_name: str) -> int:
+        """按工作区 + 文档删除分块，不同工作区同名文件互不影响。"""
+        collection = self._collection(collection_name)
+        existing = collection.get(
+            where={
+                "$and": [
+                    {"workspace_id": {"$eq": str(workspace_id)}},
+                    {"doc_id": {"$eq": str(doc_id)}},
+                ]
+            },
+            include=[],
+        )
+        ids = existing.get("ids", [])
+        if not ids:
+            return 0
+        collection.delete(ids=ids)
+        self._keyword.delete_by_doc(collection_name, workspace_id, doc_id)
+        return len(ids)
+
+    def delete_by_chunk_ids(self, workspace_id: int, chunk_ids: list[str], collection_name: str) -> int:
+        """按工作区 + chunk id 删除，忽略不属于该工作区的 id。"""
+        if not chunk_ids:
+            return 0
+        collection = self._collection(collection_name)
+        existing = collection.get(
+            ids=chunk_ids,
+            where={"workspace_id": {"$eq": str(workspace_id)}},
+            include=[],
+        )
+        ids = existing.get("ids", [])
+        if not ids:
+            return 0
+        collection.delete(ids=ids)
+        self._keyword.delete_by_chunk_ids(collection_name, workspace_id, ids)
+        return len(ids)
+
+    def _vector_search(
+        self,
+        query: str,
+        top_k: int,
+        collection_name: str,
+        workspace_id: int | None = None,
+    ) -> list[SearchHit]:
+        """query embed → top_k 检索，score 为 cosine 相似度。知识库必须带 where 过滤。"""
         collection = self._collection(collection_name)
         if collection.count() == 0:
             return []
         query_embedding = self._embedding.embed_single(query)
-        result = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=min(top_k, collection.count()),
-            include=["documents", "metadatas", "distances"],
-        )
+        kwargs: dict = {
+            "query_embeddings": [query_embedding],
+            "n_results": min(top_k, collection.count()),
+            "include": ["documents", "metadatas", "distances"],
+        }
+        if workspace_id is not None:
+            kwargs["where"] = {"workspace_id": {"$eq": str(workspace_id)}}
+        try:
+            result = collection.query(**kwargs)
+        except Exception:
+            return []
+        if not result or not result.get("ids") or not result["ids"][0]:
+            return []
         hits = []
         for chunk_id, document, metadata, distance in zip(
             result["ids"][0],

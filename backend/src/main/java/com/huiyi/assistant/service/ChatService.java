@@ -108,7 +108,7 @@ public class ChatService {
      * @return 统一问答响应（parts 长度 1~2）
      */
     public ChatAskResponseVO ask(ChatRequestDTO request) {
-        String sessionId = chatSessionService.resolveSessionId(request.getSessionId());
+        String sessionId = resolveScopedSession(request.getSessionId());
         String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
         List<String> subQuestions = questionDecomposeService.decompose(question);
 
@@ -152,7 +152,7 @@ public class ChatService {
                     .analysis(result)
                     .build();
         }
-        RagService.RagAnswer ragAnswer = ragService.answer(question, llmService);
+        RagService.RagAnswer ragAnswer = ragService.answer(question, llmService, workspaceId());
         chatSessionService.saveAssistantMessage(sessionId, ragAnswer.answer(),
                 IntentTypeEnum.KNOWLEDGE_QA, null, ragAnswer.references(), layer, decision.score());
         return ChatPartVO.builder()
@@ -170,7 +170,7 @@ public class ChatService {
      * @return 问答响应
      */
     public ChatResponseVO chat(ChatRequestDTO request) {
-        String sessionId = chatSessionService.resolveSessionId(request.getSessionId());
+        String sessionId = resolveScopedSession(request.getSessionId());
         // 多轮上下文：先结合历史将追问改写为独立问题（无历史时透传）
         String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
         IntentService.IntentDecision decision = intentService.detectWithDetail(question);
@@ -187,7 +187,7 @@ public class ChatService {
             sqlText = result.getSql();
             references = List.of();
         } else {
-            RagService.RagAnswer ragAnswer = ragService.answer(question, llmService);
+            RagService.RagAnswer ragAnswer = ragService.answer(question, llmService, workspaceId());
             answer = ragAnswer.answer();
             references = ragAnswer.references();
         }
@@ -209,7 +209,7 @@ public class ChatService {
      * @return SSE 发射器
      */
     public SseEmitter chatStream(ChatRequestDTO request) {
-        String sessionId = chatSessionService.resolveSessionId(request.getSessionId());
+        String sessionId = resolveScopedSession(request.getSessionId());
         // 多轮上下文：先结合历史将追问改写为独立问题（无历史时透传）
         String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
         IntentService.IntentDecision decision = intentService.detectWithDetail(question);
@@ -230,7 +230,7 @@ public class ChatService {
             tokenFlux = Flux.just(result.getAnswer());
             references = List.of();
         } else {
-            RagService.RagContext context = ragService.prepare(question);
+            RagService.RagContext context = ragService.prepare(question, workspaceId());
             references = context.references();
             tokenFlux = ragService.stream(context, llmService);
         }
@@ -263,6 +263,19 @@ public class ChatService {
                             decision.layer().name().toLowerCase(), decision.score());
                 });
         return emitter;
+    }
+
+    private String resolveScopedSession(String sessionId) {
+        com.huiyi.assistant.context.WorkspaceContext context = com.huiyi.assistant.context.WorkspaceContextHolder.get();
+        if (context == null) {
+            return chatSessionService.resolveSessionId(sessionId);
+        }
+        return chatSessionService.ensureSession(context.workspaceId(), context.userId(), sessionId);
+    }
+
+    private Long workspaceId() {
+        com.huiyi.assistant.context.WorkspaceContext context = com.huiyi.assistant.context.WorkspaceContextHolder.get();
+        return context == null ? null : context.workspaceId();
     }
 
     /**

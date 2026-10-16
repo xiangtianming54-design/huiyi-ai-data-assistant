@@ -34,8 +34,14 @@ public class KnowledgeDoc {
     /** 分块数量 */
     private Integer chunkCount;
 
-    /** 状态：UPLOADED/PARSED/READY/FAILED */
+    /** 状态：UPLOADED/PARSING/READY/FAILED/ARCHIVED */
     private String status;
+
+    private Long workspaceId;
+
+    private Long knowledgeSpaceId;
+
+    private Long createdBy;
 
     /** 创建时间（插入时自动填充） */
     @TableField(fill = FieldFill.INSERT)

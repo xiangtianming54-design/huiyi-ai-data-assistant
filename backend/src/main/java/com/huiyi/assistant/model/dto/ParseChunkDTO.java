@@ -36,5 +36,11 @@ public class ParseChunkDTO {
         /** 来源文件类型 */
         @JsonProperty("source_type")
         private String sourceType;
+
+        @JsonProperty("workspace_id")
+        private String workspaceId;
+
+        @JsonProperty("doc_id")
+        private String docId;
     }
 }

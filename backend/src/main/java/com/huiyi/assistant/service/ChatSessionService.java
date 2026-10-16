@@ -3,9 +3,12 @@ package com.huiyi.assistant.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.mapper.ChatMessageMapper;
+import com.huiyi.assistant.mapper.ChatSessionMapper;
 import com.huiyi.assistant.mapper.ChatSessionSummaryMapper;
 import com.huiyi.assistant.model.entity.ChatMessage;
+import com.huiyi.assistant.model.entity.ChatSession;
 import com.huiyi.assistant.model.entity.ChatSessionSummary;
 import com.huiyi.assistant.model.enums.IntentTypeEnum;
 import com.huiyi.assistant.model.vo.ReferenceVO;
@@ -41,15 +44,24 @@ public class ChatSessionService {
 
     private final ChatSessionSummaryMapper chatSessionSummaryMapper;
 
+    private final ChatSessionMapper chatSessionMapper;
+
     public ChatSessionService(ChatMessageMapper chatMessageMapper) {
-        this(chatMessageMapper, null);
+        this(chatMessageMapper, null, null);
+    }
+
+    public ChatSessionService(ChatMessageMapper chatMessageMapper,
+                              ChatSessionSummaryMapper chatSessionSummaryMapper) {
+        this(chatMessageMapper, chatSessionSummaryMapper, null);
     }
 
     @Autowired
     public ChatSessionService(ChatMessageMapper chatMessageMapper,
-                              ChatSessionSummaryMapper chatSessionSummaryMapper) {
+                              ChatSessionSummaryMapper chatSessionSummaryMapper,
+                              ChatSessionMapper chatSessionMapper) {
         this.chatMessageMapper = chatMessageMapper;
         this.chatSessionSummaryMapper = chatSessionSummaryMapper;
+        this.chatSessionMapper = chatSessionMapper;
     }
 
     /**
@@ -62,7 +74,78 @@ public class ChatSessionService {
         if (StringUtils.hasText(sessionId)) {
             return sessionId;
         }
-        return "s-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        return "s_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+    }
+
+    public ChatSession createSession(Long workspaceId, Long userId) {
+        String sessionId = resolveSessionId(null);
+        persistSession(sessionId, workspaceId, userId);
+        ChatSession session = new ChatSession();
+        session.setSessionId(sessionId);
+        session.setWorkspaceId(workspaceId);
+        session.setUserId(userId);
+        session.setStatus("ACTIVE");
+        return session;
+    }
+
+    public String ensureSession(Long workspaceId, Long userId, String sessionId) {
+        if (!StringUtils.hasText(sessionId)) {
+            String created = resolveSessionId(null);
+            persistSession(created, workspaceId, userId);
+            return created;
+        }
+        ChatSession session = requireOwned(workspaceId, userId, sessionId);
+        if (!"ACTIVE".equals(session.getStatus())) {
+            throw new BizException(403, "会话已归档");
+        }
+        return session.getSessionId();
+    }
+
+    public ChatSession requireOwned(Long workspaceId, Long userId, String sessionId) {
+        if (chatSessionMapper == null) {
+            ChatSession fallback = new ChatSession();
+            fallback.setSessionId(sessionId);
+            fallback.setWorkspaceId(workspaceId);
+            fallback.setUserId(userId);
+            fallback.setStatus("ACTIVE");
+            return fallback;
+        }
+        ChatSession session = chatSessionMapper.selectById(sessionId);
+        if (session == null || !workspaceId.equals(session.getWorkspaceId()) || !userId.equals(session.getUserId())) {
+            throw new BizException(403, "无权访问该会话");
+        }
+        return session;
+    }
+
+    public List<ChatSession> listMine(Long workspaceId, Long userId) {
+        if (chatSessionMapper == null) {
+            return List.of();
+        }
+        return chatSessionMapper.selectList(new LambdaQueryWrapper<ChatSession>()
+                .eq(ChatSession::getWorkspaceId, workspaceId)
+                .eq(ChatSession::getUserId, userId)
+                .orderByDesc(ChatSession::getLastMessageAt));
+    }
+
+    public void archive(Long workspaceId, Long userId, String sessionId) {
+        ChatSession session = requireOwned(workspaceId, userId, sessionId);
+        session.setStatus("ARCHIVED");
+        if (chatSessionMapper != null) {
+            chatSessionMapper.updateById(session);
+        }
+    }
+
+    private void persistSession(String sessionId, Long workspaceId, Long userId) {
+        if (chatSessionMapper == null) {
+            return;
+        }
+        ChatSession session = new ChatSession();
+        session.setSessionId(sessionId);
+        session.setWorkspaceId(workspaceId);
+        session.setUserId(userId);
+        session.setStatus("ACTIVE");
+        session.setLastMessageAt(java.time.LocalDateTime.now());
+        chatSessionMapper.insert(session);
     }
 
     /**
@@ -179,6 +262,15 @@ public class ChatSessionService {
         message.setIntent(intent == null ? null : intent.getCode());
         message.setSqlText(sqlText);
         message.setMetadataJson(metadataJson);
+        if (chatSessionMapper != null) {
+            ChatSession session = chatSessionMapper.selectById(sessionId);
+            if (session != null) {
+                message.setWorkspaceId(session.getWorkspaceId());
+                message.setUserId(session.getUserId());
+                session.setLastMessageAt(java.time.LocalDateTime.now());
+                chatSessionMapper.updateById(session);
+            }
+        }
         chatMessageMapper.insert(message);
     }
 }

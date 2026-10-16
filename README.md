@@ -2,7 +2,7 @@
 
 > 会意 · 企业经营数据智能分析助手
 
-当前发布：**v0.6.0** · 基线说明 [docs/baseline.md](docs/baseline.md) · 后续版本 [docs/roadmap.md](docs/roadmap.md)
+当前发布：**v0.6.1**；**v0.7 Enterprise Foundation 开发中**（`feature/v0.7-enterprise-foundation`）。基线说明 [docs/baseline.md](docs/baseline.md) · 设计 [docs/superpowers/specs/HuiYi-v0.7-Enterprise-Foundation-Development-Document-v2.md](docs/superpowers/specs/HuiYi-v0.7-Enterprise-Foundation-Development-Document-v2.md) · 后续版本 [docs/roadmap.md](docs/roadmap.md)
 
 基于 **Java + Python 协同架构** 的企业经营数据智能分析助手，支持 **RAG 知识库问答** 与 **Text-to-SQL 数据分析** 两类核心能力。
 
@@ -37,11 +37,11 @@
 ### 方式一：Docker Compose 一键启动
 
 ```bash
-cp .env.example .env   # 填入 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL / LLM_EMBEDDING_MODEL
+cp .env.example .env   # 填入 LLM_* 与 JWT_SECRET（至少 32 字节）
 docker compose up -d
 ```
 
-启动后访问 **http://localhost:5173**（前端），即可体验知识库上传、智能问答与数据分析。
+启动后访问 **http://localhost:5173**。首次使用请注册账号（默认加入 `default` 工作区，角色由 `DEFAULT_MEMBER_ROLE` 决定，默认 VIEWER；任何登录用户可创建自己的工作区成为 OWNER）。
 
 > 说明：容器 MySQL 默认映射到宿主机 **3307** 端口（规避本机 MySQL 占用的 3306），
 > 可通过 `.env` 中 `MYSQL_HOST_PORT` 修改。LLM 推荐硅基流动（有免费模型额度，

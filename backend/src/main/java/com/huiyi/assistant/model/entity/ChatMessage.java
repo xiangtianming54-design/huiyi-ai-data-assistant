@@ -40,6 +40,10 @@ public class ChatMessage {
     /** 附加元数据 JSON（如引用来源） */
     private String metadataJson;
 
+    private Long workspaceId;
+
+    private Long userId;
+
     /** 创建时间（插入时自动填充） */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

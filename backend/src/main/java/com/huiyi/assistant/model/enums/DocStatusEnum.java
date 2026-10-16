@@ -20,5 +20,8 @@ public enum DocStatusEnum {
     READY,
 
     /** 处理失败 */
-    FAILED
+    FAILED,
+
+    /** 已归档，不可再检索 */
+    ARCHIVED
 }

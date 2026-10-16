@@ -125,6 +125,10 @@ export const useChatStore = defineStore('chat', {
       this.stop()
       this.messages = []
       this.sessionId = undefined
+    },
+
+    resetConversation() {
+      this.reset()
     }
   }
 })

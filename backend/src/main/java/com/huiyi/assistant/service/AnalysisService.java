@@ -79,7 +79,7 @@ public class AnalysisService {
      * @return 组装好的分析结果
      */
     public AnalysisResultVO query(AnalysisRequestDTO request) {
-        String sessionId = chatSessionService.resolveSessionId(request.getSessionId());
+        String sessionId = resolveScopedSession(request.getSessionId());
         // 多轮上下文：先结合历史将追问改写为独立问题（无历史时透传）
         String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
         chatSessionService.saveUserMessage(sessionId, request.getQuestion(), IntentTypeEnum.DATA_QUERY);
@@ -188,6 +188,14 @@ public class AnalysisService {
                 .summary(summary)
                 .answer(answer)
                 .build();
+    }
+
+    private String resolveScopedSession(String sessionId) {
+        com.huiyi.assistant.context.WorkspaceContext context = com.huiyi.assistant.context.WorkspaceContextHolder.get();
+        if (context == null) {
+            return chatSessionService.resolveSessionId(sessionId);
+        }
+        return chatSessionService.ensureSession(context.workspaceId(), context.userId(), sessionId);
     }
 
     /**

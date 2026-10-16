@@ -19,6 +19,13 @@ public class VectorUpsertRequestDTO {
     @JsonProperty("collection_name")
     private String collectionName;
 
+    @JsonProperty("workspace_id")
+    private Long workspaceId;
+
     /** 分块列表 */
     private List<ParseChunkDTO> chunks;
+
+    public VectorUpsertRequestDTO(String collectionName, List<ParseChunkDTO> chunks) {
+        this(collectionName, null, chunks);
+    }
 }

@@ -42,7 +42,7 @@
         </el-table-column>
         <el-table-column label="操作" width="90" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" type="danger" text @click="confirmDelete(row)">删除</el-button>
+            <el-button size="small" type="danger" text @click="confirmDelete(row)">归档</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -51,9 +51,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { knowledgeApi, type KnowledgeDoc } from '../api'
+import { useAuthStore } from '../stores/auth'
+
+const auth = useAuthStore()
+watch(() => auth.workspaceId, () => { void loadDocs() })
 
 const docs = ref<KnowledgeDoc[]>([])
 const loading = ref(false)
@@ -94,13 +98,13 @@ async function handleUpload(options: { file: File }) {
 }
 
 async function confirmDelete(doc: KnowledgeDoc) {
-  await ElMessageBox.confirm(`确定删除「${doc.docName}」吗？将同时删除其全部向量。`, '删除确认', {
+  await ElMessageBox.confirm(`确定归档「${doc.docName}」吗？文档记录保留，向量将不可再检索。`, '归档确认', {
     type: 'warning',
-    confirmButtonText: '删除',
+    confirmButtonText: '归档',
     cancelButtonText: '取消'
   })
   await knowledgeApi.remove(doc.docId)
-  ElMessage.success('已删除')
+  ElMessage.success('已归档')
   await loadDocs()
 }
 
@@ -119,7 +123,8 @@ function statusText(status: string): string {
     UPLOADED: '已上传',
     PARSED: '已解析',
     READY: '可检索',
-    FAILED: '失败'
+    FAILED: '失败',
+    ARCHIVED: '已归档'
   }
   return map[status] ?? status
 }

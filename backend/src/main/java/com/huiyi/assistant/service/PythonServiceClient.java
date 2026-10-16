@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.common.result.ResultCode;
 import com.huiyi.assistant.model.dto.DataProfileResponseDTO;
+import com.huiyi.assistant.model.dto.ParseChunkDTO;
 import com.huiyi.assistant.model.dto.ParseResultDTO;
 import com.huiyi.assistant.model.dto.SimilarityResponseDTO;
 import com.huiyi.assistant.model.dto.SqlValidateResponseDTO;
@@ -80,7 +81,22 @@ public class PythonServiceClient {
      * @param parseResult 解析结果（含分块列表）
      */
     public void upsertVectors(ParseResultDTO parseResult) {
-        VectorUpsertRequestDTO request = new VectorUpsertRequestDTO(COLLECTION_NAME, parseResult.getChunks());
+        upsertVectors(parseResult, null, null);
+    }
+
+    public void upsertVectors(ParseResultDTO parseResult, Long workspaceId, Long docId) {
+        if (parseResult.getChunks() != null && workspaceId != null && docId != null) {
+            String workspace = String.valueOf(workspaceId);
+            String document = String.valueOf(docId);
+            parseResult.getChunks().forEach(chunk -> {
+                if (chunk.getMetadata() == null) {
+                    chunk.setMetadata(new ParseChunkDTO.Metadata());
+                }
+                chunk.getMetadata().setWorkspaceId(workspace);
+                chunk.getMetadata().setDocId(document);
+            });
+        }
+        VectorUpsertRequestDTO request = new VectorUpsertRequestDTO(COLLECTION_NAME, workspaceId, parseResult.getChunks());
         post("/api/vector/upsert", spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(request), String.class);
         log.info("向量写入完成: filename={}, chunks={}", parseResult.getFilename(), parseResult.getChunkCount());
     }
@@ -89,7 +105,11 @@ public class PythonServiceClient {
      * 调用 /api/vector/search 进行 Top-K 检索（默认知识库 collection）。
      */
     public VectorSearchResponseDTO searchVectors(String query, int topK) {
-        return searchVectors(query, topK, COLLECTION_NAME);
+        return searchVectors(query, topK, COLLECTION_NAME, null);
+    }
+
+    public VectorSearchResponseDTO searchVectors(String query, int topK, Long workspaceId) {
+        return searchVectors(query, topK, COLLECTION_NAME, workspaceId);
     }
 
     /**
@@ -101,7 +121,11 @@ public class PythonServiceClient {
      * @return 检索响应（含命中列表）
      */
     public VectorSearchResponseDTO searchVectors(String query, int topK, String collectionName) {
-        VectorSearchRequestDTO request = new VectorSearchRequestDTO(query, topK, collectionName);
+        return searchVectors(query, topK, collectionName, null);
+    }
+
+    public VectorSearchResponseDTO searchVectors(String query, int topK, String collectionName, Long workspaceId) {
+        VectorSearchRequestDTO request = new VectorSearchRequestDTO(query, topK, collectionName, workspaceId);
         return post("/api/vector/search",
                 spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(request),
                 VectorSearchResponseDTO.class);
@@ -124,9 +148,16 @@ public class PythonServiceClient {
      * @param filename 来源文件名
      */
     public void deleteVectorsByFilename(String filename) {
-        Map<String, String> body = Map.of("filename", filename, "collection_name", COLLECTION_NAME);
+        throw new BizException(ResultCode.PARAM_ERROR.getCode(), "禁止仅按文件名删除向量");
+    }
+
+    public void deleteVectorsByDoc(Long workspaceId, Long docId) {
+        Map<String, Object> body = Map.of(
+                "workspace_id", workspaceId,
+                "doc_id", docId,
+                "collection_name", COLLECTION_NAME);
         post("/api/vector/delete", spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(body), String.class);
-        log.info("向量删除完成: filename={}", filename);
+        log.info("向量删除完成: workspaceId={}, docId={}", workspaceId, docId);
     }
 
     /**

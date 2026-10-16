@@ -1,6 +1,6 @@
 import type { Reference } from './index'
+import { getAccessToken, getWorkspaceId } from '../auth/token'
 
-/** SSE 流式问答回调 */
 export interface StreamCallbacks {
   onSession?: (sessionId: string) => void
   onToken?: (token: string) => void
@@ -9,19 +9,23 @@ export interface StreamCallbacks {
   onDone?: () => void
 }
 
-/**
- * 发起 SSE 流式问答（fetch + ReadableStream 解析 text/event-stream）。
- *
- * @returns 中止函数（用于「停止生成」）
- */
 export function streamChat(question: string, sessionId: string | undefined, callbacks: StreamCallbacks): () => void {
   const controller = new AbortController()
 
   void (async () => {
     try {
-      const response = await fetch('/api/chat/stream', {
+      const workspaceId = getWorkspaceId()
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream'
+      }
+      const token = getAccessToken()
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+      const response = await fetch(`/api/v1/workspaces/${workspaceId}/chat/stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+        headers,
         body: JSON.stringify(sessionId ? { question, sessionId } : { question }),
         signal: controller.signal
       })
@@ -47,7 +51,7 @@ export function streamChat(question: string, sessionId: string | undefined, call
           try {
             callbacks.onReferences?.(JSON.parse(data) as Reference[])
           } catch {
-            // 引用 JSON 异常时忽略，不影响主流程
+            // ignore
           }
         } else if (eventName === 'error') {
           callbacks.onError?.(data)

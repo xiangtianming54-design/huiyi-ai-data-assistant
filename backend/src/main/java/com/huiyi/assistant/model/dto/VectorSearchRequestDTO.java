@@ -1,5 +1,6 @@
 package com.huiyi.assistant.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,6 +12,7 @@ import lombok.Data;
  */
 @Data
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class VectorSearchRequestDTO {
 
     /** 查询文本 */
@@ -23,4 +25,11 @@ public class VectorSearchRequestDTO {
     /** collection 名称 */
     @JsonProperty("collection_name")
     private String collectionName;
+
+    @JsonProperty("workspace_id")
+    private Long workspaceId;
+
+    public VectorSearchRequestDTO(String query, Integer topK, String collectionName) {
+        this(query, topK, collectionName, null);
+    }
 }

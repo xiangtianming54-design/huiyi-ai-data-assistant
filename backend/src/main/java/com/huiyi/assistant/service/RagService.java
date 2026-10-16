@@ -65,9 +65,15 @@ public class RagService {
      * @return RAG 上下文
      */
     public RagContext prepare(String question) {
+        return prepare(question, null);
+    }
+
+    public RagContext prepare(String question, Long workspaceId) {
         List<VectorSearchResponseDTO.Hit> hits;
         try {
-            VectorSearchResponseDTO response = pythonServiceClient.searchVectors(question, TOP_K);
+            VectorSearchResponseDTO response = workspaceId == null
+                    ? pythonServiceClient.searchVectors(question, TOP_K)
+                    : pythonServiceClient.searchVectors(question, TOP_K, workspaceId);
             hits = response == null ? null : response.getHits();
         } catch (BizException e) {
             // Python 检索服务不可用 → 降级兜底（4.8）
@@ -103,7 +109,11 @@ public class RagService {
      * @return 回答与引用
      */
     public RagAnswer answer(String question, LlmService llmService) {
-        RagContext context = prepare(question);
+        return answer(question, llmService, null);
+    }
+
+    public RagAnswer answer(String question, LlmService llmService, Long workspaceId) {
+        RagContext context = prepare(question, workspaceId);
         if (!context.needLlm()) {
             return new RagAnswer(context.fallbackAnswer(), context.references());
         }

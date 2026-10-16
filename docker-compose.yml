@@ -49,7 +49,7 @@ services:
       LLM_EMBEDDING_MODEL: ${LLM_EMBEDDING_MODEL:-}
       TZ: Asia/Shanghai
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     volumes:
       - chroma-data:/app/chroma_store
     healthcheck:
@@ -83,6 +83,16 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-}
       LLM_EMBEDDING_MODEL: ${LLM_EMBEDDING_MODEL:-}
+      REGISTER_ENABLED: ${REGISTER_ENABLED:-true}
+      DEFAULT_MEMBER_ROLE: ${DEFAULT_MEMBER_ROLE:-VIEWER}
+      JWT_SECRET: ${JWT_SECRET:?请在 .env 中配置 JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER:-huiyi}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-huiyi-api}
+      JWT_ACCESS_TOKEN_TTL: ${JWT_ACCESS_TOKEN_TTL:-1800}
+      JWT_REFRESH_TOKEN_TTL: ${JWT_REFRESH_TOKEN_TTL:-604800}
+      LOGIN_FAIL_MAX_ATTEMPTS: ${LOGIN_FAIL_MAX_ATTEMPTS:-5}
+      LOGIN_FAIL_WINDOW_SECONDS: ${LOGIN_FAIL_WINDOW_SECONDS:-900}
+      LOGIN_LOCK_SECONDS: ${LOGIN_LOCK_SECONDS:-900}
       TZ: Asia/Shanghai
     ports:
       - "8080:8080"

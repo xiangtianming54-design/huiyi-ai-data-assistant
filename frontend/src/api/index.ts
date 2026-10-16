@@ -42,10 +42,35 @@ export const knowledgeApi = {
   }
 }
 
+/** 意图预检结果（compound 时携带子问题） */
+export interface IntentResult {
+  intent: string
+  questions?: string[]
+}
+
+/** 复合问答的单个子问题结果 */
+export interface ChatPart {
+  question: string
+  intent: string
+  answer: string
+  references: Reference[]
+  analysis?: AnalysisResult
+}
+
+/** 统一问答响应 */
+export interface ChatAskResult {
+  sessionId: string
+  parts: ChatPart[]
+}
+
 export const chatApi = {
-  /** 意图预检：knowledge_qa 走 SSE 流式，data_query 走分析接口 */
+  /** 意图预检：knowledge_qa 走 SSE 流式，data_query 走分析接口，compound 走统一问答 */
   intent(question: string) {
-    return http.post<Result<{ intent: string }>>('/chat/intent', { question })
+    return http.post<Result<IntentResult>>('/chat/intent', { question })
+  },
+  /** 统一问答（复合问题多部分回答） */
+  ask(question: string, sessionId?: string) {
+    return http.post<Result<ChatAskResult>>('/chat/ask', { question, sessionId })
   }
 }
 

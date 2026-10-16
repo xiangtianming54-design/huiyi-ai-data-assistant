@@ -66,4 +66,31 @@ class QuestionDecomposeServiceTest {
 
         assertEquals(2, result.size());
     }
+
+    @Test
+    void decomposeMergesParaphrasePairBackToOriginal() {
+        LlmService llmService = mock(LlmService.class);
+        when(llmService.chat(anyString()))
+                .thenReturn("{\"questions\": [\"什么是有效订单？\", \"它的定义是什么？\"]}");
+        QuestionDecomposeService decomposeService =
+                new QuestionDecomposeService(llmService, new PromptTemplateLoader());
+
+        List<String> result = decomposeService.decompose("什么是有效订单？它的定义是什么？");
+
+        assertEquals(List.of("什么是有效订单？它的定义是什么？"), result);
+    }
+
+    @Test
+    void decomposeKeepsTrueCompoundPair() {
+        LlmService llmService = mock(LlmService.class);
+        when(llmService.chat(anyString()))
+                .thenReturn("{\"questions\": [\"什么是有效订单？\", \"上个月销售额前三的商品？\"]}");
+        QuestionDecomposeService decomposeService =
+                new QuestionDecomposeService(llmService, new PromptTemplateLoader());
+
+        List<String> result = decomposeService.decompose("什么是有效订单？上个月销售额前三的商品？");
+
+        assertEquals(2, result.size());
+        assertEquals("上个月销售额前三的商品？", result.get(1));
+    }
 }

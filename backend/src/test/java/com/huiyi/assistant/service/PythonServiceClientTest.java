@@ -118,4 +118,16 @@ class PythonServiceClientTest {
         assertEquals(Boolean.FALSE, result.getValid());
         assertTrue(result.getReason().contains("SELECT"));
     }
+
+    @Test
+    void similaritySuccess() {
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody("{\"success\":true,\"score\":0.91}"));
+
+        double score = client.similarity("什么是有效订单？", "有效订单的定义是什么？");
+
+        assertEquals(0.91, score, 0.001);
+    }
 }

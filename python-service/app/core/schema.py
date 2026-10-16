@@ -88,6 +88,20 @@ class DeleteResponse(BaseModel):
     filename: str
 
 
+class SimilarityRequest(BaseModel):
+    """文本相似度请求：两条文本做 cosine。"""
+
+    text_a: str = Field(min_length=1)
+    text_b: str = Field(min_length=1)
+
+
+class SimilarityResponse(BaseModel):
+    """文本相似度响应：score 为 cosine，范围 [0, 1]。"""
+
+    success: bool
+    score: float
+
+
 # ===== SQL 校验与数据画像接口（/api/sql/*、/api/data/*），契约与《开发文档》7.2 节一致 =====
 
 

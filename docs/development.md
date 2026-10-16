@@ -37,11 +37,11 @@ npm run dev
 ## 测试
 
 ```bash
-# Python（pytest + 覆盖率，当前 90 用例 / 97%）
+# Python（pytest + 覆盖率，当前 93 用例 / 97%）
 cd python-service
 pytest --cov=app --cov-report=term-missing
 
-# Java（JUnit + Mockito + MockWebServer + H2，当前 31 用例）
+# Java（JUnit + Mockito + MockWebServer + H2，当前 56 用例）
 cd backend
 mvn test
 
@@ -78,6 +78,15 @@ docs/             架构 / API / 演示 / 开发文档 + Postman 集合 + 截图
 3. **检索质量**：cosine 相似度 + 0.5 阈值过滤低分命中，保证「未命中」场景的确定性兜底
 4. **Prompt 工程**：模板文件化（classpath）+ `{{var}}` 占位替换工具；Text-to-SQL 输出约定 JSON，三级提取兜底（JSON → 代码块 → 裸 SELECT），不抛栈
 5. **响应式流式**：SSE 事件协议（session/token/references/error），前端 ReadableStream 解析，Pinia 中必须经响应式代理写入（裸对象引用不触发更新）
+
+## v0.5.1 变更（2026-10-16）
+
+**单一问题误拆修复**：LLM 把同义复述拆成两问时，回退为原问题，避免第二问丢指代、答案重复。
+
+- Prompt 强约束：`question-decompose.md` 增加「复述 / 指代 / 同题」禁止拆分的反例
+- `QuestionDeduper`：词面主题归并（抽出问句套话后主题相同或后句纯指代 → 合并）+ embedding cosine ≥ 0.85 合并；embedding 失败仅跳过该层，不影响词面判定
+- Python `POST /api/vector/similarity`：两条文本 embedding cosine，供 Java 去重调用
+- 实测：「什么是有效订单？它的定义是什么？」不再拆成两问；真复合「什么是有效订单？上个月销售额前三？」仍并行两路
 
 ## v0.5 变更（2026-10-16 已发布）
 

@@ -5,6 +5,7 @@ import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.common.result.ResultCode;
 import com.huiyi.assistant.model.dto.DataProfileResponseDTO;
 import com.huiyi.assistant.model.dto.ParseResultDTO;
+import com.huiyi.assistant.model.dto.SimilarityResponseDTO;
 import com.huiyi.assistant.model.dto.SqlValidateResponseDTO;
 import com.huiyi.assistant.model.dto.VectorSearchRequestDTO;
 import com.huiyi.assistant.model.dto.VectorSearchResponseDTO;
@@ -126,6 +127,24 @@ public class PythonServiceClient {
         Map<String, String> body = Map.of("filename", filename, "collection_name", COLLECTION_NAME);
         post("/api/vector/delete", spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(body), String.class);
         log.info("向量删除完成: filename={}", filename);
+    }
+
+    /**
+     * 调用 /api/vector/similarity 计算两条文本的 embedding cosine 相似度。
+     *
+     * @param textA 文本 A
+     * @param textB 文本 B
+     * @return cosine 分数，范围 [0, 1]
+     */
+    public double similarity(String textA, String textB) {
+        SimilarityResponseDTO response = post("/api/vector/similarity",
+                spec -> spec.contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(Map.of("text_a", textA, "text_b", textB)),
+                SimilarityResponseDTO.class);
+        if (response == null || response.getScore() == null) {
+            throw new BizException(ResultCode.PYTHON_SERVICE_UNAVAILABLE);
+        }
+        return response.getScore();
     }
 
     /**

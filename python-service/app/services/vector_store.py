@@ -68,6 +68,11 @@ class VectorStore:
             )
         return hits
 
+    def similarity(self, text_a: str, text_b: str) -> float:
+        """两条文本的 cosine 相似度，范围 [0, 1]（向量夹角，负值截断为 0）。"""
+        vectors = self._embedding.embed([text_a, text_b])
+        return cosine(vectors[0], vectors[1])
+
     def delete_by_filename(self, filename: str, collection_name: str) -> int:
         """按 metadata.filename 删除文档全部分块，返回删除数量。"""
         collection = self._collection(collection_name)
@@ -82,6 +87,16 @@ class VectorStore:
 # ===== 延迟初始化的模块级单例（测试可通过依赖注入替换） =====
 
 _vector_store: VectorStore | None = None
+
+
+def cosine(left: list[float], right: list[float]) -> float:
+    """余弦相似度，结果截断到 [0, 1]。"""
+    dot = sum(x * y for x, y in zip(left, right))
+    norm_left = sum(x * x for x in left) ** 0.5
+    norm_right = sum(y * y for y in right) ** 0.5
+    if norm_left == 0 or norm_right == 0:
+        return 0.0
+    return max(0.0, min(1.0, dot / (norm_left * norm_right)))
 
 
 def get_vector_store() -> VectorStore:

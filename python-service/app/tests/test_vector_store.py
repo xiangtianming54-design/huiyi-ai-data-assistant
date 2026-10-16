@@ -94,6 +94,26 @@ class TestPersistence:
         assert hits and hits[0].id == GLOSSARY_CHUNK.id
 
 
+class TestSimilarity:
+    def test_paraphrase_is_closer_than_unrelated(self, store):
+        paraphrase = store.similarity("什么是有效订单？", "有效订单的定义是什么？")
+        unrelated = store.similarity("什么是有效订单？", "上个月销售额前三的商品？")
+        assert 0 <= unrelated < paraphrase <= 1
+
+    def test_identical_texts_are_one(self, store):
+        assert store.similarity("有效订单", "有效订单") == pytest.approx(1.0)
+
+    def test_similarity_api(self, client):
+        resp = client.post(
+            "/api/vector/similarity",
+            json={"text_a": "什么是有效订单？", "text_b": "有效订单的定义是什么？"},
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["success"] is True
+        assert 0 < body["score"] <= 1
+
+
 class TestVectorApi:
     def test_upsert_search_delete_flow(self, client):
         chunks = [c.model_dump() for c in [GLOSSARY_CHUNK, CHANNEL_CHUNK]]

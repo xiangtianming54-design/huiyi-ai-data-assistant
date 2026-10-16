@@ -12,7 +12,7 @@
 - **RAG 知识库问答**：Markdown / PDF / Word 解析 → 段落优先分块 → Chroma 向量化 → Top-K 检索 → 带引用来源的回答；0.5 分阈值过滤 + 无命中确定性兜底，不编造业务口径
 - **Text-to-SQL**：LLM 生成 SQL → **四道安全防线**（意图层拦截 → sqlglot 静态校验 → 只读账号执行 → 超时/行数/审计）→ pandas 数据画像与图表推荐
 - **SSE 流式问答**：自洽事件协议（session/token/references/error），前端 ReadableStream 逐 token 渲染
-- **工程化**：Docker Compose 一键启动、敏感配置全环境变量化、Python 97% / Java 31 用例测试覆盖、GitHub Actions CI
+- **工程化**：Docker Compose 一键启动、敏感配置全环境变量化、Python 97% / Java 56 用例测试覆盖、GitHub Actions CI
 
 ## Architecture
 
@@ -146,6 +146,8 @@ huiyi-ai-data-assistant/
 - [x] **v0.4 意图识别混合分层**：规则快路径 → embedding 示例句投票 → LLM 兜底，判定轨迹可解释（见 docs/development.md「v0.4 变更」）
 
 - [x] **v0.5 复合问题分解**：一句话多问题 → 分解 → 并行多路回答，知识气泡与数据卡片并存（见 docs/development.md「v0.5 变更」）
+
+- [x] **v0.5.1 误拆去重**：同义复述 / 指代回退单问题（词面主题 + embedding cosine），真复合仍并行（见 docs/development.md「v0.5.1 变更」）
 
 后续方向：重排序与混合检索、知识库权限隔离、Agent / Tool Calling（见开发文档第 15 节）。
 

@@ -22,7 +22,7 @@ Java 17、Spring Boot 3、SpringAI、MyBatis-Plus、MySQL、Redis、Python、Fas
 
 4. **基于 pandas 实现查询结果画像与图表推荐**（行数、数值列 sum/max/min、日期/类别/占比规则推荐 line/bar/pie/table），前端 ECharts 按类型渲染，SSE 流式问答自洽事件协议（session/token/references）。
 
-5. **工程化交付**：Docker Compose 一键编排 5 个服务；Python 覆盖率 97%（90 用例）、Java 31 用例（MockWebServer/H2 打桩）；GitHub Actions 三端 CI；浏览器自动化五场景回归脚本。
+5. **工程化交付**：Docker Compose 一键编排 5 个服务；Python 覆盖率 97%（93 用例）、Java 56 用例（MockWebServer/H2 打桩）；GitHub Actions 三端 CI；浏览器自动化五场景回归脚本。
 
 ## 技术难点与 STAR 问答
 

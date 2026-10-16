@@ -219,6 +219,16 @@ POST /api/vector/delete
 
 响应：`{"success":true,"deleted_count":2,"filename":"business-glossary.md"}`
 
+### 文本相似度
+
+```http
+POST /api/vector/similarity
+```
+
+请求：`{"text_a":"什么是有效订单？","text_b":"有效订单的定义是什么？"}`
+
+响应：`{"success":true,"score":0.91}`（score 为 embedding cosine，范围 [0, 1]）
+
 ### SQL 校验
 
 ```http

@@ -7,6 +7,8 @@ from app.core.schema import (
     DeleteResponse,
     SearchRequest,
     SearchResponse,
+    SimilarityRequest,
+    SimilarityResponse,
     UpsertRequest,
     UpsertResponse,
 )
@@ -40,3 +42,12 @@ def delete(
 ) -> DeleteResponse:
     count = store.delete_by_filename(request.filename, request.collection_name)
     return DeleteResponse(success=True, deleted_count=count, filename=request.filename)
+
+
+@router.post("/similarity", response_model=SimilarityResponse, summary="两条文本的 embedding cosine 相似度")
+def similarity(
+    request: SimilarityRequest,
+    store: VectorStore = Depends(get_vector_store),
+) -> SimilarityResponse:
+    score = store.similarity(request.text_a, request.text_b)
+    return SimilarityResponse(success=True, score=round(score, 4))

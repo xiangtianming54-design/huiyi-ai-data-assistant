@@ -143,7 +143,9 @@ huiyi-ai-data-assistant/
 
 - [x] **v0.3 多轮对话上下文**：查询改写将追问转为独立问题，RAG 与 Text-to-SQL 两链路共用（见 docs/development.md「v0.3 变更」）
 
-后续方向：意图识别升级（规则 → LLM/语义分类）、重排序与混合检索、知识库权限隔离、Agent / Tool Calling（见开发文档第 15 节）。
+- [x] **v0.4 意图识别混合分层**：规则快路径 → embedding 示例句投票 → LLM 兜底，判定轨迹可解释（见 docs/development.md「v0.4 变更」）
+
+后续方向：重排序与混合检索、知识库权限隔离、Agent / Tool Calling（见开发文档第 15 节）。
 
 ## License
 

@@ -79,6 +79,19 @@ docs/             架构 / API / 演示 / 开发文档 + Postman 集合 + 截图
 4. **Prompt 工程**：模板文件化（classpath）+ `{{var}}` 占位替换工具；Text-to-SQL 输出约定 JSON，三级提取兜底（JSON → 代码块 → 裸 SELECT），不抛栈
 5. **响应式流式**：SSE 事件协议（session/token/references/error），前端 ReadableStream 解析，Pinia 中必须经响应式代理写入（裸对象引用不触发更新）
 
+## v0.4 变更（2026-10-16 已发布）
+
+**意图识别混合分层**（规则 → embedding → LLM 三层）：
+
+- **L1 规则快路径**：强/弱关键词判数据查询，新增知识关键词（什么是/定义/口径等）判知识问答，命中即返回（~70% 请求 0ms）
+- **L2 embedding 投票**：两类意图示例句（各 8 条，配置化）启动时写入独立 collection `intent_examples`；用户问题取 top3 最近邻按分数投票，阈值 0.55（实测无关键词问法「卖得最好的是哪些？」以 0.70 分正确判为 data_query）
+- **L3 LLM 兜底**：低置信时调 LLM 分类（`prompts/intent-classify.md`），异常保守返回 knowledge_qa
+- **可解释性**：每次判定的来源层与分数写入 `chat_messages.metadata_json`（intentLayer/intentScore）
+- **灰度开关**：`app.intent.mode: rule | hybrid`，rule 模式完全回退 v1 行为
+- Python 侧 `ChunkMetadata` 开放 extra 字段以在向量 metadata 中携带 intent 标签
+
+后续评估：示例句在线调优、判定轨迹前端可视化。
+
 ## v0.3 变更（2026-10-15 已发布）
 
 **多轮对话上下文**：支持「那第二名呢？」「那取消的订单算什么？」这类依赖上下文的追问。实现方案（Conversational RAG 经典模式）：

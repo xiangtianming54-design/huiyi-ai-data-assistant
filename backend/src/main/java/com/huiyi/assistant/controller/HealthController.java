@@ -5,12 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -20,16 +23,16 @@ import java.util.Map;
 @RequestMapping("/api")
 public class HealthController {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final DataSource dataSource;
     private final RedisConnectionFactory redisConnectionFactory;
     private final WebClient pythonServiceWebClient;
     private final String pythonBaseUrl;
 
-    public HealthController(@Qualifier("jdbcTemplate") JdbcTemplate jdbcTemplate,
+    public HealthController(DataSource dataSource,
                             RedisConnectionFactory redisConnectionFactory,
                             @Qualifier("pythonServiceWebClient") WebClient pythonServiceWebClient,
                             @Value("${python-service.url}") String pythonBaseUrl) {
-        this.jdbcTemplate = jdbcTemplate;
+        this.dataSource = dataSource;
         this.redisConnectionFactory = redisConnectionFactory;
         this.pythonServiceWebClient = pythonServiceWebClient;
         this.pythonBaseUrl = pythonBaseUrl;
@@ -45,10 +48,11 @@ public class HealthController {
     }
 
     private String probeMysql() {
-        try {
-            jdbcTemplate.queryForObject("SELECT 1", Integer.class);
-            return "up";
-        } catch (RuntimeException e) {
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery("SELECT 1")) {
+            return resultSet.next() ? "up" : "down";
+        } catch (Exception e) {
             log.warn("health mysql down: {}", e.getMessage());
             return "down";
         }
@@ -66,7 +70,8 @@ public class HealthController {
 
     private String probePython() {
         try {
-            pythonServiceWebClient.get().uri(pythonBaseUrl.endsWith("/") ? "/health" : "/health")
+            pythonServiceWebClient.get()
+                    .uri(pythonBaseUrl.endsWith("/") ? "/health" : "/health")
                     .retrieve()
                     .bodyToMono(String.class)
                     .block(Duration.ofSeconds(2));

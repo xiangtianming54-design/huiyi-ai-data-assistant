@@ -22,12 +22,15 @@ mybatis-plus:
 python-service:
   url: ${PYTHON_SERVICE_URL:http://python-service:8001}
 
-# 意图识别规则（v0.2 外置）
+# 意图识别（v0.4 混合分层）
 app:
   intent:
+    mode: hybrid
     strong-keywords: 排名,销售额,订单量,趋势,最高,最低,对比,占比,汇总,统计,top,TOP,Top,删除,修改,更新,清空
     weak-keywords: 多少,几个,哪家
     business-nouns: 订单,销售,商品,产品,渠道,客户,收入,销量,金额
+    knowledge-keywords: 什么是,是什么,定义,口径,什么意思,有哪些,包含哪些
+    embedding-threshold: 0.55
   sql:
     allowed-tables: sales_orders,products,regions,channels
     ro-url: ${RO_DB_URL:jdbc:mysql://mysql:3306/huiyi_demo?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}

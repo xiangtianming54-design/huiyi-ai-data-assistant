@@ -82,13 +82,35 @@ public class ChatSessionService {
      */
     public void saveAssistantMessage(String sessionId, String answer, IntentTypeEnum intent,
                                      String sqlText, List<ReferenceVO> references) {
+        saveAssistantMessage(sessionId, answer, intent, sqlText, references, null, null);
+    }
+
+    /**
+     * 保存助手回答（含引用来源与意图判定轨迹）。
+     *
+     * @param intentLayer 意图判定层（rule/embedding/llm/default），可空
+     * @param intentScore embedding 相似度，可空
+     */
+    public void saveAssistantMessage(String sessionId, String answer, IntentTypeEnum intent,
+                                     String sqlText, List<ReferenceVO> references,
+                                     String intentLayer, Double intentScore) {
         String metadataJson = null;
-        if (references != null && !references.isEmpty()) {
-            try {
-                metadataJson = OBJECT_MAPPER.writeValueAsString(Map.of("references", references));
-            } catch (JsonProcessingException e) {
-                log.warn("引用来源序列化失败，metadata_json 置空: {}", e.getMessage());
+        try {
+            Map<String, Object> metadata = new java.util.LinkedHashMap<>();
+            if (references != null && !references.isEmpty()) {
+                metadata.put("references", references);
             }
+            if (intentLayer != null) {
+                metadata.put("intentLayer", intentLayer);
+            }
+            if (intentScore != null) {
+                metadata.put("intentScore", intentScore);
+            }
+            if (!metadata.isEmpty()) {
+                metadataJson = OBJECT_MAPPER.writeValueAsString(metadata);
+            }
+        } catch (JsonProcessingException e) {
+            log.warn("元数据序列化失败，metadata_json 置空: {}", e.getMessage());
         }
         save(sessionId, ROLE_ASSISTANT, answer, intent, sqlText, metadataJson);
     }

@@ -1,10 +1,12 @@
 """API 数据模型：字段与《开发文档》7.2 节契约一致。"""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChunkMetadata(BaseModel):
-    """分块元数据：来源文件名、序号与文件类型。"""
+    """分块元数据：来源文件名、序号与文件类型；允许扩展字段（如意图示例句的 intent）。"""
+
+    model_config = ConfigDict(extra="allow")
 
     filename: str = Field(description="来源文件名")
     chunk_index: int = Field(ge=0, description="分块序号，从 0 开始")

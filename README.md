@@ -145,6 +145,8 @@ huiyi-ai-data-assistant/
 
 - [x] **v0.4 意图识别混合分层**：规则快路径 → embedding 示例句投票 → LLM 兜底，判定轨迹可解释（见 docs/development.md「v0.4 变更」）
 
+- [x] **v0.5 复合问题分解**：一句话多问题 → 分解 → 并行多路回答，知识气泡与数据卡片并存（见 docs/development.md「v0.5 变更」）
+
 后续方向：重排序与混合检索、知识库权限隔离、Agent / Tool Calling（见开发文档第 15 节）。
 
 ## License

@@ -23,6 +23,20 @@ mybatis-plus:
   global-config:
     banner: false
 
+huiyi:
+  auth:
+    register-enabled: ${REGISTER_ENABLED:true}
+    default-member-role: ${DEFAULT_MEMBER_ROLE:VIEWER}
+    default-workspace-code: ${DEFAULT_WORKSPACE_CODE:default}
+    jwt-secret: ${JWT_SECRET:local-dev-only-change-me-32chars-min}
+    jwt-issuer: ${JWT_ISSUER:huiyi}
+    jwt-audience: ${JWT_AUDIENCE:huiyi-api}
+    access-token-ttl-seconds: ${JWT_ACCESS_TOKEN_TTL:1800}
+    refresh-token-ttl-seconds: ${JWT_REFRESH_TOKEN_TTL:604800}
+    login-fail-max-attempts: ${LOGIN_FAIL_MAX_ATTEMPTS:5}
+    login-fail-window-seconds: ${LOGIN_FAIL_WINDOW_SECONDS:900}
+    login-lock-seconds: ${LOGIN_LOCK_SECONDS:900}
+
 # Python Sidecar 服务地址
 python-service:
   url: ${PYTHON_SERVICE_URL:http://localhost:8001}

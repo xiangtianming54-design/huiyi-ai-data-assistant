@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 
 from app.api import analysis, document, sql_guard, vector
 from app.core.config import settings
+from app.core.observability import ObservabilityMiddleware
 from app.services.document_parser import DocumentParseError, UnsupportedFileTypeError
 from app.services.embedding import EmbeddingError
 
@@ -13,6 +14,8 @@ app = FastAPI(
     version=settings.app_version,
     description="HuiYi AI Data Assistant - Python Sidecar（文档解析 / 向量检索 / SQL 校验 / 数据画像）",
 )
+
+app.add_middleware(ObservabilityMiddleware)
 
 app.include_router(document.router)
 app.include_router(vector.router)

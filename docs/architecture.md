@@ -59,7 +59,7 @@ flowchart TD
 
 ```text
 提问 → 意图识别(knowledge_qa) → Python /api/vector/search (top_k=5)
-→ 0.5 分阈值过滤 → context 拼装(标注来源) → rag-system.md 渲染
+→ 知识库混合检索(向量≥0.5 + BM25 → RRF) → context 拼装(标注来源) → rag-system.md 渲染
 → LlmService 生成 → 引用来源去重(同名取最高分) → chat_messages 落库
 → 响应(或 SSE 流式: session → token* → references)
 ```

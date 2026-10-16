@@ -70,15 +70,15 @@ class RagServiceTest {
     }
 
     @Test
-    void lowScoreHitsAreFiltered() {
+    void keywordOnlyHitIsNotDropped() {
         when(pythonServiceClient.searchVectors(anyString(), anyInt()))
                 .thenReturn(searchResponse(List.of(
-                        hit("c1", "不相关内容", "other.md", 0.33))));
+                        hit("c1", "有效订单是指支付成功且未退款的订单。", "business-glossary.md", 0.0))));
 
-        RagService.RagContext context = ragService.prepare("公司年假有多少天？");
+        RagService.RagContext context = ragService.prepare("有效订单未退款怎么算？");
 
-        assertFalse(context.needLlm());
-        assertEquals(RagService.NO_HIT_FALLBACK, context.fallbackAnswer());
+        assertTrue(context.needLlm());
+        assertTrue(context.prompt().contains("有效订单是指支付成功且未退款的订单。"));
     }
 
     @Test

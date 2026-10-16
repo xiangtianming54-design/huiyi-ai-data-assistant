@@ -149,7 +149,9 @@ huiyi-ai-data-assistant/
 
 - [x] **v0.5.1 误拆去重**：同义复述 / 指代回退单问题（词面主题 + embedding cosine），真复合仍并行（见 docs/development.md「v0.5.1 变更」）
 
-后续方向：重排序与混合检索、知识库权限隔离、Agent / Tool Calling（见开发文档第 15 节）。
+- [x] **v0.6 混合检索与会话压缩**：知识库向量 + BM25 RRF 融合；改写保留近 10 轮，更早对话 LLM 摘要（见 docs/v0.6-design.md）
+
+后续方向：知识库权限隔离、Agent / Tool Calling、按用户等级限流。
 
 ## License
 

@@ -207,7 +207,8 @@ POST /api/vector/search
 
 请求：`{"query":"什么是有效订单？","top_k":5,"collection_name":"huiyi_knowledge"}`
 
-响应：`{"success":true,"hits":[{"id":"...","text":"...","metadata":{...},"score":0.74}]}`（score 为 cosine 相似度）
+响应：`{"success":true,"hits":[{"id":"...","text":"...","metadata":{...},"score":0.74}]}`  
+`huiyi_knowledge` 为向量 + BM25 的 RRF 混合结果，`score` 为该命中的向量 cosine（仅关键词命中时为 0）。其它 collection 仍为纯向量。
 
 ### 向量删除
 

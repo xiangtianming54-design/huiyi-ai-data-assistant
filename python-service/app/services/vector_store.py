@@ -10,6 +10,10 @@ import chromadb
 from app.core.config import settings
 from app.core.schema import Chunk, SearchHit
 from app.services.embedding import EmbeddingService
+from app.services.hybrid_search import rrf_merge
+from app.services.keyword_index import KeywordIndex
+
+VECTOR_SCORE_THRESHOLD = 0.5
 
 
 class VectorStore:
@@ -18,6 +22,7 @@ class VectorStore:
     def __init__(self, persist_dir: str, embedding_service: EmbeddingService) -> None:
         self._client = chromadb.PersistentClient(path=persist_dir)
         self._embedding = embedding_service
+        self._keyword = KeywordIndex(persist_dir)
 
     def _collection(self, name: str):
         """获取或创建 collection（cosine 相似度空间）。"""
@@ -38,17 +43,63 @@ class VectorStore:
             documents=[chunk.text for chunk in chunks],
             metadatas=[chunk.metadata.model_dump() for chunk in chunks],
         )
+        self._keyword.upsert(collection_name, chunks)
         return len(chunks)
 
     def search(self, query: str, top_k: int, collection_name: str) -> list[SearchHit]:
-        """query embed → top_k 检索，score 为 cosine 相似度（越大越相关）。"""
+        """知识库 collection 走向量+关键词 RRF；其它 collection 仍只做向量。"""
+        fetch = top_k * 2 if collection_name == settings.chroma_collection else top_k
+        vector_hits = self._vector_search(query, fetch, collection_name)
+        if collection_name != settings.chroma_collection:
+            return vector_hits[:top_k]
+        qualified = [hit for hit in vector_hits if hit.score >= VECTOR_SCORE_THRESHOLD]
+        try:
+            keyword_raw = self._keyword.search(collection_name, query, fetch)
+        except Exception:
+            return qualified[:top_k]
+        if not keyword_raw:
+            return qualified[:top_k]
+        merged_ids = rrf_merge(
+            [(hit.id, hit.score) for hit in qualified],
+            [(item["id"], item["score"]) for item in keyword_raw],
+            top_k,
+        )
+        by_id = {hit.id: hit for hit in vector_hits}
+        for item in keyword_raw:
+            if item["id"] not in by_id:
+                by_id[item["id"]] = SearchHit(
+                    id=item["id"],
+                    text=item["text"],
+                    metadata=item["metadata"],
+                    score=0.0,
+                )
+        return [by_id[doc_id] for doc_id, _ in merged_ids if doc_id in by_id]
+
+    def similarity(self, text_a: str, text_b: str) -> float:
+        """两条文本的 cosine 相似度，范围 [0, 1]（向量夹角，负值截断为 0）。"""
+        vectors = self._embedding.embed([text_a, text_b])
+        return cosine(vectors[0], vectors[1])
+
+    def delete_by_filename(self, filename: str, collection_name: str) -> int:
+        """按 metadata.filename 删除文档全部分块，返回删除数量。"""
+        collection = self._collection(collection_name)
+        existing = collection.get(where={"filename": filename}, include=[])
+        ids = existing.get("ids", [])
+        if not ids:
+            return 0
+        collection.delete(ids=ids)
+        self._keyword.delete_by_filename(collection_name, filename)
+        return len(ids)
+
+    def _vector_search(self, query: str, top_k: int, collection_name: str) -> list[SearchHit]:
+        """query embed → top_k 检索，score 为 cosine 相似度。"""
         collection = self._collection(collection_name)
         if collection.count() == 0:
             return []
         query_embedding = self._embedding.embed_single(query)
         result = collection.query(
             query_embeddings=[query_embedding],
-            n_results=top_k,
+            n_results=min(top_k, collection.count()),
             include=["documents", "metadatas", "distances"],
         )
         hits = []
@@ -67,21 +118,6 @@ class VectorStore:
                 )
             )
         return hits
-
-    def similarity(self, text_a: str, text_b: str) -> float:
-        """两条文本的 cosine 相似度，范围 [0, 1]（向量夹角，负值截断为 0）。"""
-        vectors = self._embedding.embed([text_a, text_b])
-        return cosine(vectors[0], vectors[1])
-
-    def delete_by_filename(self, filename: str, collection_name: str) -> int:
-        """按 metadata.filename 删除文档全部分块，返回删除数量。"""
-        collection = self._collection(collection_name)
-        existing = collection.get(where={"filename": filename}, include=[])
-        ids = existing.get("ids", [])
-        if not ids:
-            return 0
-        collection.delete(ids=ids)
-        return len(ids)
 
 
 # ===== 延迟初始化的模块级单例（测试可通过依赖注入替换） =====

@@ -2,7 +2,9 @@ package com.huiyi.assistant.service;
 
 import com.huiyi.assistant.common.util.PromptTemplateLoader;
 import com.huiyi.assistant.mapper.ChatMessageMapper;
+import com.huiyi.assistant.mapper.ChatSessionSummaryMapper;
 import com.huiyi.assistant.model.entity.ChatMessage;
+import com.huiyi.assistant.model.entity.ChatSessionSummary;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -86,6 +88,58 @@ class QueryRewriteServiceTest {
         String result = rewriteService.rewrite("s-1", "那它的口径呢？");
 
         assertEquals("那它的口径呢？", result);
+    }
+
+    @Test
+    void summarizesOverflowThenRewrites() {
+        ChatSessionSummaryMapper summaryMapper = mock(ChatSessionSummaryMapper.class);
+        rewriteService = new QueryRewriteService(
+                new ChatSessionService(chatMessageMapper, summaryMapper), llmService, new PromptTemplateLoader());
+        when(chatMessageMapper.selectList(any())).thenReturn(recentWindow(), overflowPair());
+        when(summaryMapper.selectById("s-1")).thenReturn(null);
+        when(llmService.chat(anyString()))
+                .thenReturn("用户问过上个月销售额第一名是显示器", "上个月销售额第二高的商品是什么？");
+
+        String result = rewriteService.rewrite("s-1", "那第二名呢？");
+
+        assertEquals("上个月销售额第二高的商品是什么？", result);
+        verify(summaryMapper).insert(any(ChatSessionSummary.class));
+    }
+
+    @Test
+    void summaryFailureStillRewritesRecentWindow() {
+        ChatSessionSummaryMapper summaryMapper = mock(ChatSessionSummaryMapper.class);
+        rewriteService = new QueryRewriteService(
+                new ChatSessionService(chatMessageMapper, summaryMapper), llmService, new PromptTemplateLoader());
+        when(chatMessageMapper.selectList(any())).thenReturn(recentWindow(), overflowPair());
+        when(summaryMapper.selectById("s-1")).thenReturn(null);
+        when(llmService.chat(anyString()))
+                .thenThrow(new RuntimeException("summarize down"))
+                .thenReturn("上个月销售额第二高的商品是什么？");
+
+        String result = rewriteService.rewrite("s-1", "那第二名呢？");
+
+        assertEquals("上个月销售额第二高的商品是什么？", result);
+        verify(summaryMapper, never()).insert(any(ChatSessionSummary.class));
+    }
+
+    private List<ChatMessage> recentWindow() {
+        return List.of(
+                messageWithId(3L, "user", "有效订单怎么算？"),
+                messageWithId(4L, "assistant", "支付成功且未退款。"));
+    }
+
+    private List<ChatMessage> overflowPair() {
+        return List.of(
+                messageWithId(1L, "user", "上个月销售额最高的商品是什么？"),
+                messageWithId(2L, "assistant", "第一名是 4K 便携显示器。"));
+    }
+
+    private ChatMessage messageWithId(Long id, String role, String content) {
+        ChatMessage message = message(role, content);
+        message.setId(id);
+        message.setSessionId("s-1");
+        return message;
     }
 
     private ChatMessage message(String role, String content) {

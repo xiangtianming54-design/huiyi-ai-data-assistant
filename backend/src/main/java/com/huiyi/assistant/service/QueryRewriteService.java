@@ -2,6 +2,7 @@ package com.huiyi.assistant.service;
 
 import com.huiyi.assistant.common.util.PromptTemplateLoader;
 import com.huiyi.assistant.model.entity.ChatMessage;
+import com.huiyi.assistant.model.entity.ChatSessionSummary;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -22,8 +23,10 @@ public class QueryRewriteService {
     /** 改写 Prompt 模板位置 */
     private static final String CONDENSE_PROMPT = "prompts/condense-question.md";
 
-    /** 参与改写的历史窗口（最近 6 条，约 3 轮） */
-    private static final int HISTORY_LIMIT = 6;
+    /** 近 10 轮原文（约 20 条） */
+    private static final int HISTORY_LIMIT = 20;
+
+    private static final String SUMMARIZE_PROMPT = "prompts/history-summarize.md";
 
     private final ChatSessionService chatSessionService;
 
@@ -51,10 +54,8 @@ public class QueryRewriteService {
             return question;
         }
         try {
-            String historyText = history.stream()
-                    .map(m -> (ChatSessionService.ROLE_USER.equals(m.getRole()) ? "用户: " : "助手: ")
-                            + m.getContent())
-                    .collect(Collectors.joining("\n"));
+            String summary = refreshSummary(sessionId, history);
+            String historyText = formatHistory(summary, history);
             String prompt = promptTemplateLoader.render(CONDENSE_PROMPT,
                     Map.of("history", historyText, "question", question));
             String rewritten = llmService.chat(prompt);
@@ -68,5 +69,50 @@ public class QueryRewriteService {
             log.warn("问题改写失败，回退原问题: {}", e.getMessage());
             return question;
         }
+    }
+
+    private String refreshSummary(String sessionId, List<ChatMessage> recent) {
+        if (recent.get(0).getId() == null) {
+            return "";
+        }
+        ChatSessionSummary existing = chatSessionService.findSummary(sessionId);
+        String existingText = existing == null ? "" : existing.getSummary();
+        Long covered = existing == null ? 0L : existing.getCoveredUntilId();
+        List<ChatMessage> overflow = chatSessionService.getOverflowMessages(
+                sessionId, recent.get(0).getId(), covered);
+        if (overflow.isEmpty()) {
+            return existingText;
+        }
+        try {
+            String overflowText = overflow.stream()
+                    .map(this::lineOf)
+                    .collect(Collectors.joining("\n"));
+            String output = llmService.chat(promptTemplateLoader.render(SUMMARIZE_PROMPT, Map.of(
+                    "existing_summary", existingText,
+                    "overflow", overflowText)));
+            if (output == null || output.isBlank()) {
+                return existingText;
+            }
+            String summary = output.trim();
+            Long lastId = overflow.get(overflow.size() - 1).getId();
+            chatSessionService.saveSummary(sessionId, summary, lastId);
+            return summary;
+        } catch (Exception e) {
+            log.warn("会话摘要失败，仅用近 10 轮原文: {}", e.getMessage());
+            return existingText;
+        }
+    }
+
+    private String formatHistory(String summary, List<ChatMessage> recent) {
+        String recentText = recent.stream().map(this::lineOf).collect(Collectors.joining("\n"));
+        if (summary == null || summary.isBlank()) {
+            return recentText;
+        }
+        return "【更早对话摘要】\n" + summary + "\n【最近对话】\n" + recentText;
+    }
+
+    private String lineOf(ChatMessage message) {
+        String prefix = ChatSessionService.ROLE_USER.equals(message.getRole()) ? "用户: " : "助手: ";
+        return prefix + message.getContent();
     }
 }

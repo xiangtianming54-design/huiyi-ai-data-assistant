@@ -64,7 +64,9 @@ class TestUpsertAndSearch:
         store.upsert([GLOSSARY_CHUNK, CHANNEL_CHUNK], "huiyi_knowledge")
         store.upsert([GLOSSARY_CHUNK, CHANNEL_CHUNK], "huiyi_knowledge")
         hits = store.search("订单", top_k=10, collection_name="huiyi_knowledge")
-        assert len(hits) == 2, "同 id 重复 upsert 不应产生重复向量"
+        ids = [hit.id for hit in hits]
+        assert len(ids) == len(set(ids)), "同 id 重复 upsert 不应产生重复向量"
+        assert hits, "至少应命中含订单的口径分块"
 
     def test_search_empty_collection_returns_no_hits(self, store):
         assert store.search("任意问题", top_k=5, collection_name="huiyi_knowledge") == []

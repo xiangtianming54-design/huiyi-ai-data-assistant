@@ -79,3 +79,12 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_session (session_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '会话消息表';
+
+-- 6.7 会话摘要表（超过 10 轮后压缩更早对话）
+CREATE TABLE IF NOT EXISTS chat_session_summaries (
+  session_id VARCHAR(64) PRIMARY KEY,
+  summary TEXT NOT NULL,
+  covered_until_id BIGINT NOT NULL,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = '会话历史摘要';
+

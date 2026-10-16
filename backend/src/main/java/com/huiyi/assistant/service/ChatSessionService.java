@@ -4,10 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huiyi.assistant.mapper.ChatMessageMapper;
+import com.huiyi.assistant.mapper.ChatSessionSummaryMapper;
 import com.huiyi.assistant.model.entity.ChatMessage;
+import com.huiyi.assistant.model.entity.ChatSessionSummary;
 import com.huiyi.assistant.model.enums.IntentTypeEnum;
 import com.huiyi.assistant.model.vo.ReferenceVO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -36,8 +39,17 @@ public class ChatSessionService {
 
     private final ChatMessageMapper chatMessageMapper;
 
+    private final ChatSessionSummaryMapper chatSessionSummaryMapper;
+
     public ChatSessionService(ChatMessageMapper chatMessageMapper) {
+        this(chatMessageMapper, null);
+    }
+
+    @Autowired
+    public ChatSessionService(ChatMessageMapper chatMessageMapper,
+                              ChatSessionSummaryMapper chatSessionSummaryMapper) {
         this.chatMessageMapper = chatMessageMapper;
+        this.chatSessionSummaryMapper = chatSessionSummaryMapper;
     }
 
     /**
@@ -68,6 +80,46 @@ public class ChatSessionService {
                         .last("LIMIT " + limit)));
         Collections.reverse(messages);
         return messages;
+    }
+
+    /**
+     * 近窗口之前、且尚未归档的消息（升序）。
+     */
+    public List<ChatMessage> getOverflowMessages(String sessionId, Long beforeId, Long afterId) {
+        if (beforeId == null) {
+            return List.of();
+        }
+        LambdaQueryWrapper<ChatMessage> wrapper = new LambdaQueryWrapper<ChatMessage>()
+                .eq(ChatMessage::getSessionId, sessionId)
+                .lt(ChatMessage::getId, beforeId)
+                .orderByAsc(ChatMessage::getId);
+        if (afterId != null && afterId > 0) {
+            wrapper.gt(ChatMessage::getId, afterId);
+        }
+        return new ArrayList<>(chatMessageMapper.selectList(wrapper));
+    }
+
+    public ChatSessionSummary findSummary(String sessionId) {
+        if (chatSessionSummaryMapper == null || sessionId == null) {
+            return null;
+        }
+        return chatSessionSummaryMapper.selectById(sessionId);
+    }
+
+    public void saveSummary(String sessionId, String summary, Long coveredUntilId) {
+        if (chatSessionSummaryMapper == null) {
+            return;
+        }
+        ChatSessionSummary row = new ChatSessionSummary();
+        row.setSessionId(sessionId);
+        row.setSummary(summary);
+        row.setCoveredUntilId(coveredUntilId);
+        row.setUpdatedAt(java.time.LocalDateTime.now());
+        if (chatSessionSummaryMapper.selectById(sessionId) == null) {
+            chatSessionSummaryMapper.insert(row);
+        } else {
+            chatSessionSummaryMapper.updateById(row);
+        }
     }
 
     /**

@@ -37,11 +37,11 @@ npm run dev
 ## 测试
 
 ```bash
-# Python（pytest + 覆盖率，当前 93 用例 / 97%）
+# Python（pytest + 覆盖率）
 cd python-service
 pytest --cov=app --cov-report=term-missing
 
-# Java（JUnit + Mockito + MockWebServer + H2，当前 56 用例）
+# Java（JUnit + Mockito + MockWebServer + H2）
 cd backend
 mvn test
 
@@ -78,6 +78,16 @@ docs/             架构 / API / 演示 / 开发文档 + Postman 集合 + 截图
 3. **检索质量**：cosine 相似度 + 0.5 阈值过滤低分命中，保证「未命中」场景的确定性兜底
 4. **Prompt 工程**：模板文件化（classpath）+ `{{var}}` 占位替换工具；Text-to-SQL 输出约定 JSON，三级提取兜底（JSON → 代码块 → 裸 SELECT），不抛栈
 5. **响应式流式**：SSE 事件协议（session/token/references/error），前端 ReadableStream 解析，Pinia 中必须经响应式代理写入（裸对象引用不触发更新）
+
+## v0.6 变更（2026-10-16）
+
+**混合检索 + 近 10 轮摘要压缩：**
+
+- 知识库 `huiyi_knowledge`：向量（cosine≥0.5）与 BM25 关键词（字符 bigram）各取 top_k×2，RRF 合成 Top-K；`intent_examples` 仍纯向量
+- 关键词索引与 upsert/delete 同步并落盘；索引缺失时退回纯向量
+- Java `RagService` 不再二次 0.5 过滤，避免打掉关键词-only 命中
+- 改写窗口改为近 20 条原文（10 轮）；更早消息由 LLM 压成摘要写入 `chat_session_summaries`，增量更新；失败只用近 10 轮
+- 已有库执行 `scripts/alter_v06_session_summaries.sql`
 
 ## v0.5.1 变更（2026-10-16）
 

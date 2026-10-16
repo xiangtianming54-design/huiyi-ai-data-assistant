@@ -1,0 +1,44 @@
+name: 缺陷
+description: 报告与当前基线不符的错误行为
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请对照 [docs/baseline.md](../docs/baseline.md)。未做的能力（登录、Agent 等）请用功能建议，不要当缺陷。
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望
+      description: 按文档或演示场景，应该出现什么。
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际
+      description: 实际看到了什么（可贴日志片段，不要贴密钥）。
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤
+      description: 版本标签、提问原文、是否 Docker。
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 模块
+      options:
+        - RAG / 检索
+        - Text-to-SQL / 安全
+        - 意图 / 分解 / 改写
+        - 前端
+        - 部署 / CI
+        - 文档
+        - 其他
+    validations:
+      required: true

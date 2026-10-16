@@ -2,6 +2,8 @@
 
 > 会意 · 企业经营数据智能分析助手
 
+当前发布：**v0.6.0** · 基线说明 [docs/baseline.md](docs/baseline.md) · 后续版本 [docs/roadmap.md](docs/roadmap.md)
+
 基于 **Java + Python 协同架构** 的企业经营数据智能分析助手，支持 **RAG 知识库问答** 与 **Text-to-SQL 数据分析** 两类核心能力。
 
 ![demo](docs/images/demo.gif)
@@ -9,7 +11,7 @@
 ## 项目亮点
 
 - **Java 主服务 + Python Sidecar 分层协同**：Java 承载业务接口、Prompt 编排、LLM 调用、SQL 执行与结果组装；Python 承载文档解析、分块、向量检索、SQL 静态校验与数据画像
-- **RAG 知识库问答**：Markdown / PDF / Word 解析 → 段落优先分块 → Chroma 向量化 → Top-K 检索 → 带引用来源的回答；0.5 分阈值过滤 + 无命中确定性兜底，不编造业务口径
+- **RAG 知识库问答**：Markdown / PDF / Word 解析 → 段落优先分块 → Chroma 向量化 → **向量 + BM25 RRF 混合检索** → 带引用来源的回答；无命中确定性兜底，不编造业务口径
 - **Text-to-SQL**：LLM 生成 SQL → **四道安全防线**（意图层拦截 → sqlglot 静态校验 → 只读账号执行 → 超时/行数/审计）→ pandas 数据画像与图表推荐
 - **SSE 流式问答**：自洽事件协议（session/token/references/error），前端 ReadableStream 逐 token 渲染
 - **工程化**：Docker Compose 一键启动、敏感配置全环境变量化、Python 97% / Java 56 用例测试覆盖、GitHub Actions CI
@@ -149,9 +151,10 @@ huiyi-ai-data-assistant/
 
 - [x] **v0.5.1 误拆去重**：同义复述 / 指代回退单问题（词面主题 + embedding cosine），真复合仍并行（见 docs/development.md「v0.5.1 变更」）
 
-- [x] **v0.6 混合检索与会话压缩**：知识库向量 + BM25 RRF 融合；改写保留近 10 轮，更早对话 LLM 摘要（见 docs/v0.6-design.md）
+- [x] **v0.6 混合检索与会话压缩**：知识库向量 + BM25 RRF 融合；改写保留近 10 轮，更早对话 LLM 摘要（见 [docs/v0.6-design.md](docs/v0.6-design.md)）
+- [x] **v0.6.1 Baseline Hardening**：稳定基线、补齐发布流程（见 [docs/baseline.md](docs/baseline.md)、[docs/roadmap.md](docs/roadmap.md)）
 
-后续方向：知识库权限隔离、Agent / Tool Calling、按用户等级限流。
+按企业迭代文档演进（未开始）：**v0.7.0** 用户/工作区/RBAC → **v0.8.0** 可观测与成本 → **v0.9.0** Tool Harness / Agent Runtime → **v1.0.0** 稳定助手 → v1.1 评测 → v1.2 知识面 → v1.3 生产 → v1.4+ 平台。不把未做能力写成当前功能。
 
 ## License
 

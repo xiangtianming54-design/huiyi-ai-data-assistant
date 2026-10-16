@@ -1,0 +1,31 @@
+name: 任务
+description: 文档、测试、重构、发版等工程任务
+title: "[task] "
+labels: ["task"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目标
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: 完成标准
+    validations:
+      required: true
+  - type: dropdown
+    id: version
+    attributes:
+      label: 归属版本
+      options:
+        - v0.6.1
+        - v0.7.0
+        - v0.8.0
+        - v0.9.0
+        - v1.0.0
+        - v1.1.0+
+        - 其他 / 杂项
+    validations:
+      required: true

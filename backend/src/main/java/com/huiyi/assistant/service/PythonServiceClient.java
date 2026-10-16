@@ -85,17 +85,36 @@ public class PythonServiceClient {
     }
 
     /**
-     * 调用 /api/vector/search 进行 Top-K 检索。
+     * 调用 /api/vector/search 进行 Top-K 检索（默认知识库 collection）。
+     */
+    public VectorSearchResponseDTO searchVectors(String query, int topK) {
+        return searchVectors(query, topK, COLLECTION_NAME);
+    }
+
+    /**
+     * 调用 /api/vector/search 进行 Top-K 检索（指定 collection）。
      *
      * @param query 查询文本
      * @param topK 返回条数
+     * @param collectionName collection 名称
      * @return 检索响应（含命中列表）
      */
-    public VectorSearchResponseDTO searchVectors(String query, int topK) {
-        VectorSearchRequestDTO request = new VectorSearchRequestDTO(query, topK, COLLECTION_NAME);
+    public VectorSearchResponseDTO searchVectors(String query, int topK, String collectionName) {
+        VectorSearchRequestDTO request = new VectorSearchRequestDTO(query, topK, collectionName);
         return post("/api/vector/search",
                 spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(request),
                 VectorSearchResponseDTO.class);
+    }
+
+    /**
+     * 调用 /api/vector/upsert 写入通用分块（metadata 为自由 Map，供意图示例句等场景使用）。
+     *
+     * @param collectionName collection 名称
+     * @param chunks 分块列表（每项含 id/text/metadata）
+     */
+    public void upsertChunks(String collectionName, List<Map<String, Object>> chunks) {
+        Map<String, Object> body = Map.of("collection_name", collectionName, "chunks", chunks);
+        post("/api/vector/upsert", spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(body), String.class);
     }
 
     /**

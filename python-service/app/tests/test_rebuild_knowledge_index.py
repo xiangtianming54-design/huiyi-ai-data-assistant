@@ -54,3 +54,35 @@ def test_rebuild_drops_chunks_without_mapping(tmp_path):
     result = store.rebuild_assign_workspace("huiyi_knowledge", {})
     assert result["dropped"] == 1
     assert store.search_by_workspace("有效订单", 7, 5, "huiyi_knowledge") == []
+
+
+def test_rebuild_cli_succeeds_when_all_mapped(tmp_path, monkeypatch):
+    from app.tools import rebuild_knowledge_index as cli
+
+    mapping = tmp_path / "mapping.json"
+    mapping.write_text('{"business-glossary.md": 1}', encoding="utf-8")
+    monkeypatch.setattr(cli, "EmbeddingService", FakeEmbeddingService)
+    monkeypatch.setattr(
+        cli.VectorStore,
+        "rebuild_assign_workspace",
+        lambda self, collection, assignments: {
+            "kept": 1, "assigned": 1, "dropped": 0, "missing_workspace": 0
+        },
+    )
+    assert cli.main(["--mapping", str(mapping), "--persist-dir", str(tmp_path)]) == 0
+
+
+def test_rebuild_cli_fails_when_chunks_unmapped(tmp_path, monkeypatch):
+    from app.tools import rebuild_knowledge_index as cli
+
+    mapping = tmp_path / "mapping.json"
+    mapping.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(cli, "EmbeddingService", FakeEmbeddingService)
+    monkeypatch.setattr(
+        cli.VectorStore,
+        "rebuild_assign_workspace",
+        lambda self, collection, assignments: {
+            "kept": 0, "assigned": 0, "dropped": 1, "missing_workspace": 1
+        },
+    )
+    assert cli.main(["--mapping", str(mapping), "--persist-dir", str(tmp_path)]) == 1

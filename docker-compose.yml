@@ -39,7 +39,10 @@ services:
       - huiyi-net
 
   python-service:
-    build: ./python-service
+    build:
+      context: ./python-service
+      extra_hosts:
+        - "mirrors.cloud.tencent.com:${TENCENT_MAVEN_IP:-123.6.105.104}"
     container_name: huiyi-python
     environment:
       CHROMA_PERSIST_DIR: /app/chroma_store
@@ -61,7 +64,11 @@ services:
       - huiyi-net
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      extra_hosts:
+        # Docker Desktop 的 192.168.65.7 DNS 代理会间歇失败；构建时用宿主机解析到的 IPv4。
+        - "mirrors.cloud.tencent.com:${TENCENT_MAVEN_IP:-123.6.105.104}"
     container_name: huiyi-backend
     depends_on:
       mysql:

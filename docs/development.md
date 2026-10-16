@@ -70,7 +70,7 @@ python-service/   Python Sidecar（FastAPI）
   └── app/{api,core,services,tests}/ 接口层 / 配置与模型 / 业务实现 / 单测
 frontend/         Vue3 + TS + Element Plus + ECharts
 scripts/          init_mysql.sql（建表+只读账号）、init_sample_data.sql（确定性造数）、e2e-m5.js
-docs/             架构 / API / 演示 / 开发文档 + Postman 集合 + 截图
+docs/             架构 / API / 演示 / 开发文档 / 踩坑手册 + Postman 集合 + 截图
 ```
 
 ## 关键技术决策
@@ -142,9 +142,24 @@ docs/             架构 / API / 演示 / 开发文档 + Postman 集合 + 截图
 
 后续评估：LLM 意图识别（当前规则版）、多轮对话上下文。
 
+## v0.7 变更（2026-10-16，标签 v0.7.0）
+
+企业基础层：JWT 注册/登录/刷新/登出、工作区 RBAC、资源挂 `workspace_id`、Flyway V1–V6、审计、登录失败锁定、前端登录页，旧 `/api/chat|knowledge|analysis` 返回 404。
+
+**回滚：** 切回镜像/代码标签 `v0.6.1`，恢复发版前 MySQL 与 `chroma_store` 备份，再做健康检查。v0.7 Flyway 会改 schema，不能只换镜像不还原库。
+
 ## 常见坑（本仓库已踩过）
 
-- Docker 构建容器内部分国内 CDN 不可达：依赖镜像统一用腾讯云（Maven）/ npmmirror（npm）
+完整记录（现象 / 原因 / 处理 / 以后）见 [pitfalls.md](pitfalls.md)。修好非显而易见的问题后往该文档**顶部**追加，不要只留在对话里。
+
+速查：
+
+- Docker Desktop 里编后端镜像：腾讯 Maven DNS 会间歇失败；Compose `extra_hosts` + `TENCENT_MAVEN_IP`（见 pitfalls）
+- 已有 v0.6 MySQL 卷跑 Flyway：必须 `baseline-on-migrate: true` 且 `baseline-version: 0`
+- JWT 之后 SSE 结束光标不消失：放行 `ASYNC` / `ERROR` dispatcher
+- e2e 里 Node 侧 `refresh` 会作废浏览器里的 `huiyi_refresh`，必须写回新 refresh
+- 新用户在 `default` 工作区是 VIEWER，不能上传；要写知识先自建工作区
 - 本机 MySQL 占用 3306：容器映射 3307（`.env` 的 `MYSQL_HOST_PORT` 可调）
 - SpringAI `OpenAiApi` 默认补全路径含 `/v1`：base-url 含 `/v1` 时需显式 `completionsPath("/chat/completions")`
 - 多数据源需显式 `@Primary`，否则 MyBatis-Plus 可能绑错只读库
+- Pinia SSE 追加必须走响应式代理（数组下标），裸对象引用不触发视图更新

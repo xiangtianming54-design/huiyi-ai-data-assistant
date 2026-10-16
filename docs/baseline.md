@@ -34,7 +34,7 @@
 
 | 问题 | 计划版本 |
 |---|---|
-| 缺少用户、工作区、RBAC；资源无明确归属 | v0.7.0 |
+| 缺少用户、工作区、RBAC；资源无明确归属 | v0.7.0（已交付，标签 `v0.7.0`） |
 | 无统一 Tool Registry / Agent Loop | v0.9.0 |
 | 无系统化 Trace / Metrics / Cost | v0.8.0 |
 | 无评测集 / 回归报告；Prompt 散落在资源文件 | v1.1.0 |
@@ -93,6 +93,7 @@ curl http://localhost:8001/health       # Python → {"status":"ok"}
 - [architecture.md](architecture.md) — 分层与数据流
 - [api.md](api.md) — 接口契约
 - [development.md](development.md) — 本地开发与 v0.2–v0.6 变更
+- [pitfalls.md](pitfalls.md) — 开发踩坑（现象 / 原因 / 处理 / 以后）
 - [v0.6-design.md](v0.6-design.md) — 混合检索与会话压缩
 - [roadmap.md](roadmap.md) — v0.6.1 起的版本路线
 - [release-checklist.md](release-checklist.md) — 发版核对

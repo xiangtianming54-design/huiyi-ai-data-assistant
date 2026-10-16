@@ -2,7 +2,7 @@
 
 > 会意 · 企业经营数据智能分析助手
 
-当前发布：**v0.6.1**；**v0.7 Enterprise Foundation 开发中**（`feature/v0.7-enterprise-foundation`）。基线说明 [docs/baseline.md](docs/baseline.md) · 设计 [docs/superpowers/specs/HuiYi-v0.7-Enterprise-Foundation-Development-Document-v2.md](docs/superpowers/specs/HuiYi-v0.7-Enterprise-Foundation-Development-Document-v2.md) · 后续版本 [docs/roadmap.md](docs/roadmap.md)
+当前发布：**v0.7.0 Enterprise Foundation**（标签 `v0.7.0`）。基线对照 [docs/baseline.md](docs/baseline.md) · 设计 [docs/superpowers/specs/HuiYi-v0.7-Enterprise-Foundation-Development-Document-v2.md](docs/superpowers/specs/HuiYi-v0.7-Enterprise-Foundation-Development-Document-v2.md) · 踩坑 [docs/pitfalls.md](docs/pitfalls.md) · 后续版本 [docs/roadmap.md](docs/roadmap.md)
 
 基于 **Java + Python 协同架构** 的企业经营数据智能分析助手，支持 **RAG 知识库问答** 与 **Text-to-SQL 数据分析** 两类核心能力。
 
@@ -14,7 +14,7 @@
 - **RAG 知识库问答**：Markdown / PDF / Word 解析 → 段落优先分块 → Chroma 向量化 → **向量 + BM25 RRF 混合检索** → 带引用来源的回答；无命中确定性兜底，不编造业务口径
 - **Text-to-SQL**：LLM 生成 SQL → **四道安全防线**（意图层拦截 → sqlglot 静态校验 → 只读账号执行 → 超时/行数/审计）→ pandas 数据画像与图表推荐
 - **SSE 流式问答**：自洽事件协议（session/token/references/error），前端 ReadableStream 逐 token 渲染
-- **工程化**：Docker Compose 一键启动、敏感配置全环境变量化、Python 97% / Java 56 用例测试覆盖、GitHub Actions CI
+- **工程化**：Docker Compose 一键启动、JWT / 工作区 RBAC / Flyway / 审计；敏感配置全环境变量化；GitHub Actions CI（`mvn verify` / `pytest --cov` / `npm run build`）
 
 ## Architecture
 
@@ -156,7 +156,7 @@ huiyi-ai-data-assistant/
 - [x] **v0.6 混合检索与会话压缩**：知识库向量 + BM25 RRF 融合；改写保留近 10 轮，更早对话 LLM 摘要（见 [docs/v0.6-design.md](docs/v0.6-design.md)）
 - [x] **v0.6.1 Baseline Hardening**：稳定基线、补齐发布流程（见 [docs/baseline.md](docs/baseline.md)、[docs/roadmap.md](docs/roadmap.md)）
 
-- [ ] **v0.7.0 Enterprise Foundation**：认证、工作区、RBAC、资源隔离、审计、Flyway（本分支开发中）
+- [x] **v0.7.0 Enterprise Foundation**：认证、工作区、RBAC、资源隔离、审计、Flyway、`/api/v1`（见 [docs/development.md](docs/development.md)）
 
 按企业迭代文档演进：**v0.7.0** 用户/工作区/RBAC → **v0.8.0** 可观测与成本 → **v0.9.0** Tool Harness / Agent Runtime → **v1.0.0** 稳定助手。不把未做能力写成当前功能。
 

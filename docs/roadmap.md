@@ -29,31 +29,25 @@
 | **v1.3.0** | Production Ready | 3–4 周 | staging/prod、备份、限流、压测、告警 |
 | **v1.4.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
 
-## 当前：v0.6.1 Baseline Hardening
+## 当前：v0.7.0 Enterprise Foundation
 
-周期：3–5 天。冻结 v0.6 可用能力，作为企业化改造前的基线。
+本地标签 `v0.7.0`。上一基线见 [baseline.md](baseline.md)（v0.6 能力对照）。本版增量：JWT 认证、工作区 RBAC、资源按 workspace/user 隔离、Flyway、审计、登录锁定、`/api/v1`、登录页。
 
-**必须完成（文档 §6.2）**
+**已完成**
 
-1. `main` 含 v0.6 最新代码（已完成）
-2. 标签 `v0.6.0`（已完成）
-3. Git 作者：本仓库今后提交 `user.name=xianglonghai`（不改写已推送历史）
-4. README 当前状态与本路线图
-5. `.env` 不入库
-6. Java / Python / Frontend CI
-7. 记录测试覆盖率
-8. 记录五个核心 Demo 场景
-9. `docs/baseline.md`
-10. `docs/roadmap.md`（本文）
+1. `main` 含 v0.7 代码（本地 fast-forward，标签 `v0.7.0`）
+2. 五场景 `e2e-m5.js` + 企业场景 `e2e-v07.js`
+3. Flyway：旧 v0.6 卷 baseline + 空卷迁移（见发布门禁）
+4. Python 知识检索按 `workspace_id` 先过滤；缺 id 的旧 chunk 用 `python -m app.tools.rebuild_knowledge_index` 重建
+5. 踩坑手册 [pitfalls.md](pitfalls.md)
 
-**明确不做**
+**明确不做（留到后续版本）**
 
-- 用户体系、租户
-- 不重构 `ChatService`
-- 不切换向量库
-- 不引入 Kubernetes
+- Agent Loop / Tool Registry（v0.9）
+- 用户状态管理 API、前端工作区切换 UI（P1，未作为本版发布阻断）
+- 推远程 / GitHub Release（需单独执行 `git push origin main --tags`）
 
-合入本版后进入 **v0.7.0**，不再在 0.6.x 加企业功能。
+下一版 **v0.8.0** 可观测与成本。
 
 ## 后续版本（摘要）
 

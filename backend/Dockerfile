@@ -2,7 +2,8 @@
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /build
 
-# 项目级 Maven 配置（阿里云镜像），随后先离线依赖再编译，充分利用镜像层缓存
+# 项目级 Maven 配置（腾讯云镜像）。Docker Desktop 上 Java 双栈 AAAA 会卡住 DNS，强制 IPv4。
+ENV JAVA_TOOL_OPTIONS="-Djava.net.preferIPv4Stack=true"
 COPY .mvn .mvn
 COPY pom.xml .
 RUN mvn -B dependency:go-offline

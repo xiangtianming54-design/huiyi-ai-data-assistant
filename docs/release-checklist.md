@@ -4,11 +4,11 @@
 
 ## 代码与测试
 
-- [ ] 目标分支已合并，工作区无未提交的发版必须项
-- [ ] `backend`：`mvn -B verify` 通过
-- [ ] `python-service`：`pytest --cov=app --cov-report=term-missing` 通过
-- [ ] `frontend`：`npm run build` 通过
-- [ ] GitHub Actions 对应 commit 三条 job 均为成功
+- [x] 目标分支已合并（本地 `main` @ `v0.7.0`）；发版后文档/Compose extra_hosts 仍有未提交改动
+- [x] `backend`：`mvn -B verify` 通过（本地）
+- [x] `python-service`：`pytest --cov=app --cov-report=term-missing` 通过（本地 111+）
+- [x] `frontend`：`npm run build` 通过（本地）
+- [ ] GitHub Actions 对应 commit 三条 job 均为成功（需推远程后才看得到）
 - [ ] 若改了检索 / SQL / 意图 / 改写：相关单测已更新
 
 ## 安全与仓库卫生
@@ -27,10 +27,10 @@
 
 ## 运行与演示
 
-- [ ] `docker compose up -d` 后健康检查通过：
+- [x] `docker compose up -d` 后健康检查通过（v0.7 镜像，2026-10-16）：
   - `GET http://localhost:8080/api/health`
   - `GET http://localhost:8001/health`
-- [ ] [demo.md](demo.md) 五场景仍可走通（或已注明本版故意变更的期望）
+- [x] [demo.md](demo.md) 五场景仍可走通（`e2e-m5.js` 在 Compose 前端上通过）
 
 ## 发布动作
 
@@ -38,6 +38,14 @@
 - [ ] `git push origin <tag>`
 - [ ] GitHub Release 写清：新增 / 修复 / 不包含
 - [ ] 若本版是公开里程碑：确认仓库可见性仍符合预期
+
+## v0.7.0 特别项（仅本版）
+
+- [x] 本地标签 `v0.7.0`（`main`）
+- [ ] GitHub Actions 对应 commit 三条 job 均为成功（需 `git push origin main --tags` 后看 Actions）
+- [x] Flyway：旧 v0.6 卷已 migrate；空卷用独立 MySQL 容器再验一次
+- [x] 五场景 `e2e-m5.js` + 企业场景 `e2e-v07.js`
+- [x] 回滚路径：`v0.6.1` + MySQL / Chroma 备份（见 development.md）
 
 ## v0.6.1 特别项（仅本版）
 

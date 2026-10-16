@@ -1,4 +1,5 @@
 import type { Reference } from './index'
+import { saveObservabilityIds } from '../auth/requestId'
 import { getAccessToken, getWorkspaceId } from '../auth/token'
 
 export interface StreamCallbacks {
@@ -29,6 +30,7 @@ export function streamChat(question: string, sessionId: string | undefined, call
         body: JSON.stringify(sessionId ? { question, sessionId } : { question }),
         signal: controller.signal
       })
+      saveObservabilityIds(response.headers)
       if (!response.ok || !response.body) {
         callbacks.onError?.(`请求失败（HTTP ${response.status}）`)
         callbacks.onDone?.()

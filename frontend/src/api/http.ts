@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { lastRequestId, saveObservabilityIds } from '../auth/requestId'
 import { clearSession, getAccessToken, getRefreshToken, setAccessToken, setRefreshToken } from '../auth/token'
 
 export interface Result<T> {
@@ -25,6 +26,7 @@ let refreshing: Promise<boolean> | null = null
 
 http.interceptors.response.use(
   (response) => {
+    saveObservabilityIds(response.headers as Record<string, string>)
     const result = response.data as Result<unknown>
     if (result && typeof result.code === 'number' && result.code !== 0) {
       ElMessage.error(result.message || '请求失败')
@@ -51,10 +53,14 @@ http.interceptors.response.use(
         window.location.href = '/login'
       }
     }
+    if (error.response?.headers) {
+      saveObservabilityIds(error.response.headers as Record<string, string>)
+    }
+    const requestHint = lastRequestId() ? `（request_id=${lastRequestId()}）` : ''
     if (status === 403) {
-      ElMessage.error(error.response?.data?.message || '没有权限执行该操作')
+      ElMessage.error((error.response?.data?.message || '没有权限执行该操作') + requestHint)
     } else if (status !== 401) {
-      ElMessage.error(error.response?.data?.message || '网络异常，请稍后重试')
+      ElMessage.error((error.response?.data?.message || '网络异常，请稍后重试') + requestHint)
     }
     return Promise.reject(error)
   }

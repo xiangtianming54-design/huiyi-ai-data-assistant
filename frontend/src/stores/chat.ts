@@ -21,7 +21,7 @@ export const useChatStore = defineStore('chat', {
     streaming: false
   }),
   actions: {
-    /** 发送问题：先意图预检，知识问答走 SSE 流式，数据查询走分析接口 */
+    /** 发送问题：先意图预检，知识问答走 SSE 流式，数据查询走分析接口，复合问题走统一问答 */
     async ask(question: string) {
       let intent = 'knowledge_qa'
       try {
@@ -32,10 +32,39 @@ export const useChatStore = defineStore('chat', {
       }
 
       this.messages.push({ role: 'user', content: question })
-      if (intent === 'data_query') {
+      if (intent === 'compound') {
+        await this.askCompound(question)
+      } else if (intent === 'data_query') {
         await this.askAnalysis(question)
       } else {
         this.askKnowledge(question)
+      }
+    },
+
+    /** 复合问题：统一问答接口，每个子问题一个气泡（知识→Markdown，数据→富结果卡片） */
+    async askCompound(question: string) {
+      this.streaming = true
+      const markerIndex = this.messages.push({ role: 'assistant', content: '正在分解并并行回答多个问题…', streaming: true }) - 1
+      try {
+        const response = await chatApi.ask(question, this.sessionId)
+        const result = response.data.data
+        this.sessionId = result.sessionId
+        // 移除占位气泡，按子问题逐个渲染
+        this.messages.splice(markerIndex, 1)
+        for (const part of result.parts) {
+          if (part.analysis) {
+            this.messages.push({ role: 'assistant', content: '', analysis: part.analysis })
+          } else {
+            this.messages.push({ role: 'assistant', content: part.answer, references: part.references })
+          }
+        }
+      } catch {
+        this.messages[markerIndex].content = '问答服务暂不可用，请稍后重试。'
+      } finally {
+        if (this.messages[markerIndex]) {
+          this.messages[markerIndex].streaming = false
+        }
+        this.streaming = false
       }
     },
 

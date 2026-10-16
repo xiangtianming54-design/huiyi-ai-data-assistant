@@ -5,7 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huiyi.assistant.model.dto.ChatRequestDTO;
 import com.huiyi.assistant.model.enums.IntentTypeEnum;
 import com.huiyi.assistant.model.vo.AnalysisResultVO;
+import com.huiyi.assistant.model.vo.ChatAskResponseVO;
+import com.huiyi.assistant.model.vo.ChatPartVO;
 import com.huiyi.assistant.model.vo.ChatResponseVO;
+import com.huiyi.assistant.model.vo.IntentResponseVO;
 import com.huiyi.assistant.model.vo.ReferenceVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,6 +18,8 @@ import reactor.core.publisher.Flux;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 /**
  * 问答编排服务：意图识别 → RAG / 数据查询 → 回答组装 → 会话落库。
@@ -42,15 +47,22 @@ public class ChatService {
 
     private final QueryRewriteService queryRewriteService;
 
+    private final QuestionDecomposeService questionDecomposeService;
+
+    private final ExecutorService chatExecutor;
+
     public ChatService(IntentService intentService, RagService ragService,
                        LlmService llmService, AnalysisService analysisService,
-                       ChatSessionService chatSessionService, QueryRewriteService queryRewriteService) {
+                       ChatSessionService chatSessionService, QueryRewriteService queryRewriteService,
+                       QuestionDecomposeService questionDecomposeService, ExecutorService chatExecutor) {
         this.intentService = intentService;
         this.ragService = ragService;
         this.llmService = llmService;
         this.analysisService = analysisService;
         this.chatSessionService = chatSessionService;
         this.queryRewriteService = queryRewriteService;
+        this.questionDecomposeService = questionDecomposeService;
+        this.chatExecutor = chatExecutor;
     }
 
     /**
@@ -61,6 +73,94 @@ public class ChatService {
      */
     public IntentTypeEnum detectIntent(String question) {
         return intentService.detect(question);
+    }
+
+    /**
+     * 意图预检（含复合问题识别）：问号/分号启发式疑似复合时调用分解服务。
+     *
+     * @param question 用户问题
+     * @return 预检结果（compound 时携带子问题列表）
+     */
+    public IntentResponseVO precheck(String question) {
+        if (isSuspectedCompound(question)) {
+            List<String> subQuestions = questionDecomposeService.decompose(question);
+            if (subQuestions.size() > 1) {
+                return new IntentResponseVO("compound", subQuestions);
+            }
+        }
+        return new IntentResponseVO(intentService.detect(question).getCode(), null);
+    }
+
+    /**
+     * 复合问题启发式：问号/分号 ≥ 2 个。
+     */
+    private boolean isSuspectedCompound(String question) {
+        if (question == null) {
+            return false;
+        }
+        return question.chars().filter(c -> c == '？' || c == '?' || c == '；' || c == ';').count() >= 2;
+    }
+
+    /**
+     * 统一问答编排：改写 → 分解 → 单/多路执行 → 多部分响应。
+     *
+     * @param request 问答请求
+     * @return 统一问答响应（parts 长度 1~2）
+     */
+    public ChatAskResponseVO ask(ChatRequestDTO request) {
+        String sessionId = chatSessionService.resolveSessionId(request.getSessionId());
+        String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
+        List<String> subQuestions = questionDecomposeService.decompose(question);
+
+        if (subQuestions.size() == 1) {
+            String single = subQuestions.get(0);
+            IntentService.IntentDecision decision = intentService.detectWithDetail(single);
+            chatSessionService.saveUserMessage(sessionId, request.getQuestion(), decision.intent());
+            return ChatAskResponseVO.builder()
+                    .sessionId(sessionId)
+                    .parts(List.of(executeSubQuestion(sessionId, single, decision)))
+                    .build();
+        }
+
+        // 复合问题：两个子问题并行执行
+        log.info("复合问题并行执行: sessionId={}, parts={}", sessionId, subQuestions.size());
+        chatSessionService.saveUserMessage(sessionId, request.getQuestion(), null);
+        List<CompletableFuture<ChatPartVO>> futures = subQuestions.stream()
+                .map(sub -> CompletableFuture.supplyAsync(
+                        () -> executeSubQuestion(sessionId, sub, intentService.detectWithDetail(sub)),
+                        chatExecutor))
+                .toList();
+        List<ChatPartVO> parts = futures.stream().map(CompletableFuture::join).toList();
+        return ChatAskResponseVO.builder().sessionId(sessionId).parts(parts).build();
+    }
+
+    /**
+     * 执行单个子问题并按意图落库，返回统一的部分结果。
+     */
+    private ChatPartVO executeSubQuestion(String sessionId, String question,
+                                          IntentService.IntentDecision decision) {
+        String layer = decision.layer().name().toLowerCase();
+        if (decision.intent() == IntentTypeEnum.DATA_QUERY) {
+            AnalysisResultVO result = analysisService.executeQuery(question);
+            chatSessionService.saveAssistantMessage(sessionId, result.getAnswer(),
+                    IntentTypeEnum.DATA_QUERY, result.getSql(), List.of(), layer, decision.score());
+            return ChatPartVO.builder()
+                    .question(question)
+                    .intent(IntentTypeEnum.DATA_QUERY.getCode())
+                    .answer(result.getAnswer())
+                    .references(List.of())
+                    .analysis(result)
+                    .build();
+        }
+        RagService.RagAnswer ragAnswer = ragService.answer(question, llmService);
+        chatSessionService.saveAssistantMessage(sessionId, ragAnswer.answer(),
+                IntentTypeEnum.KNOWLEDGE_QA, null, ragAnswer.references(), layer, decision.score());
+        return ChatPartVO.builder()
+                .question(question)
+                .intent(IntentTypeEnum.KNOWLEDGE_QA.getCode())
+                .answer(ragAnswer.answer())
+                .references(ragAnswer.references())
+                .build();
     }
 
     /**

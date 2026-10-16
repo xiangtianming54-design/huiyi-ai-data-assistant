@@ -79,6 +79,15 @@ docs/             架构 / API / 演示 / 开发文档 + Postman 集合 + 截图
 4. **Prompt 工程**：模板文件化（classpath）+ `{{var}}` 占位替换工具；Text-to-SQL 输出约定 JSON，三级提取兜底（JSON → 代码块 → 裸 SELECT），不抛栈
 5. **响应式流式**：SSE 事件协议（session/token/references/error），前端 ReadableStream 解析，Pinia 中必须经响应式代理写入（裸对象引用不触发更新）
 
+## v0.5 变更（2026-10-16 已发布）
+
+**复合问题分解与多路并行回答**：一句话包含多个问题时，每个子问题都得到正确形态的回答。
+
+- `QuestionDecomposeService`：LLM 将复合问题拆为最多 2 个独立子问题（`prompts/question-decompose.md`，JSON 解析 + 限 2 + 异常回退单问题）
+- `POST /api/chat/ask`：改写 → 分解 → 子问题**并行执行**（独立线程池）→ parts 响应；`/api/chat/intent` 预检以问号启发式识别 compound（避免单问题的额外 LLM 调用）
+- 前端多气泡渲染：知识部分 Markdown + 引用，数据部分复用 `AnalysisResultCard` 富结果卡片
+- 实测：「什么是有效订单？上个月销售额最高的 3 个商品？」→ 定义气泡（引用 0.74）+ 排名数据卡片并存
+
 ## v0.4 变更（2026-10-16 已发布）
 
 **意图识别混合分层**（规则 → embedding → LLM 三层）：

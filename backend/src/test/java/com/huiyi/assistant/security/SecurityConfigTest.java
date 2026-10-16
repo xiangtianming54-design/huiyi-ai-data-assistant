@@ -23,5 +23,9 @@ class SecurityConfigTest {
                 "ASYNC dispatcher must be permitAll so SseEmitter.complete() is not Access Denied");
         assertTrue(source.contains("DispatcherType.ERROR"),
                 "ERROR dispatcher must be permitAll so committed SSE responses do not cascade");
+        assertTrue(source.contains("/actuator/prometheus"),
+                "Prometheus scrape endpoint must be permitAll");
+        assertTrue(source.contains("/actuator/health"),
+                "Actuator health must be permitAll");
     }
 }

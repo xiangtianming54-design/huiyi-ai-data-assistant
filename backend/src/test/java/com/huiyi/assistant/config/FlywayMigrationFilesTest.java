@@ -26,7 +26,8 @@ class FlywayMigrationFilesTest {
         for (String table : List.of(
                 "knowledge_docs", "chat_messages", "chat_session_summaries",
                 "users", "workspaces", "workspace_members", "refresh_tokens",
-                "chat_sessions", "audit_events")) {
+                "chat_sessions", "audit_events",
+                "assistant_runs", "assistant_run_steps", "llm_calls")) {
             assertTrue(sql.contains(table), "missing table " + table);
         }
         assertTrue(sql.contains("username = 'migrated'") || sql.contains("username,'migrated'")

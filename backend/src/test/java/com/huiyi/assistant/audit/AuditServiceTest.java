@@ -2,6 +2,7 @@ package com.huiyi.assistant.audit;
 
 import com.huiyi.assistant.mapper.AuditEventMapper;
 import com.huiyi.assistant.model.entity.AuditEvent;
+import com.huiyi.assistant.observability.ObservabilityContextHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +29,20 @@ class AuditServiceTest {
     @BeforeEach
     void setUp() {
         auditService = new AuditService(auditEventMapper);
+    }
+
+    @Test
+    void recordsRequestIdFromContext() {
+        ObservabilityContextHolder.setRequestId("req_abc123abc123abc123abc123abc123ab");
+        try {
+            auditService.record(AuditAction.AUTH_LOGIN_SUCCESS, "SUCCESS", 1L, "alice", 2L,
+                    "user", "1", Map.of());
+            ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
+            verify(auditEventMapper).insert(captor.capture());
+            assertEquals("req_abc123abc123abc123abc123abc123ab", captor.getValue().getRequestId());
+        } finally {
+            ObservabilityContextHolder.clear();
+        }
     }
 
     @Test

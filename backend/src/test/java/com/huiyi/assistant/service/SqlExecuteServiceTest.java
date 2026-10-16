@@ -38,7 +38,12 @@ class SqlExecuteServiceTest {
         JdbcTemplate readOnlyTemplate = new JdbcTemplate(dataSource);
         readOnlyTemplate.setQueryTimeout(5);
         readOnlyTemplate.setMaxRows(500);
-        sqlExecuteService = new SqlExecuteService(readOnlyTemplate);
+        com.huiyi.assistant.observability.ObservabilityProperties properties =
+                new com.huiyi.assistant.observability.ObservabilityProperties();
+        properties.setMetricsEnabled(false);
+        sqlExecuteService = new SqlExecuteService(readOnlyTemplate,
+                new com.huiyi.assistant.observability.ObservabilityMetrics(
+                        properties, new io.micrometer.core.instrument.simple.SimpleMeterRegistry()));
     }
 
     @AfterEach

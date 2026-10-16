@@ -11,6 +11,7 @@ import com.huiyi.assistant.model.dto.SqlValidateResponseDTO;
 import com.huiyi.assistant.model.dto.VectorSearchRequestDTO;
 import com.huiyi.assistant.model.dto.VectorSearchResponseDTO;
 import com.huiyi.assistant.model.dto.VectorUpsertRequestDTO;
+import com.huiyi.assistant.observability.ObservabilityMetrics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
@@ -44,9 +45,11 @@ public class PythonServiceClient {
     private static final String COLLECTION_NAME = "huiyi_knowledge";
 
     private final WebClient pythonServiceWebClient;
+    private final ObservabilityMetrics observabilityMetrics;
 
-    public PythonServiceClient(WebClient pythonServiceWebClient) {
+    public PythonServiceClient(WebClient pythonServiceWebClient, ObservabilityMetrics observabilityMetrics) {
         this.pythonServiceWebClient = pythonServiceWebClient;
+        this.observabilityMetrics = observabilityMetrics;
     }
 
     /**
@@ -207,19 +210,25 @@ public class PythonServiceClient {
      */
     private <T> T post(String uri, java.util.function.Function<WebClient.RequestBodySpec, WebClient.RequestHeadersSpec<?>> requestBuilder,
                        Class<T> responseType) {
+        long start = System.nanoTime();
         try {
-            return requestBuilder.apply(pythonServiceWebClient.post().uri(uri))
+            T result = requestBuilder.apply(pythonServiceWebClient.post().uri(uri))
                     .retrieve()
                     .bodyToMono(responseType)
                     .block(TIMEOUT);
+            observabilityMetrics.python(true, false, false, Duration.ofNanos(System.nanoTime() - start));
+            return result;
         } catch (WebClientResponseException e) {
-            // Python 已响应但返回错误状态：4xx 透传 detail 提示，5xx 视为服务异常
+            boolean parseFailed = uri.contains("/documents/parse");
+            boolean embeddingFailed = uri.contains("/similarity") || uri.contains("/vector/");
+            observabilityMetrics.python(false, parseFailed, embeddingFailed, Duration.ofNanos(System.nanoTime() - start));
             log.warn("Python 接口返回错误: uri={}, status={}, body={}", uri, e.getStatusCode(), e.getResponseBodyAsString());
             if (e.getStatusCode().is4xxClientError()) {
                 throw new BizException(ResultCode.PARAM_ERROR.getCode(), extractDetail(e.getResponseBodyAsString()));
             }
             throw new BizException(ResultCode.PYTHON_SERVICE_UNAVAILABLE);
         } catch (WebClientException e) {
+            observabilityMetrics.python(false, false, false, Duration.ofNanos(System.nanoTime() - start));
             log.error("调用 Python 接口失败: uri={}, error={}", uri, e.getMessage());
             throw new BizException(ResultCode.PYTHON_SERVICE_UNAVAILABLE);
         }

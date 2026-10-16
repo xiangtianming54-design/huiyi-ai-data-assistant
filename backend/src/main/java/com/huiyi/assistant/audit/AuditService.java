@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huiyi.assistant.mapper.AuditEventMapper;
 import com.huiyi.assistant.model.entity.AuditEvent;
+import com.huiyi.assistant.observability.ObservabilityContextHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,7 @@ public class AuditService {
         event.setResourceType(resourceType);
         event.setResourceId(resourceId);
         event.setDetailJson(toJson(sanitize(detail)));
+        event.setRequestId(ObservabilityContextHolder.requestId());
         event.setCreatedAt(LocalDateTime.now());
         HttpServletRequest request = currentRequest();
         if (request != null) {

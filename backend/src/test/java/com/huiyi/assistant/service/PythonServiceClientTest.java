@@ -1,11 +1,17 @@
 package com.huiyi.assistant.service;
 
 import com.huiyi.assistant.common.exception.BizException;
+import com.huiyi.assistant.config.WebClientConfig;
 import com.huiyi.assistant.model.dto.ParseResultDTO;
 import com.huiyi.assistant.model.dto.SqlValidateResponseDTO;
 import com.huiyi.assistant.model.dto.VectorSearchResponseDTO;
+import com.huiyi.assistant.observability.ObservabilityContextHolder;
+import com.huiyi.assistant.observability.ObservabilityMetrics;
+import com.huiyi.assistant.observability.ObservabilityProperties;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,13 +41,35 @@ class PythonServiceClientTest {
     void setUp() throws IOException {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
+        ObservabilityProperties properties = new ObservabilityProperties();
+        properties.setMetricsEnabled(false);
         client = new PythonServiceClient(
-                WebClient.builder().baseUrl(mockWebServer.url("/").toString()).build());
+                WebClient.builder().baseUrl(mockWebServer.url("/").toString())
+                        .filter(WebClientConfig.observabilityHeaders())
+                        .build(),
+                new ObservabilityMetrics(properties, new SimpleMeterRegistry()));
     }
 
     @AfterEach
     void tearDown() throws IOException {
+        ObservabilityContextHolder.clear();
         mockWebServer.shutdown();
+    }
+
+    @Test
+    void searchVectorsSendsObservabilityHeaders() throws InterruptedException {
+        ObservabilityContextHolder.setRequestId("req_abc123abc123abc123abc123abc123ab");
+        ObservabilityContextHolder.setRunId("run_abc123abc123abc123abc123abc123ab");
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .setBody("{\"success\":true,\"hits\":[]}"));
+
+        client.searchVectors("什么是有效订单？", 5);
+
+        RecordedRequest recorded = mockWebServer.takeRequest();
+        assertEquals("req_abc123abc123abc123abc123abc123ab", recorded.getHeader("X-Request-Id"));
+        assertEquals("run_abc123abc123abc123abc123abc123ab", recorded.getHeader("X-Run-Id"));
     }
 
     @Test

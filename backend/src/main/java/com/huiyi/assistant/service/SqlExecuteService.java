@@ -2,12 +2,14 @@ package com.huiyi.assistant.service;
 
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.common.result.ResultCode;
+import com.huiyi.assistant.observability.ObservabilityMetrics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -21,9 +23,12 @@ import java.util.Map;
 public class SqlExecuteService {
 
     private final JdbcTemplate readOnlyJdbcTemplate;
+    private final ObservabilityMetrics observabilityMetrics;
 
-    public SqlExecuteService(@Qualifier("readOnlyJdbcTemplate") JdbcTemplate readOnlyJdbcTemplate) {
+    public SqlExecuteService(@Qualifier("readOnlyJdbcTemplate") JdbcTemplate readOnlyJdbcTemplate,
+                             ObservabilityMetrics observabilityMetrics) {
         this.readOnlyJdbcTemplate = readOnlyJdbcTemplate;
+        this.observabilityMetrics = observabilityMetrics;
     }
 
     /**
@@ -34,16 +39,20 @@ public class SqlExecuteService {
      * @return 结果行集（最多 500 行）
      */
     public List<Map<String, Object>> execute(String sql, String question) {
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
         try {
             List<Map<String, Object>> rows = readOnlyJdbcTemplate.queryForList(sql);
-            long cost = System.currentTimeMillis() - start;
-            log.info("[SQL审计] question={}, sql={}, costMs={}, rows={}", question, sql, cost, rows.size());
+            Duration latency = Duration.ofNanos(System.nanoTime() - start);
+            boolean limited = rows.size() >= 500;
+            observabilityMetrics.sqlExecute(true, false, limited, latency);
+            log.info("[SQL审计] question={}, sql={}, costMs={}, rows={}", question, sql, latency.toMillis(), rows.size());
             return rows;
         } catch (DataAccessException e) {
-            long cost = System.currentTimeMillis() - start;
+            Duration latency = Duration.ofNanos(System.nanoTime() - start);
+            boolean timeout = e.getMessage() != null && e.getMessage().toLowerCase().contains("timeout");
+            observabilityMetrics.sqlExecute(false, timeout, false, latency);
             log.warn("[SQL审计] 执行失败 question={}, sql={}, costMs={}, error={}",
-                    question, sql, cost, e.getMessage());
+                    question, sql, latency.toMillis(), e.getMessage());
             throw new BizException(ResultCode.SYSTEM_ERROR.getCode(), "SQL 执行失败，请调整问题后重试");
         }
     }

@@ -8,6 +8,9 @@ import com.huiyi.assistant.model.dto.DataProfileResponseDTO;
 import com.huiyi.assistant.model.dto.SqlValidateResponseDTO;
 import com.huiyi.assistant.model.enums.IntentTypeEnum;
 import com.huiyi.assistant.model.vo.AnalysisResultVO;
+import com.huiyi.assistant.observability.ObservabilityContextHolder;
+import com.huiyi.assistant.observability.ObservabilityMetrics;
+import com.huiyi.assistant.observability.RequestTraceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -58,11 +61,14 @@ public class AnalysisService {
     private final ChatSessionService chatSessionService;
 
     private final QueryRewriteService queryRewriteService;
+    private final RequestTraceService requestTraceService;
+    private final ObservabilityMetrics observabilityMetrics;
 
     public AnalysisService(TextToSqlService textToSqlService, SqlExecuteService sqlExecuteService,
                            PythonServiceClient pythonServiceClient, LlmService llmService,
                            PromptTemplateLoader promptTemplateLoader, ChatSessionService chatSessionService,
-                           QueryRewriteService queryRewriteService) {
+                           QueryRewriteService queryRewriteService, RequestTraceService requestTraceService,
+                           ObservabilityMetrics observabilityMetrics) {
         this.textToSqlService = textToSqlService;
         this.sqlExecuteService = sqlExecuteService;
         this.pythonServiceClient = pythonServiceClient;
@@ -70,6 +76,8 @@ public class AnalysisService {
         this.promptTemplateLoader = promptTemplateLoader;
         this.chatSessionService = chatSessionService;
         this.queryRewriteService = queryRewriteService;
+        this.requestTraceService = requestTraceService;
+        this.observabilityMetrics = observabilityMetrics;
     }
 
     /**
@@ -79,16 +87,31 @@ public class AnalysisService {
      * @return 组装好的分析结果
      */
     public AnalysisResultVO query(AnalysisRequestDTO request) {
-        String sessionId = resolveScopedSession(request.getSessionId());
-        // 多轮上下文：先结合历史将追问改写为独立问题（无历史时透传）
-        String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
-        chatSessionService.saveUserMessage(sessionId, request.getQuestion(), IntentTypeEnum.DATA_QUERY);
+        boolean ownsRun = ObservabilityContextHolder.runId() == null;
+        long start = System.nanoTime();
+        if (ownsRun) {
+            requestTraceService.start("analysis_query", request.getQuestion(), request.getSessionId());
+        }
+        try {
+            String sessionId = resolveScopedSession(request.getSessionId());
+            String question = requestTraceService.timed("query_rewrite",
+                    () -> queryRewriteService.rewrite(sessionId, request.getQuestion()));
+            chatSessionService.saveUserMessage(sessionId, request.getQuestion(), IntentTypeEnum.DATA_QUERY);
 
-        AnalysisResultVO result = executeQuery(question);
-        result.setSessionId(sessionId);
-        chatSessionService.saveAssistantMessage(sessionId, result.getAnswer(),
-                IntentTypeEnum.DATA_QUERY, result.getSql(), List.of());
-        return result;
+            AnalysisResultVO result = executeQuery(question);
+            result.setSessionId(sessionId);
+            chatSessionService.saveAssistantMessage(sessionId, result.getAnswer(),
+                    IntentTypeEnum.DATA_QUERY, result.getSql(), List.of());
+            if (ownsRun) {
+                requestTraceService.finish("SUCCEEDED", IntentTypeEnum.DATA_QUERY.getCode(), null, start);
+            }
+            return result;
+        } catch (RuntimeException e) {
+            if (ownsRun) {
+                requestTraceService.finish("FAILED", IntentTypeEnum.DATA_QUERY.getCode(), e.getMessage(), start);
+            }
+            throw e;
+        }
     }
 
     /**
@@ -101,19 +124,29 @@ public class AnalysisService {
         // 0. 意图层拦截：数据修改意图直接拒绝，不进入 LLM 生成（场景 4）
         if (containsModificationIntent(question)) {
             log.warn("数据修改意图被拦截: question={}", question);
+            observabilityMetrics.sqlValidate(false);
+            requestTraceService.step("sql_validate", "REJECTED", System.nanoTime(), "modification_intent");
             return finish(question, null, List.of(), null, SAFE_REFUSAL);
         }
 
-        // 1. Text-to-SQL
+        long genStart = System.nanoTime();
         String sql = textToSqlService.generateSql(question);
+        boolean generated = sql != null;
+        observabilityMetrics.sqlGenerate(generated);
+        requestTraceService.step("sql_generate", generated ? "SUCCESS" : "FAILED", genStart,
+                generated ? null : "empty_sql");
         if (sql == null) {
             return finish(question, null, List.of(), null, CANNOT_UNDERSTAND);
         }
         log.info("生成 SQL: {}", sql);
 
-        // 2. 安全校验（四道防线之静态校验）
+        long validateStart = System.nanoTime();
         SqlValidateResponseDTO validation = pythonServiceClient.validateSql(sql);
-        if (validation == null || !Boolean.TRUE.equals(validation.getValid())) {
+        boolean passed = validation != null && Boolean.TRUE.equals(validation.getValid());
+        observabilityMetrics.sqlValidate(passed);
+        requestTraceService.step("sql_validate", passed ? "PASSED" : "REJECTED", validateStart,
+                passed ? null : (validation == null ? "校验服务异常" : validation.getReason()));
+        if (!passed) {
             String reason = validation == null ? "校验服务异常" : validation.getReason();
             log.warn("SQL 被安全策略拦截: sql={}, reason={}", sql, reason);
             return finish(question, sql, List.of(), null, refusalFor(reason));
@@ -121,17 +154,18 @@ public class AnalysisService {
         String safeSql = validation.getSql();
 
         // 3. 只读执行（超时 5s、500 行上限、审计日志）
+        long execStart = System.nanoTime();
         List<Map<String, Object>> rows = sqlExecuteService.execute(safeSql, question);
+        requestTraceService.step("sql_execute", "SUCCESS", execStart, null);
 
-        // 4. 数据画像与图表推荐
         DataProfileResponseDTO profile = pythonServiceClient.profileData(rows);
 
-        // 5. 结果总结（空结果走确定性话术，不调用 LLM）
         String answer;
         if (rows.isEmpty()) {
             answer = EMPTY_RESULT;
         } else {
-            answer = summarize(question, safeSql, profile, rows);
+            answer = requestTraceService.timed("llm_summarize",
+                    () -> summarize(question, safeSql, profile, rows));
         }
 
         AnalysisResultVO.Summary summary = AnalysisResultVO.Summary.builder()

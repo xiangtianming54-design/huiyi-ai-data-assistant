@@ -10,6 +10,8 @@ import com.huiyi.assistant.model.vo.ChatPartVO;
 import com.huiyi.assistant.model.vo.ChatResponseVO;
 import com.huiyi.assistant.model.vo.IntentResponseVO;
 import com.huiyi.assistant.model.vo.ReferenceVO;
+import com.huiyi.assistant.observability.ObservabilityMetrics;
+import com.huiyi.assistant.observability.RequestTraceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -20,6 +22,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 问答编排服务：意图识别 → RAG / 数据查询 → 回答组装 → 会话落库。
@@ -50,11 +54,14 @@ public class ChatService {
     private final QuestionDecomposeService questionDecomposeService;
 
     private final ExecutorService chatExecutor;
+    private final RequestTraceService requestTraceService;
+    private final ObservabilityMetrics observabilityMetrics;
 
     public ChatService(IntentService intentService, RagService ragService,
                        LlmService llmService, AnalysisService analysisService,
                        ChatSessionService chatSessionService, QueryRewriteService queryRewriteService,
-                       QuestionDecomposeService questionDecomposeService, ExecutorService chatExecutor) {
+                       QuestionDecomposeService questionDecomposeService, ExecutorService chatExecutor,
+                       RequestTraceService requestTraceService, ObservabilityMetrics observabilityMetrics) {
         this.intentService = intentService;
         this.ragService = ragService;
         this.llmService = llmService;
@@ -63,6 +70,8 @@ public class ChatService {
         this.queryRewriteService = queryRewriteService;
         this.questionDecomposeService = questionDecomposeService;
         this.chatExecutor = chatExecutor;
+        this.requestTraceService = requestTraceService;
+        this.observabilityMetrics = observabilityMetrics;
     }
 
     /**
@@ -108,30 +117,46 @@ public class ChatService {
      * @return 统一问答响应（parts 长度 1~2）
      */
     public ChatAskResponseVO ask(ChatRequestDTO request) {
-        String sessionId = resolveScopedSession(request.getSessionId());
-        String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
-        List<String> subQuestions = questionDecomposeService.decompose(question);
+        observabilityMetrics.chatRequest();
+        long start = System.nanoTime();
+        requestTraceService.start("chat_ask", request.getQuestion(), request.getSessionId());
+        try {
+            String sessionId = resolveScopedSession(request.getSessionId());
+            String question = requestTraceService.timed("query_rewrite",
+                    () -> queryRewriteService.rewrite(sessionId, request.getQuestion()));
+            List<String> subQuestions = requestTraceService.timed("decompose",
+                    () -> questionDecomposeService.decompose(question));
 
-        if (subQuestions.size() == 1) {
-            String single = subQuestions.get(0);
-            IntentService.IntentDecision decision = intentService.detectWithDetail(single);
-            chatSessionService.saveUserMessage(sessionId, request.getQuestion(), decision.intent());
-            return ChatAskResponseVO.builder()
-                    .sessionId(sessionId)
-                    .parts(List.of(executeSubQuestion(sessionId, single, decision)))
-                    .build();
+            ChatAskResponseVO response;
+            if (subQuestions.size() == 1) {
+                String single = subQuestions.get(0);
+                IntentService.IntentDecision decision = requestTraceService.timed("intent",
+                        () -> intentService.detectWithDetail(single));
+                chatSessionService.saveUserMessage(sessionId, request.getQuestion(), decision.intent());
+                response = ChatAskResponseVO.builder()
+                        .sessionId(sessionId)
+                        .parts(List.of(executeSubQuestion(sessionId, single, decision)))
+                        .build();
+            } else {
+                log.info("复合问题并行执行: sessionId={}, parts={}", sessionId, subQuestions.size());
+                chatSessionService.saveUserMessage(sessionId, request.getQuestion(), null);
+                List<CompletableFuture<ChatPartVO>> futures = subQuestions.stream()
+                        .map(sub -> CompletableFuture.supplyAsync(
+                                () -> executeSubQuestion(sessionId, sub,
+                                        requestTraceService.timed("intent", () -> intentService.detectWithDetail(sub))),
+                                chatExecutor))
+                        .toList();
+                List<ChatPartVO> parts = futures.stream().map(CompletableFuture::join).toList();
+                response = ChatAskResponseVO.builder().sessionId(sessionId).parts(parts).build();
+            }
+            requestTraceService.finish("SUCCEEDED", null, null, start);
+            observabilityMetrics.chatSuccess(Duration.ofNanos(System.nanoTime() - start), null);
+            return response;
+        } catch (RuntimeException e) {
+            requestTraceService.finish("FAILED", null, e.getMessage(), start);
+            observabilityMetrics.chatFailed(Duration.ofNanos(System.nanoTime() - start));
+            throw e;
         }
-
-        // 复合问题：两个子问题并行执行
-        log.info("复合问题并行执行: sessionId={}, parts={}", sessionId, subQuestions.size());
-        chatSessionService.saveUserMessage(sessionId, request.getQuestion(), null);
-        List<CompletableFuture<ChatPartVO>> futures = subQuestions.stream()
-                .map(sub -> CompletableFuture.supplyAsync(
-                        () -> executeSubQuestion(sessionId, sub, intentService.detectWithDetail(sub)),
-                        chatExecutor))
-                .toList();
-        List<ChatPartVO> parts = futures.stream().map(CompletableFuture::join).toList();
-        return ChatAskResponseVO.builder().sessionId(sessionId).parts(parts).build();
     }
 
     /**
@@ -141,7 +166,8 @@ public class ChatService {
                                           IntentService.IntentDecision decision) {
         String layer = decision.layer().name().toLowerCase();
         if (decision.intent() == IntentTypeEnum.DATA_QUERY) {
-            AnalysisResultVO result = analysisService.executeQuery(question);
+            AnalysisResultVO result = requestTraceService.timed("sql_pipeline",
+                    () -> analysisService.executeQuery(question));
             chatSessionService.saveAssistantMessage(sessionId, result.getAnswer(),
                     IntentTypeEnum.DATA_QUERY, result.getSql(), List.of(), layer, decision.score());
             return ChatPartVO.builder()
@@ -152,7 +178,7 @@ public class ChatService {
                     .analysis(result)
                     .build();
         }
-        RagService.RagAnswer ragAnswer = ragService.answer(question, llmService, workspaceId());
+        RagService.RagAnswer ragAnswer = timedRagAnswer(question);
         chatSessionService.saveAssistantMessage(sessionId, ragAnswer.answer(),
                 IntentTypeEnum.KNOWLEDGE_QA, null, ragAnswer.references(), layer, decision.score());
         return ChatPartVO.builder()
@@ -170,36 +196,48 @@ public class ChatService {
      * @return 问答响应
      */
     public ChatResponseVO chat(ChatRequestDTO request) {
-        String sessionId = resolveScopedSession(request.getSessionId());
-        // 多轮上下文：先结合历史将追问改写为独立问题（无历史时透传）
-        String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
-        IntentService.IntentDecision decision = intentService.detectWithDetail(question);
-        IntentTypeEnum intent = decision.intent();
-        chatSessionService.saveUserMessage(sessionId, request.getQuestion(), intent);
+        observabilityMetrics.chatRequest();
+        long start = System.nanoTime();
+        requestTraceService.start("chat", request.getQuestion(), request.getSessionId());
+        try {
+            String sessionId = resolveScopedSession(request.getSessionId());
+            String question = requestTraceService.timed("query_rewrite",
+                    () -> queryRewriteService.rewrite(sessionId, request.getQuestion()));
+            IntentService.IntentDecision decision = requestTraceService.timed("intent",
+                    () -> intentService.detectWithDetail(question));
+            IntentTypeEnum intent = decision.intent();
+            chatSessionService.saveUserMessage(sessionId, request.getQuestion(), intent);
 
-        String answer;
-        String sqlText = null;
-        List<ReferenceVO> references;
-        if (intent == IntentTypeEnum.DATA_QUERY) {
-            // P5：data_query 意图接入 Text-to-SQL 链路
-            AnalysisResultVO result = analysisService.executeQuery(question);
-            answer = result.getAnswer();
-            sqlText = result.getSql();
-            references = List.of();
-        } else {
-            RagService.RagAnswer ragAnswer = ragService.answer(question, llmService, workspaceId());
-            answer = ragAnswer.answer();
-            references = ragAnswer.references();
+            String answer;
+            String sqlText = null;
+            List<ReferenceVO> references;
+            if (intent == IntentTypeEnum.DATA_QUERY) {
+                AnalysisResultVO result = requestTraceService.timed("sql_pipeline",
+                        () -> analysisService.executeQuery(question));
+                answer = result.getAnswer();
+                sqlText = result.getSql();
+                references = List.of();
+            } else {
+                RagService.RagAnswer ragAnswer = timedRagAnswer(question);
+                answer = ragAnswer.answer();
+                references = ragAnswer.references();
+            }
+
+            chatSessionService.saveAssistantMessage(sessionId, answer, intent, sqlText, references,
+                    decision.layer().name().toLowerCase(), decision.score());
+            requestTraceService.finish("SUCCEEDED", intent.getCode(), null, start);
+            observabilityMetrics.chatSuccess(Duration.ofNanos(System.nanoTime() - start), null);
+            return ChatResponseVO.builder()
+                    .sessionId(sessionId)
+                    .answer(answer)
+                    .intent(intent.getCode())
+                    .references(references)
+                    .build();
+        } catch (RuntimeException e) {
+            requestTraceService.finish("FAILED", null, e.getMessage(), start);
+            observabilityMetrics.chatFailed(Duration.ofNanos(System.nanoTime() - start));
+            throw e;
         }
-
-        chatSessionService.saveAssistantMessage(sessionId, answer, intent, sqlText, references,
-                decision.layer().name().toLowerCase(), decision.score());
-        return ChatResponseVO.builder()
-                .sessionId(sessionId)
-                .answer(answer)
-                .intent(intent.getCode())
-                .references(references)
-                .build();
     }
 
     /**
@@ -209,43 +247,54 @@ public class ChatService {
      * @return SSE 发射器
      */
     public SseEmitter chatStream(ChatRequestDTO request) {
+        observabilityMetrics.chatRequest();
+        long start = System.nanoTime();
+        requestTraceService.start("chat_stream", request.getQuestion(), request.getSessionId());
         String sessionId = resolveScopedSession(request.getSessionId());
-        // 多轮上下文：先结合历史将追问改写为独立问题（无历史时透传）
-        String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
-        IntentService.IntentDecision decision = intentService.detectWithDetail(question);
+        String question = requestTraceService.timed("query_rewrite",
+                () -> queryRewriteService.rewrite(sessionId, request.getQuestion()));
+        IntentService.IntentDecision decision = requestTraceService.timed("intent",
+                () -> intentService.detectWithDetail(question));
         IntentTypeEnum intent = decision.intent();
         chatSessionService.saveUserMessage(sessionId, request.getQuestion(), intent);
 
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
-        // 首个事件告知前端会话 ID，便于多轮续话
         sendEvent(emitter, "session", sessionId);
 
         Flux<String> tokenFlux;
         List<ReferenceVO> references;
         String sqlText = null;
         if (intent == IntentTypeEnum.DATA_QUERY) {
-            // Text-to-SQL 为多段阻塞调用，结果作为整体一次性推送
-            AnalysisResultVO result = analysisService.executeQuery(question);
+            AnalysisResultVO result = requestTraceService.timed("sql_pipeline",
+                    () -> analysisService.executeQuery(question));
             sqlText = result.getSql();
             tokenFlux = Flux.just(result.getAnswer());
             references = List.of();
         } else {
+            long ragStart = System.nanoTime();
             RagService.RagContext context = ragService.prepare(question, workspaceId());
+            boolean hit = context.references() != null && !context.references().isEmpty();
+            observabilityMetrics.ragSearch(Duration.ofNanos(System.nanoTime() - ragStart), hit,
+                    context.fallbackAnswer() != null && context.fallbackAnswer().equals(RagService.SEARCH_DEGRADED_FALLBACK));
+            requestTraceService.step("rag", "SUCCESS", ragStart, null);
             references = context.references();
             tokenFlux = ragService.stream(context, llmService);
         }
 
         final String finalSqlText = sqlText;
-
         StringBuilder fullAnswer = new StringBuilder();
         List<ReferenceVO> finalReferences = references;
+        AtomicBoolean firstToken = new AtomicBoolean(true);
+        AtomicLong firstTokenAt = new AtomicLong();
         tokenFlux.subscribe(
                 token -> {
+                    if (firstToken.compareAndSet(true, false)) {
+                        firstTokenAt.set(System.nanoTime());
+                    }
                     fullAnswer.append(token);
                     sendEvent(emitter, "token", token);
                 },
                 error -> {
-                    // LLM 异常 / 超时：推送兜底文案，中断内容落库（4.8）
                     log.warn("流式问答中断: {}", error.getMessage());
                     String partial = fullAnswer.toString();
                     sendEvent(emitter, "error", "AI 服务暂不可用，请稍后重试。");
@@ -254,6 +303,8 @@ public class ChatService {
                             partial.isEmpty() ? "AI 服务暂不可用，请稍后重试。" : partial,
                             intent, null, finalReferences,
                             decision.layer().name().toLowerCase(), decision.score());
+                    requestTraceService.finish("FAILED", intent.getCode(), error.getMessage(), start);
+                    observabilityMetrics.chatFailed(Duration.ofNanos(System.nanoTime() - start));
                 },
                 () -> {
                     sendEvent(emitter, "references", toJson(finalReferences));
@@ -261,8 +312,20 @@ public class ChatService {
                     chatSessionService.saveAssistantMessage(sessionId, fullAnswer.toString(),
                             intent, finalSqlText, finalReferences,
                             decision.layer().name().toLowerCase(), decision.score());
+                    requestTraceService.finish("SUCCEEDED", intent.getCode(), null, start);
+                    Duration first = firstTokenAt.get() == 0 ? null : Duration.ofNanos(firstTokenAt.get() - start);
+                    observabilityMetrics.chatSuccess(Duration.ofNanos(System.nanoTime() - start), first);
                 });
         return emitter;
+    }
+
+    private RagService.RagAnswer timedRagAnswer(String question) {
+        long ragStart = System.nanoTime();
+        RagService.RagAnswer ragAnswer = ragService.answer(question, llmService, workspaceId());
+        boolean hit = ragAnswer.references() != null && !ragAnswer.references().isEmpty();
+        observabilityMetrics.ragSearch(Duration.ofNanos(System.nanoTime() - ragStart), hit, false);
+        requestTraceService.step("rag", "SUCCESS", ragStart, null);
+        return ragAnswer;
     }
 
     private String resolveScopedSession(String sessionId) {

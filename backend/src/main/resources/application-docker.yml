@@ -36,6 +36,26 @@ huiyi:
     login-fail-max-attempts: ${LOGIN_FAIL_MAX_ATTEMPTS:5}
     login-fail-window-seconds: ${LOGIN_FAIL_WINDOW_SECONDS:900}
     login-lock-seconds: ${LOGIN_LOCK_SECONDS:900}
+  observability:
+    enabled: ${OBSERVABILITY_ENABLED:true}
+    metrics-enabled: ${METRICS_ENABLED:true}
+    llm-cost-enabled: ${LLM_COST_ENABLED:true}
+    llm-cost-default: ${LLM_COST_DEFAULT:0}
+    trace-steps-enabled: ${TRACE_STEPS_ENABLED:true}
+    trace-max-steps: ${TRACE_MAX_STEPS:20}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+  endpoint:
+    health:
+      show-details: never
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 # Python Sidecar 服务地址（Compose 网络内服务名）
 python-service:

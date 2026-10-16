@@ -1207,7 +1207,7 @@ POST /api/v1/auth/refresh
 3. Compose 中 8001 端口只绑定 127.0.0.1 或不映射；
 4. Java 调 Python 时必须携带 workspaceId；
 5. Python 缺少 workspaceId 时返回 4xx；
-6. v0.8 再考虑服务间认证和 request_id。
+6. request_id 列入 v0.8；服务间认证未列入桌面 §8 的 v0.8 范围。
 ```
 
 Compose 示例：
@@ -1974,11 +1974,13 @@ DEFAULT_MEMBER_ROLE=VIEWER
 
 ```text
 Request ID；
-全链路 Trace；
-Metrics；
-LLM 成本统计；
-Python 服务间认证；
-Prompt 版本化基础。
+Run ID / assistant_run_id；
+Request Trace（非 Agent Trace）；
+Metrics（Actuator / Prometheus 端点）；
+LLM Token / 成本字段；
+Python 访问日志；
+健康检查增强。
+不做 Grafana / Agent Loop。
 ```
 
 ## v0.9

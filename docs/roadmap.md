@@ -35,15 +35,14 @@
 
 未纳入本版、也不自动滚进 v0.8 的 P1：用户状态 API、前端工作区切换 / 会话列表 UI。
 
-## 当前准备：v0.8.0 Observability & Cost
+## 当前开发：v0.8.0 Observability & Cost
 
-规格草稿：[2026-10-16-v08-observability-and-cost.md](superpowers/specs/2026-10-16-v08-observability-and-cost.md)
+口径：桌面规划 §8。规格：[2026-10-16-v08-observability-and-cost.md](superpowers/specs/2026-10-16-v08-observability-and-cost.md)  
+分支：`feature/v0.8-observability-cost`
 
-**本版要做：** Request ID、结构化日志、请求级 Trace（Java→Python→LLM）、LLM token 成本、健康检查依赖探测、Java→Python 服务间认证、Prompt 版本号基础。
+**本版要做：** Request ID、Run ID（一次 Chat/Analysis）、结构化日志、请求级 Trace（Intent → Rewrite → RAG/SQL → LLM Summary）、LLM Token 与 `cost_amount`（可默认 0）、Micrometer Metrics（含 SQL 拒绝/超时/行数限制）、Python 访问日志、健康检查增强、`/actuator/prometheus`。
 
-**明确不做：** Agent Loop / Tool Registry（v0.9）；评测平台与多模型路由；生产多环境。
-
-评审通过规格后再开 `feature/v0.8-observability-cost`。
+**明确不做：** Grafana 大盘；Agent Loop / Tool Registry / Agent Trace（v0.9）；评测平台与多模型路由；完整账单；v0.7 P1 UI。
 
 ## 后续版本（摘要）
 
@@ -52,7 +51,7 @@
 | 版本 | 做什么 | 不提前做 |
 |---|---|---|
 | **v0.7.0** | 认证、工作区、成员、RBAC、资源归属、`/api/v1`、Flyway、审计、基础限流 | Agent Loop、换向量库、K8s |
-| **v0.8.0** | Request/Run ID、结构化日志、Trace、Token/成本、Metrics、健康检查增强 | 评测平台、多模型路由 |
+| **v0.8.0** | Request/Run ID、Request Trace、Token/成本字段、Metrics、Python 访问日志、健康检查 | Grafana 大盘、Agent Loop、评测平台、多模型路由 |
 | **v0.9.0** | 把 RAG / SQL / 画像收成 Tool，最小 Agent Runtime + Run Trace + SSE | 完整多 Agent、MCP |
 | **v1.0.0** | ContextBuilder、TokenBudget、记忆与压缩、输入/工具/输出 Guard、反馈 | 生产多环境、语义层 |
 | **v1.1.0** | 评测集、回归报告、Prompt/模型版本与灰度 | 知识空间改造 |

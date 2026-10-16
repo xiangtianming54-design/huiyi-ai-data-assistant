@@ -1,21 +1,32 @@
 package com.huiyi.assistant.service;
 
+import com.huiyi.assistant.common.util.PromptTemplateLoader;
 import com.huiyi.assistant.config.IntentProperties;
 import com.huiyi.assistant.model.enums.IntentTypeEnum;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
 /**
- * IntentService 规则版意图识别单元测试。
+ * IntentService 规则层单元测试（mode=rule，v1 行为兼容）。
  *
  * @author huiyi
  */
 class IntentServiceTest {
 
-    private final IntentService intentService = new IntentService(new IntentProperties());
+    private IntentService intentService;
+
+    @BeforeEach
+    void setUp() {
+        IntentProperties properties = new IntentProperties();
+        properties.setMode("rule");
+        intentService = new IntentService(properties,
+                mock(IntentEmbeddingClassifier.class), mock(LlmService.class), new PromptTemplateLoader());
+    }
 
     @ParameterizedTest
     @ValueSource(strings = {

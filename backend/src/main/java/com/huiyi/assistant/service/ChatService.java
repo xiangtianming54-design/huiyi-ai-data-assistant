@@ -73,7 +73,8 @@ public class ChatService {
         String sessionId = chatSessionService.resolveSessionId(request.getSessionId());
         // 多轮上下文：先结合历史将追问改写为独立问题（无历史时透传）
         String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
-        IntentTypeEnum intent = intentService.detect(question);
+        IntentService.IntentDecision decision = intentService.detectWithDetail(question);
+        IntentTypeEnum intent = decision.intent();
         chatSessionService.saveUserMessage(sessionId, request.getQuestion(), intent);
 
         String answer;
@@ -91,7 +92,8 @@ public class ChatService {
             references = ragAnswer.references();
         }
 
-        chatSessionService.saveAssistantMessage(sessionId, answer, intent, sqlText, references);
+        chatSessionService.saveAssistantMessage(sessionId, answer, intent, sqlText, references,
+                decision.layer().name().toLowerCase(), decision.score());
         return ChatResponseVO.builder()
                 .sessionId(sessionId)
                 .answer(answer)
@@ -110,7 +112,8 @@ public class ChatService {
         String sessionId = chatSessionService.resolveSessionId(request.getSessionId());
         // 多轮上下文：先结合历史将追问改写为独立问题（无历史时透传）
         String question = queryRewriteService.rewrite(sessionId, request.getQuestion());
-        IntentTypeEnum intent = intentService.detect(question);
+        IntentService.IntentDecision decision = intentService.detectWithDetail(question);
+        IntentTypeEnum intent = decision.intent();
         chatSessionService.saveUserMessage(sessionId, request.getQuestion(), intent);
 
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
@@ -149,13 +152,15 @@ public class ChatService {
                     emitter.complete();
                     chatSessionService.saveAssistantMessage(sessionId,
                             partial.isEmpty() ? "AI 服务暂不可用，请稍后重试。" : partial,
-                            intent, null, finalReferences);
+                            intent, null, finalReferences,
+                            decision.layer().name().toLowerCase(), decision.score());
                 },
                 () -> {
                     sendEvent(emitter, "references", toJson(finalReferences));
                     emitter.complete();
                     chatSessionService.saveAssistantMessage(sessionId, fullAnswer.toString(),
-                            intent, finalSqlText, finalReferences);
+                            intent, finalSqlText, finalReferences,
+                            decision.layer().name().toLowerCase(), decision.score());
                 });
         return emitter;
     }

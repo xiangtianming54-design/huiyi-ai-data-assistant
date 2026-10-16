@@ -2,7 +2,7 @@
 
 > 会意 · 企业经营数据智能分析助手
 
-当前发布：**v0.7.0 Enterprise Foundation**（标签 `v0.7.0`）。基线对照 [docs/baseline.md](docs/baseline.md) · 设计 [docs/superpowers/specs/HuiYi-v0.7-Enterprise-Foundation-Development-Document-v2.md](docs/superpowers/specs/HuiYi-v0.7-Enterprise-Foundation-Development-Document-v2.md) · 踩坑 [docs/pitfalls.md](docs/pitfalls.md) · 后续版本 [docs/roadmap.md](docs/roadmap.md)
+当前发布：**v0.7.0 Enterprise Foundation**（标签 `v0.7.0`）。下一版 **v0.8.0 Observability & Cost**（[规格草稿](docs/superpowers/specs/2026-10-16-v08-observability-and-cost.md)）。基线对照 [docs/baseline.md](docs/baseline.md) · v0.7 设计 [docs/superpowers/specs/HuiYi-v0.7-Enterprise-Foundation-Development-Document-v2.md](docs/superpowers/specs/HuiYi-v0.7-Enterprise-Foundation-Development-Document-v2.md) · 踩坑 [docs/pitfalls.md](docs/pitfalls.md) · 路线图 [docs/roadmap.md](docs/roadmap.md)
 
 基于 **Java + Python 协同架构** 的企业经营数据智能分析助手，支持 **RAG 知识库问答** 与 **Text-to-SQL 数据分析** 两类核心能力。
 
@@ -157,8 +157,9 @@ huiyi-ai-data-assistant/
 - [x] **v0.6.1 Baseline Hardening**：稳定基线、补齐发布流程（见 [docs/baseline.md](docs/baseline.md)、[docs/roadmap.md](docs/roadmap.md)）
 
 - [x] **v0.7.0 Enterprise Foundation**：认证、工作区、RBAC、资源隔离、审计、Flyway、`/api/v1`（见 [docs/development.md](docs/development.md)）
+- [ ] **v0.8.0 Observability & Cost**：Request ID、Trace、LLM 成本、健康检查增强、服务间认证（[规格](docs/superpowers/specs/2026-10-16-v08-observability-and-cost.md)）
 
-按企业迭代文档演进：**v0.7.0** 用户/工作区/RBAC → **v0.8.0** 可观测与成本 → **v0.9.0** Tool Harness / Agent Runtime → **v1.0.0** 稳定助手。不把未做能力写成当前功能。
+按企业迭代文档演进：下一迭代 **v0.8.0** 可观测与成本 → **v0.9.0** Tool Harness / Agent Runtime → **v1.0.0** 稳定助手。不把未做能力写成当前功能。
 
 ## License
 

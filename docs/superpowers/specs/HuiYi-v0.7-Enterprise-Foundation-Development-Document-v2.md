@@ -1,7 +1,7 @@
 # HuiYi v0.7 · Enterprise Foundation 开发文档
 
 > 版本：v0.7.0  
-> 状态：Draft v2 / 待评审  
+> 状态：已发布（标签 `v0.7.0` → `627da84`；main 含发版后文档/Docker 门禁 `97f53d2`）  
 > 基线：`huiyi-ai-data-assistant v0.6.1`  
 > 修订说明：本版取消成员 / 用户物理删除，改为账号与成员生命周期状态治理；补充 Chroma 迁移、会话归属、Flyway 和 API 设计。  
 

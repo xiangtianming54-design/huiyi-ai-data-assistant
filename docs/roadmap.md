@@ -29,25 +29,21 @@
 | **v1.3.0** | Production Ready | 3–4 周 | staging/prod、备份、限流、压测、告警 |
 | **v1.4.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
 
-## 当前：v0.7.0 Enterprise Foundation
+## 已发布：v0.7.0 Enterprise Foundation
 
-本地标签 `v0.7.0`。上一基线见 [baseline.md](baseline.md)（v0.6 能力对照）。本版增量：JWT 认证、工作区 RBAC、资源按 workspace/user 隔离、Flyway、审计、登录锁定、`/api/v1`、登录页。
+标签 `v0.7.0` 已推 `origin`。上一基线见 [baseline.md](baseline.md)。本版：JWT、工作区 RBAC、资源隔离、Flyway、审计、登录锁定、`/api/v1`、登录页。
 
-**已完成**
+未纳入本版、也不自动滚进 v0.8 的 P1：用户状态 API、前端工作区切换 / 会话列表 UI。
 
-1. `main` 含 v0.7 代码（本地 fast-forward，标签 `v0.7.0`）
-2. 五场景 `e2e-m5.js` + 企业场景 `e2e-v07.js`
-3. Flyway：旧 v0.6 卷 baseline + 空卷迁移（见发布门禁）
-4. Python 知识检索按 `workspace_id` 先过滤；缺 id 的旧 chunk 用 `python -m app.tools.rebuild_knowledge_index` 重建
-5. 踩坑手册 [pitfalls.md](pitfalls.md)
+## 当前准备：v0.8.0 Observability & Cost
 
-**明确不做（留到后续版本）**
+规格草稿：[2026-10-16-v08-observability-and-cost.md](superpowers/specs/2026-10-16-v08-observability-and-cost.md)
 
-- Agent Loop / Tool Registry（v0.9）
-- 用户状态管理 API、前端工作区切换 UI（P1，未作为本版发布阻断）
-- 推远程 / GitHub Release（需单独执行 `git push origin main --tags`）
+**本版要做：** Request ID、结构化日志、请求级 Trace（Java→Python→LLM）、LLM token 成本、健康检查依赖探测、Java→Python 服务间认证、Prompt 版本号基础。
 
-下一版 **v0.8.0** 可观测与成本。
+**明确不做：** Agent Loop / Tool Registry（v0.9）；评测平台与多模型路由；生产多环境。
+
+评审通过规格后再开 `feature/v0.8-observability-cost`。
 
 ## 后续版本（摘要）
 
@@ -79,7 +75,7 @@ hotfix/*    紧急修复
 
 发布：`feature` → PR 到日常集成 → CI + Review → staging → `release/*` → `main` → tag。
 
-**仓库现状（v0.6.1 不改远程分支名）：** GitHub 日常分支仍是 `dev`，CI 监听 `main` / `dev`。从 v0.7 起 feature 按 `feature/v0.7-auth-workspace` 这类命名；改名为 `develop` 单独立项，避免打断现有 PR。
+**仓库现状：** GitHub 日常分支仍是 `dev`，CI 监听 `main` / `dev`。feature 按 `feature/v0.8-observability-cost` 这类命名；改名为 `develop` 单独立项，避免打断现有 PR。
 
 版本号：Semantic Versioning。MAJOR = 不兼容 API/数据；MINOR = 兼容新功能；PATCH = 修复。
 

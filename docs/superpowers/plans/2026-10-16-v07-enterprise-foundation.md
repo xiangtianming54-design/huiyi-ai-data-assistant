@@ -1,8 +1,9 @@
 # v0.7 Enterprise Foundation Implementation Plan
 
 > Spec: [HuiYi-v0.7-Enterprise-Foundation-Development-Document-v2.md](../specs/HuiYi-v0.7-Enterprise-Foundation-Development-Document-v2.md)  
-> Branch: `feature/v0.7-enterprise-foundation`  
-> Baseline: v0.6.1 (`ce231b2`)
+> Branch: `feature/v0.7-enterprise-foundation`（已合并删除；worktree 已移除）  
+> Baseline: v0.6.1 (`ce231b2`)  
+> Status: 已完成。合并点 `627da84`，标签 `v0.7.0`。未纳入的 P1（用户状态 API、前端工作区切换）不滚进 v0.8。
 
 ## Global Constraints
 

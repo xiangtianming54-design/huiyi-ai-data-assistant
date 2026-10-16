@@ -55,7 +55,7 @@ node scripts/e2e-m5.js
 ```text
 main            —— 稳定发布，里程碑打 tag
 dev             —— 当前 GitHub 日常集成（CI 监听 main / dev）
-feature/*       —— 功能分支；v0.7 起示例：feature/v0.7-auth-workspace
+feature/*       —— 功能分支；下一版示例：feature/v0.8-observability-cost
 提交规范        —— feat:/fix:/test:/docs:/chore: + 中文摘要
 ```
 
@@ -142,9 +142,9 @@ docs/             架构 / API / 演示 / 开发文档 / 踩坑手册 + Postman 
 
 后续评估：LLM 意图识别（当前规则版）、多轮对话上下文。
 
-## v0.7 变更（2026-10-16，标签 v0.7.0）
+## v0.7 变更（2026-10-16，标签 v0.7.0，已发布）
 
-企业基础层：JWT 注册/登录/刷新/登出、工作区 RBAC、资源挂 `workspace_id`、Flyway V1–V6、审计、登录失败锁定、前端登录页，旧 `/api/chat|knowledge|analysis` 返回 404。
+企业基础层：JWT 注册/登录/刷新/登出、工作区 RBAC、资源挂 `workspace_id`、Flyway V1–V6、审计、登录失败锁定、前端登录页，旧 `/api/chat|knowledge|analysis` 返回 404。下一版见 [v0.8 规格](superpowers/specs/2026-10-16-v08-observability-and-cost.md)。
 
 **回滚：** 切回镜像/代码标签 `v0.6.1`，恢复发版前 MySQL 与 `chroma_store` 备份，再做健康检查。v0.7 Flyway 会改 schema，不能只换镜像不还原库。
 

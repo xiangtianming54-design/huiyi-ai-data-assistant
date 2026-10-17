@@ -1,7 +1,7 @@
 # HuiYi v0.8 · Observability & Cost 开发文档
 
 > 版本：v0.8.0  
-> 状态：已发布（标签 `v0.8.0`）  
+> 状态：已发布（标签 `v0.8.0` → `bc9ce6d`）  
 > 基线：`huiyi-ai-data-assistant v0.7.0`（标签 `v0.7.0`）  
 > 来源：桌面《HuiYi-Enterprise-Agent-Version-Iteration-Development-Plan》§8；[roadmap.md](../../roadmap.md)  
 >

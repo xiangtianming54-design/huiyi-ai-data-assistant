@@ -4,7 +4,7 @@
 
 ## 代码与测试
 
-- [x] 目标分支已合并（标签 `v0.8.0`；推送后回填 `main` SHA）
+- [x] 目标分支已合并（`main` @ `bc9ce6d`；标签 `v0.8.0` → `bc9ce6d`）
 - [x] `backend`：`mvn -B verify` 通过（本地，96 tests）
 - [x] `python-service`：`pytest app/tests/test_observability.py` 通过（本地 2）；完整 `pytest --cov` 待 GitHub Actions（Compose 运行镜像无 pytest）
 - [x] `frontend`：`npm run build` 通过（本地）

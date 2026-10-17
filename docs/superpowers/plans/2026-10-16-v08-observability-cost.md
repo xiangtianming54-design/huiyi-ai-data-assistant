@@ -1,5 +1,7 @@
 # v0.8 Observability & Cost Implementation Plan
 
+> Status: 已完成。标签 `v0.8.0`。P2（调试面板、反馈带 ID、Python embedding/向量指标）不滚进 v0.9。
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship request-level observability: Request ID, Chat/Analysis Run ID, step Trace, LLM token rows, Micrometer metrics, Python access logs, and dependency health — without Grafana or Agent Loop.

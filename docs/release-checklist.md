@@ -4,11 +4,11 @@
 
 ## 代码与测试
 
-- [x] 目标分支已合并并推送（`main` @ `97f53d2`；标签 `v0.7.0` → `627da84`）
-- [x] `backend`：`mvn -B verify` 通过（本地）
-- [x] `python-service`：`pytest --cov=app --cov-report=term-missing` 通过（本地 111+）
+- [x] 目标分支已合并（标签 `v0.8.0`；推送后回填 `main` SHA）
+- [x] `backend`：`mvn -B verify` 通过（本地，96 tests）
+- [x] `python-service`：`pytest app/tests/test_observability.py` 通过（本地 2）；完整 `pytest --cov` 待 GitHub Actions（Compose 运行镜像无 pytest）
 - [x] `frontend`：`npm run build` 通过（本地）
-- [x] GitHub Actions 对应 commit 三条 job 均为成功（`97f53d2` CI#15 成功）
+- [ ] GitHub Actions 对应 commit 三条 job 均为成功（push `main` 后确认；本机无 `gh`）
 - [x] 若改了检索 / SQL / 意图 / 改写：相关单测已更新（本版未改检索/SQL 算法）
 
 ## 安全与仓库卫生
@@ -27,17 +27,25 @@
 
 ## 运行与演示
 
-- [x] `docker compose up -d` 后健康检查通过（v0.7 镜像，2026-10-16）：
-  - `GET http://localhost:8080/api/health`
+- [x] Compose 健康检查通过（v0.8 镜像，2026-10-16/17）：
+  - `GET http://localhost:8080/api/health` → `code=0`，`data.mysql/redis/python`
+  - `GET http://localhost:8080/actuator/prometheus`
   - `GET http://localhost:8001/health`
 - [x] [demo.md](demo.md) 五场景仍可走通（`e2e-m5.js` 在 Compose 前端上通过）
 
 ## 发布动作
 
-- [x] 语义化标签：`v0.7.0`
-- [x] `git push origin v0.7.0`
+- [x] 语义化标签：`v0.8.0`
+- [ ] `git push origin v0.8.0`（与 `main` 一并推）
 - [ ] GitHub Release 写清：新增 / 修复 / 不包含（本机无 `gh`，需在 GitHub 网页创建）
 - [ ] 若本版是公开里程碑：确认仓库可见性仍符合预期
+
+## v0.8.0 特别项（仅本版）
+
+- [x] Flyway V7–V9：`assistant_runs` / `assistant_run_steps` / `llm_calls`（现网卷已 migrate 到 v9）
+- [x] 五场景 `e2e-m5.js` + 企业场景 `e2e-v07.js`
+- [x] 不做 Grafana、Agent Loop、P2 调试面板
+- [x] 回滚路径：`v0.7.0` + MySQL 备份（见 development.md）
 
 ## v0.7.0 特别项（仅本版）
 

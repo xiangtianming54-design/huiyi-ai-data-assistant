@@ -1,10 +1,11 @@
 # HuiYi v0.8 · Observability & Cost 开发文档
 
 > 版本：v0.8.0  
-> 状态：已对齐桌面规划 §8（待实现）  
+> 状态：已发布（标签 `v0.8.0`）  
 > 基线：`huiyi-ai-data-assistant v0.7.0`（标签 `v0.7.0`）  
-> 分支：`feature/v0.8-observability-cost`  
-> 来源：桌面《HuiYi-Enterprise-Agent-Version-Iteration-Development-Plan》§8；[roadmap.md](../../roadmap.md)
+> 来源：桌面《HuiYi-Enterprise-Agent-Version-Iteration-Development-Plan》§8；[roadmap.md](../../roadmap.md)  
+>
+> 未纳入：P2 调试面板、问题反馈携带 request_id、Python embedding/向量指标；Grafana；Agent Loop。v0.7 P1 UI 不滚进本版。
 
 周期：2 周。
 
@@ -402,26 +403,26 @@ TRACE_MAX_STEPS=20
 ## 12. 验收标准
 
 ```text
-[ ] 每个 HTTP 请求都有 request_id；
-[ ] 响应头回写 X-Request-Id；
-[ ] 每次 Chat / Analysis 生成 run_id；
-[ ] run_id 贯穿 Java、Python、LLM 和审计记录；
-[ ] assistant_runs 记录一次完整链路；
-[ ] assistant_run_steps 记录关键步骤；
-[ ] llm_calls 记录模型、Token、耗时和状态；
-[ ] llm_calls 包含 cost_amount 字段；
-[ ] 暴露 /actuator/prometheus 或等价 Metrics；
-[ ] Chat 成功 / 失败 / 耗时指标可用；
-[ ] RAG 命中、无命中、耗时指标可用；
-[ ] SQL 生成、校验、执行、拒绝、失败、超时指标可用；
-[ ] Python 调用成功、失败、耗时指标可用；
-[ ] SSE 首字延迟可统计；
-[ ] Java / Python 日志可通过 request_id 关联；
-[ ] 健康检查能区分 MySQL / Redis / Python 异常；
-[ ] 不引入 Grafana 大盘；
-[ ] 不实现 Agent Loop / Tool Registry / Agent Trace；
-[ ] 旧五个核心场景不回归；
-[ ] CI 全绿。
+[x] 每个 HTTP 请求都有 request_id；
+[x] 响应头回写 X-Request-Id；
+[x] 每次 Chat / Analysis 生成 run_id；
+[x] run_id 贯穿 Java、Python、LLM 和审计记录；
+[x] assistant_runs 记录一次完整链路；
+[x] assistant_run_steps 记录关键步骤；
+[x] llm_calls 记录模型、Token、耗时和状态；
+[x] llm_calls 包含 cost_amount 字段（本版默认 0）；
+[x] 暴露 /actuator/prometheus 或等价 Metrics；
+[x] Chat 成功 / 失败 / 耗时指标可用；
+[x] RAG 命中、无命中、耗时指标可用；
+[x] SQL 生成、校验、执行、拒绝、失败、超时指标可用；
+[x] Python 调用成功、失败、耗时指标可用；
+[x] SSE 首字延迟可统计；
+[x] Java / Python 日志可通过 request_id 关联；
+[x] 健康检查能区分 MySQL / Redis / Python 异常；
+[x] 不引入 Grafana 大盘；
+[x] 不实现 Agent Loop / Tool Registry / Agent Trace；
+[x] 旧五个核心场景不回归（e2e-m5 / e2e-v07）；
+[ ] CI 全绿（推 main 后由 GitHub Actions 确认；本机无 gh）。
 ```
 
 ## 13. 明确留给 v0.9+

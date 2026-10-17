@@ -55,7 +55,7 @@ node scripts/e2e-m5.js
 ```text
 main            —— 稳定发布，里程碑打 tag
 dev             —— 当前 GitHub 日常集成（CI 监听 main / dev）
-feature/*       —— 功能分支；下一版示例：feature/v0.8-observability-cost
+feature/*       —— 功能分支；下一版示例：feature/v0.9-tool-harness
 提交规范        —— feat:/fix:/test:/docs:/chore: + 中文摘要
 ```
 
@@ -144,9 +144,15 @@ docs/             架构 / API / 演示 / 开发文档 / 踩坑手册 + Postman 
 
 ## v0.7 变更（2026-10-16，标签 v0.7.0，已发布）
 
-企业基础层：JWT 注册/登录/刷新/登出、工作区 RBAC、资源挂 `workspace_id`、Flyway V1–V6、审计、登录失败锁定、前端登录页，旧 `/api/chat|knowledge|analysis` 返回 404。下一版见 [v0.8 规格](superpowers/specs/2026-10-16-v08-observability-and-cost.md)。
+企业基础层：JWT 注册/登录/刷新/登出、工作区 RBAC、资源挂 `workspace_id`、Flyway V1–V6、审计、登录失败锁定、前端登录页，旧 `/api/chat|knowledge|analysis` 返回 404。
 
 **回滚：** 切回镜像/代码标签 `v0.6.1`，恢复发版前 MySQL 与 `chroma_store` 备份，再做健康检查。v0.7 Flyway 会改 schema，不能只换镜像不还原库。
+
+## v0.8 变更（2026-10-17，标签 v0.8.0，已发布）
+
+请求级可观测：`X-Request-Id` / `X-Run-Id`，Chat/Analysis 写入 `assistant_runs` / `assistant_run_steps` / `llm_calls`（Flyway V7–V9），审计行带 `request_id`，Micrometer 出口 `/actuator/prometheus`，Python 访问日志透传 ID，`/api/health` 探测 mysql/redis/python。`cost_amount` 默认 0。规格见 [v0.8 开发文档](superpowers/specs/2026-10-16-v08-observability-and-cost.md)。下一版见 [v0.9 规格草稿](superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)。
+
+**回滚：** 切回标签 `v0.7.0`，恢复发版前 MySQL 备份后再起服务。V7–V9 已改 schema，不能只换镜像不还原库。
 
 ## 常见坑（本仓库已踩过）
 
@@ -163,3 +169,5 @@ docs/             架构 / API / 演示 / 开发文档 / 踩坑手册 + Postman 
 - SpringAI `OpenAiApi` 默认补全路径含 `/v1`：base-url 含 `/v1` 时需显式 `completionsPath("/chat/completions")`
 - 多数据源需显式 `@Primary`，否则 MyBatis-Plus 可能绑错只读库
 - Pinia SSE 追加必须走响应式代理（数组下标），裸对象引用不触发视图更新
+- 不要 `@Qualifier("jdbcTemplate")`：只有 `readOnlyJdbcTemplate` 时 Boot 不会再造该 Bean
+- worktree 里不要 `docker compose up` 整套：项目名会变，容器名与现网栈冲突

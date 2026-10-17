@@ -29,20 +29,23 @@
 | **v1.3.0** | Production Ready | 3–4 周 | staging/prod、备份、限流、压测、告警 |
 | **v1.4.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
 
-## 已发布：v0.7.0 Enterprise Foundation
+## 已发布：v0.8.0 Observability & Cost
 
-标签 `v0.7.0` 已推 `origin`。上一基线见 [baseline.md](baseline.md)。本版：JWT、工作区 RBAC、资源隔离、Flyway、审计、登录锁定、`/api/v1`、登录页。
+标签 `v0.8.0`。规格：[2026-10-16-v08-observability-and-cost.md](superpowers/specs/2026-10-16-v08-observability-and-cost.md)。本版：Request/Run ID、请求级 Trace、结构化日志、LLM Token 与 `cost_amount`（默认 0）、`/actuator/prometheus`、Python 访问日志、健康检查依赖探测。Flyway V7–V9。
 
-未纳入本版、也不自动滚进 v0.8 的 P1：用户状态 API、前端工作区切换 / 会话列表 UI。
+未纳入本版：P2 调试面板 / 反馈带 ID / Python embedding 向量指标；Grafana；Agent Loop。v0.7 P1（用户状态 API、前端工作区切换）仍不自动滚入后续版本。
 
-## 当前开发：v0.8.0 Observability & Cost
+上一发布：`v0.7.0` Enterprise Foundation。
 
-口径：桌面规划 §8。规格：[2026-10-16-v08-observability-and-cost.md](superpowers/specs/2026-10-16-v08-observability-and-cost.md)  
-分支：`feature/v0.8-observability-cost`
+## 当前准备：v0.9.0 Tool Harness & Agent Runtime
 
-**本版要做：** Request ID、Run ID（一次 Chat/Analysis）、结构化日志、请求级 Trace（Intent → Rewrite → RAG/SQL → LLM Summary）、LLM Token 与 `cost_amount`（可默认 0）、Micrometer Metrics（含 SQL 拒绝/超时/行数限制）、Python 访问日志、健康检查增强、`/actuator/prometheus`。
+口径：桌面规划 §9。规格草稿：[2026-10-17-v09-tool-harness-and-agent-runtime.md](superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)
 
-**明确不做：** Grafana 大盘；Agent Loop / Tool Registry / Agent Trace（v0.9）；评测平台与多模型路由；完整账单；v0.7 P1 UI。
+**本版要做：** 把 RAG / SQL / 画像收成 Tool，最小 Agent Runtime、Tool Registry、Agent Trace、SSE Agent 事件。
+
+**明确不做：** 完整多 Agent、MCP、Grafana 生产大盘、评测平台。
+
+评审通过规格后再开 `feature/v0.9-tool-harness`。
 
 ## 后续版本（摘要）
 
@@ -74,7 +77,7 @@ hotfix/*    紧急修复
 
 发布：`feature` → PR 到日常集成 → CI + Review → staging → `release/*` → `main` → tag。
 
-**仓库现状：** GitHub 日常分支仍是 `dev`，CI 监听 `main` / `dev`。feature 按 `feature/v0.8-observability-cost` 这类命名；改名为 `develop` 单独立项，避免打断现有 PR。
+**仓库现状：** GitHub 日常分支仍是 `dev`，CI 监听 `main` / `dev`。feature 按 `feature/v0.9-tool-harness` 这类命名；改名为 `develop` 单独立项，避免打断现有 PR。
 
 版本号：Semantic Versioning。MAJOR = 不兼容 API/数据；MINOR = 兼容新功能；PATCH = 修复。
 

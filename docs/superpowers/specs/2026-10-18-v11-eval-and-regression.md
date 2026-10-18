@@ -1,7 +1,7 @@
 # HuiYi v1.1 · Eval 评测集与回归（仓库规格）
 
 > 版本：`v1.1.0`  
-> 状态：**规格已冻结，技术设计已写，实施计划已写，实现尚未开工**（P0 D01–D13 已拍板；P1 Prompt 版本/灰度只写入规格，本计划不含）  
+> 状态：**规格已冻结，技术设计已写，实施计划已写，P0 实现已落地**（P0 D01–D13 已拍板；P1 Prompt 版本/灰度只写入规格，本计划不含）  
 > 技术设计：[2026-10-18-v11-eval-and-regression-technical.md](2026-10-18-v11-eval-and-regression-technical.md)  
 > 实施计划：[../plans/2026-10-18-v11-eval-and-regression.md](../plans/2026-10-18-v11-eval-and-regression.md)  
 > 基线：`huiyi-ai-data-assistant v1.0.0`（标签 `v1.0.0`）  

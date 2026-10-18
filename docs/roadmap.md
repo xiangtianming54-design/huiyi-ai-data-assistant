@@ -39,7 +39,7 @@
 
 ## 当前开发：v1.1.0 Eval & Prompt Governance
 
-规格已冻结：[2026-10-18-v11-eval-and-regression.md](superpowers/specs/2026-10-18-v11-eval-and-regression.md)。技术设计：[2026-10-18-v11-eval-and-regression-technical.md](superpowers/specs/2026-10-18-v11-eval-and-regression-technical.md)。实施计划：[2026-10-18-v11-eval-and-regression.md](superpowers/plans/2026-10-18-v11-eval-and-regression.md)。口径以 D01–D13 为准。P0：仓库金标夹具 + Java runner + CI `eval-goldens` 报告 Artifact。Prompt 版本/灰度、评测页不进本版 P0。实现尚未开工。
+规格已冻结：[2026-10-18-v11-eval-and-regression.md](superpowers/specs/2026-10-18-v11-eval-and-regression.md)。技术设计：[2026-10-18-v11-eval-and-regression-technical.md](superpowers/specs/2026-10-18-v11-eval-and-regression-technical.md)。实施计划：[2026-10-18-v11-eval-and-regression.md](superpowers/plans/2026-10-18-v11-eval-and-regression.md)。口径以 D01–D13 为准。P0：仓库金标夹具 + Java runner + CI `eval-goldens` 报告 Artifact。Prompt 版本/灰度、评测页不进本版 P0。P0 实现位于 `feature/v1.1-eval-regression`（未合并）。
 
 ## 后续版本（摘要）
 

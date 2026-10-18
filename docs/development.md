@@ -45,6 +45,9 @@ pytest --cov=app --cov-report=term-missing
 cd backend
 mvn test
 
+# 评测金标（与 CI job eval-goldens 相同，cwd backend）
+mvn -B -Dtest=EvalGoldenRunner test
+
 # 端到端五场景（需全栈启动）
 npm i playwright-core
 node scripts/e2e-m5.js
@@ -55,7 +58,7 @@ node scripts/e2e-m5.js
 ```text
 main            —— 稳定发布，里程碑打 tag
 dev             —— 当前 GitHub 日常集成（CI 监听 main / dev）
-feature/*       —— 功能分支；本版：feature/v1.0-agent-stable
+feature/*       —— 功能分支；本版：feature/v1.1-eval-regression
 提交规范        —— feat:/fix:/test:/docs:/chore: + 中文摘要
 ```
 
@@ -168,7 +171,7 @@ Stable Agent Assistant P0：现网 `/chat/stream` 叠加 `tool.*` SSE；五工�
 
 ## v1.1 变更（未发布）
 
-Eval 评测集与回归 P0：`testdata/eval/` 金标 + Java runner + GitHub Actions 独立 job 上传 `eval-report.json/.md`。无评测页、无新 API、无新表。Prompt 版本/灰度为 P1。规格：[v1.1 开发文档](superpowers/specs/2026-10-18-v11-eval-and-regression.md)。
+Eval 评测集与回归 P0：`testdata/eval/` 金标 + Java `EvalGoldenRunner` + GitHub Actions 独立 job `eval-goldens` 上传 `eval-report.json/.md`。本地与 CI 同命令（cwd `backend`）：`mvn -B -Dtest=EvalGoldenRunner test`。无评测页、无新 API、无新表。Prompt 版本/灰度为 P1。规格：[v1.1 开发文档](superpowers/specs/2026-10-18-v11-eval-and-regression.md)。技术设计：[v1.1 技术设计](superpowers/specs/2026-10-18-v11-eval-and-regression-technical.md)。计划：[v1.1 实施计划](superpowers/plans/2026-10-18-v11-eval-and-regression.md)。
 
 **回滚：** 切回标签 `v1.0.0`。本版 P0 不改 Flyway；若后续误加迁移，不能只换镜像不还原库。
 

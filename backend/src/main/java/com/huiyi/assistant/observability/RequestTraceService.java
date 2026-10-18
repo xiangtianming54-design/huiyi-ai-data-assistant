@@ -37,6 +37,24 @@ public class RequestTraceService {
         runRecorder.step(stepType, status, millis(startNanos), error);
     }
 
+    public void stepTool(String toolName, String status, long startNanos, String error) {
+        runRecorder.step(stepTypeFor(toolName), toolName, status, millis(startNanos), error);
+    }
+
+    static String stepTypeFor(String toolName) {
+        if (toolName == null) {
+            return null;
+        }
+        return switch (toolName) {
+            case "knowledge.search" -> "rag";
+            case "sql.generate" -> "sql_generate";
+            case "sql.validate" -> "sql_validate";
+            case "sql.execute_readonly" -> "sql_execute";
+            case "data.profile" -> "data_profile";
+            default -> toolName;
+        };
+    }
+
     public void finish(String status, String intent, String error, long startNanos) {
         runRecorder.finish(status, intent, error, 0, 0, millis(startNanos));
     }

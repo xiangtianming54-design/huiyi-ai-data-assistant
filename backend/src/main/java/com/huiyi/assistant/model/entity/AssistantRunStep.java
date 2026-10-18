@@ -16,6 +16,7 @@ public class AssistantRunStep {
     private String runId;
     private Integer stepNo;
     private String stepType;
+    private String toolName;
     private String status;
     private String provider;
     private String model;

@@ -71,11 +71,20 @@ public class AssistantRunRecorder {
     }
 
     public void step(String stepType, String status, Integer latencyMs, String errorMessage) {
-        step(stepType, status, latencyMs, null, null, 0, 0, errorMessage);
+        step(stepType, null, status, latencyMs, errorMessage);
+    }
+
+    public void step(String stepType, String toolName, String status, Integer latencyMs, String errorMessage) {
+        step(stepType, toolName, status, latencyMs, null, null, 0, 0, errorMessage);
     }
 
     public void step(String stepType, String status, Integer latencyMs, String provider, String model,
                      int promptTokens, int completionTokens, String errorMessage) {
+        step(stepType, null, status, latencyMs, provider, model, promptTokens, completionTokens, errorMessage);
+    }
+
+    public void step(String stepType, String toolName, String status, Integer latencyMs, String provider,
+                     String model, int promptTokens, int completionTokens, String errorMessage) {
         if (!properties.isEnabled() || !properties.isTraceStepsEnabled()) {
             return;
         }
@@ -91,6 +100,7 @@ public class AssistantRunRecorder {
         step.setRunId(runId);
         step.setStepNo(next);
         step.setStepType(stepType);
+        step.setToolName(toolName);
         step.setStatus(status);
         step.setProvider(provider);
         step.setModel(model);

@@ -62,4 +62,14 @@ class AssistantRunRecorderTest {
         doThrow(new RuntimeException("db")).when(stepMapper).insert(any(AssistantRunStep.class));
         assertDoesNotThrow(() -> recorder.step("intent", "SUCCESS", 12, null));
     }
+
+    @Test
+    void stepWritesToolName() {
+        recorder.start("chat_stream", "q", "s1");
+        recorder.step("rag", "knowledge.search", "SUCCESS", 12, null);
+        ArgumentCaptor<AssistantRunStep> captor = ArgumentCaptor.forClass(AssistantRunStep.class);
+        verify(stepMapper).insert(captor.capture());
+        assertEquals("knowledge.search", captor.getValue().getToolName());
+        assertEquals("rag", captor.getValue().getStepType());
+    }
 }

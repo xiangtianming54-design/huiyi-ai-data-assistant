@@ -30,6 +30,9 @@ class FlywayMigrationFilesTest {
                 "assistant_runs", "assistant_run_steps", "llm_calls")) {
             assertTrue(sql.contains(table), "missing table " + table);
         }
+        assertTrue(sql.contains("tool_name"), "V10 must add assistant_run_steps.tool_name");
+        assertFalse(sql.contains("tool_invocations"), "no tool_invocations table");
+        assertFalse(sql.contains("tool_registry"), "no tool_registry table");
         assertTrue(sql.contains("username = 'migrated'") || sql.contains("username,'migrated'")
                 || sql.contains("'migrated'"), "missing migrated placeholder user");
         assertTrue(sql.contains("'default'"), "missing default workspace code");

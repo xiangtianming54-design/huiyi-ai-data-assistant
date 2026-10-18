@@ -150,17 +150,26 @@ POST /api/v1/workspaces/{workspaceId}/chat/stream
 Accept: text/event-stream
 ```
 
-请求体同上。事件序列：
+请求体同上。事件名保持 `session` / `token` / `references` / `error`，并叠加 `tool.started` / `tool.completed` / `tool.failed`。无 `/agent/runs`，无 `answer.token` / `step`。`tool.*` 的 `data` 为单行 JSON，不含 SQL 全文。
 
 ```text
-event:session     data:s-c6172277        ← 首事件，会话 ID
-event:token       data:有效               ← 逐 token 推送
-event:token       data:订单
+event:session
+data:s-c6172277
+
+event:tool.started
+data:{"tool":"knowledge.search"}
+
+event:tool.completed
+data:{"tool":"knowledge.search","status":"SUCCESS"}
+
+event:token
+data:有效
 ...
-event:references  data:[{"source":"business-glossary.md","score":0.74}]
+event:references
+data:[{"source":"business-glossary.md","score":0.74}]
 ```
 
-异常时推送 `event:error` + 兜底文案后结束；中断内容仍会落库。
+数据查询成功顺序示例：`session` → `sql.generate` / `sql.validate` / `sql.execute_readonly` / `data.profile` 的 started/completed → `token*` → `references`。Schema 拒绝或未知工具走 `tool.failed`（`status=REJECTED` 或 `FAILED`），用户句仍是「工具调用失败，请稍后重试。」。run 90s 或 Prompt 超限走 `event:error`，文案「当前问题较复杂，请缩小范围后重试。」。异常中断内容仍会落库。
 
 ### 数据分析（Text-to-SQL）
 
@@ -195,7 +204,7 @@ Content-Type: application/json
 }
 ```
 
-安全拦截时 `sql` 为 null、`answer` 为拒绝话术；空结果时 `answer` 明确提示无数据。`chartType` 取值：`bar` / `line` / `pie` / `table`。
+安全拦截时 `sql` 为 null、`answer` 为拒绝话术；空结果时 `answer` 明确提示无数据。`chartType` 取值：`bar` / `line` / `pie` / `table`。响应 JSON **没有** `toolCalls` 字段。
 
 ---
 

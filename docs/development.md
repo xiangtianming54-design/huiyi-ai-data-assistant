@@ -55,7 +55,7 @@ node scripts/e2e-m5.js
 ```text
 main            —— 稳定发布，里程碑打 tag
 dev             —— 当前 GitHub 日常集成（CI 监听 main / dev）
-feature/*       —— 功能分支；下一版示例：feature/v1.0-stable-agent
+feature/*       —— 功能分支；本版：feature/v1.0-agent-stable
 提交规范        —— feat:/fix:/test:/docs:/chore: + 中文摘要
 ```
 
@@ -159,6 +159,12 @@ docs/             架构 / API / 演示 / 开发文档 / 踩坑手册 + Postman 
 Tool Harness + Router Runtime：RAG / Text-to-SQL / 数据画像收成五个只读工具，Chat 与 Analysis 门面委托同一 `AgentRunner`。工具步骤写入 `assistant_run_steps.tool_name`（Flyway V10）。未知工具返回「工具调用失败，请稍后重试。」。入口仍是 `/api/v1/workspaces/{id}/chat/stream` 与 `.../analysis/query`。规格见 [v0.9 开发文档](superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)。
 
 **回滚：** 切回标签 `v0.8.0`，恢复发版前 MySQL 备份后再起服务。V10 已改 schema，不能只换镜像不还原库。
+
+## v1.0 变更（未发布）
+
+Stable Agent Assistant P0：现网 `/chat/stream` 叠加 `tool.*` SSE；五工具 JSON Schema 拒绝；Context Budget（默认 24000 字符）；OutputGuard 剥堆栈/密钥；run 墙钟 90s；Flyway V11 仅加 `assistant_runs.error_code`。入口仍是 `chat/stream` 与 `analysis/query`，无 `/agent/runs`，无 ReAct。规格：[v1.0 开发文档](superpowers/specs/2026-10-18-v10-stable-agent-assistant.md)。技术设计：[v1.0 技术设计](superpowers/specs/2026-10-18-v10-stable-agent-assistant-technical.md)。计划：[v1.0 实施计划](superpowers/plans/2026-10-18-v10-stable-agent-assistant.md)。
+
+**回滚：** 切回标签 `v0.9.0`，恢复发版前 MySQL 备份后再起服务。V11 已改 schema，不能只换镜像不还原库。
 
 ## 常见坑（本仓库已踩过）
 

@@ -39,7 +39,7 @@
 
 ## 当前开发：v1.0.0 Stable Agent Assistant
 
-规格已冻结：[2026-10-18-v10-stable-agent-assistant.md](superpowers/specs/2026-10-18-v10-stable-agent-assistant.md)（按桌面 v1.0 规划 1–17 章同构改写，口径以 D01–D13 为准）。技术设计：[2026-10-18-v10-stable-agent-assistant-technical.md](superpowers/specs/2026-10-18-v10-stable-agent-assistant-technical.md)。实施计划：[2026-10-18-v10-stable-agent-assistant.md](superpowers/plans/2026-10-18-v10-stable-agent-assistant.md)。实现尚未开工。
+规格已冻结：[2026-10-18-v10-stable-agent-assistant.md](superpowers/specs/2026-10-18-v10-stable-agent-assistant.md)（按桌面 v1.0 规划 1–17 章同构改写，口径以 D01–D13 为准）。技术设计：[2026-10-18-v10-stable-agent-assistant-technical.md](superpowers/specs/2026-10-18-v10-stable-agent-assistant-technical.md)。实施计划：[2026-10-18-v10-stable-agent-assistant.md](superpowers/plans/2026-10-18-v10-stable-agent-assistant.md)。P0 实现落在分支 `feature/v1.0-agent-stable`：叠加 `tool.*` SSE、五工具 Schema、Context Budget、OutputGuard、90s run 帽、Flyway V11 `error_code`。尚未发版。
 
 P0：现网 `chat/stream` / `analysis/query` 上叠加 `tool.*` SSE、五工具 JSON Schema、Context Budget、现有角色 Guard、run 总超时与 `assistant_runs.error_code`。五场景默认仍 Router。
 

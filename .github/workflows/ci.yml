@@ -73,6 +73,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: eval-report
+          if-no-files-found: warn
           path: |
             backend/target/eval-report.json
             backend/target/eval-report.md

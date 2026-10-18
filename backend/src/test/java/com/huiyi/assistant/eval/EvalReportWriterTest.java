@@ -23,4 +23,21 @@ class EvalReportWriterTest {
         assertFalse(body.contains("sk-abcdefghijk"));
         assertTrue(body.contains("x"));
     }
+
+    @Test
+    void redactsWholeStackSegment() throws Exception {
+        Path json = Files.createTempFile("eval", ".json");
+        Path md = Files.createTempFile("eval", ".md");
+        EvalReportWriter writer = new EvalReportWriter();
+        writer.write(List.of(new EvalReportRow(
+                "x",
+                false,
+                Map.of("answer", "ok\nException in thread \"main\"\nat com.huiyi.Foo.bar(Foo.java:1)"),
+                Map.of(),
+                "answerEquals")), json, md);
+        String body = Files.readString(json) + Files.readString(md);
+        assertFalse(body.contains("at com.huiyi"));
+        assertFalse(body.contains("Exception in thread"));
+        assertTrue(body.contains("x"));
+    }
 }

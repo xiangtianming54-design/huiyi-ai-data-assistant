@@ -180,6 +180,7 @@ public class EvalCase {
         private boolean errorCodeSpecified;
         private String errorCode;
         private Boolean analysisHasToolCalls;
+        private boolean toolEventsSpecified;
         private List<ToolEventExpect> toolEvents = new ArrayList<>();
         private List<String> forbiddenSubstrings = new ArrayList<>();
 
@@ -229,11 +230,17 @@ public class EvalCase {
             this.analysisHasToolCalls = analysisHasToolCalls;
         }
 
+        public boolean toolEventsSpecified() {
+            return toolEventsSpecified;
+        }
+
         public List<ToolEventExpect> toolEvents() {
             return toolEvents;
         }
 
+        @JsonSetter("toolEvents")
         public void setToolEvents(List<ToolEventExpect> toolEvents) {
+            this.toolEventsSpecified = true;
             this.toolEvents = toolEvents == null ? new ArrayList<>() : toolEvents;
         }
 

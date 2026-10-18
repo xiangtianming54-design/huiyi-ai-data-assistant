@@ -4,10 +4,11 @@ import com.huiyi.assistant.agent.AgentRunner;
 import com.huiyi.assistant.agent.PromptBudgetExceededException;
 import com.huiyi.assistant.agent.RouterPlanner;
 import com.huiyi.assistant.agent.ToolExecutor;
-import com.huiyi.assistant.agent.ToolNames;
 import com.huiyi.assistant.agent.ToolResult;
 import com.huiyi.assistant.agent.UnknownToolException;
 import com.huiyi.assistant.common.util.PromptTemplateLoader;
+import com.huiyi.assistant.context.WorkspaceContext;
+import com.huiyi.assistant.context.WorkspaceContextHolder;
 import com.huiyi.assistant.model.enums.IntentTypeEnum;
 import com.huiyi.assistant.model.vo.ReferenceVO;
 import com.huiyi.assistant.observability.ObservabilityMetrics;
@@ -22,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -63,18 +63,10 @@ class EvalGoldenRunner {
         assertTrue(ids.containsAll(REQUIRED_IDS), "missing goldens: " + REQUIRED_IDS.stream()
                 .filter(id -> !ids.contains(id)).toList());
 
-        EvalHarness harness = new EvalHarness();
-        EvalComparer comparer = new EvalComparer();
+        EvalCaseExecutor executor = new EvalCaseExecutor();
         List<EvalReportRow> rows = new ArrayList<>();
         for (EvalCase cse : cases) {
-            EvalActual actual = harness.run(cse, runnerFor(cse));
-            EvalComparer.Result result = comparer.compare(cse.expect(), actual);
-            rows.add(new EvalReportRow(
-                    cse.id(),
-                    result.passed(),
-                    expectedView(cse.expect()),
-                    actualView(cse.expect(), actual),
-                    result.mismatch()));
+            rows.add(executor.execute(cse, runnerFor(cse)));
         }
 
         Path json = Path.of("target", "eval-report.json");
@@ -125,13 +117,7 @@ class EvalGoldenRunner {
         List<String> toolNames = cse.stubs().tools().stream()
                 .map(EvalCase.ToolStub::name)
                 .toList();
-        if (toolNames.isEmpty()) {
-            toolNames = intent == IntentTypeEnum.DATA_QUERY
-                    ? List.of(ToolNames.SQL_GENERATE)
-                    : List.of(ToolNames.KNOWLEDGE_SEARCH);
-        }
-        List<String> names = toolNames;
-        lenient().when(planner.toolsFor(any())).thenReturn(names);
+        lenient().when(planner.toolsFor(any())).thenReturn(toolNames);
 
         lenient().when(executor.execute(any(), any(), any()))
                 .thenAnswer(invocation -> executeStub(cse, invocation.getArgument(0)));
@@ -151,7 +137,7 @@ class EvalGoldenRunner {
                 throw new UnknownToolException(name);
             }
             if (stub.ok()) {
-                return ToolResult.ok(adaptData(stub.data()));
+                return ToolResult.ok(isolateTrap(adaptData(stub.data())));
             }
             return ToolResult.fail(stub.error() == null ? "eval_stub_missing" : stub.error());
         }
@@ -181,73 +167,15 @@ class EvalGoldenRunner {
         return copy;
     }
 
-    private Map<String, Object> expectedView(EvalCase.Expect expect) {
-        Map<String, Object> view = new LinkedHashMap<>();
-        if (expect == null) {
-            return view;
+    private Map<String, Object> isolateTrap(Map<String, Object> data) {
+        Object trap = data.get("trap");
+        if (trap == null) {
+            return data;
         }
-        if (expect.intent() != null) {
-            view.put("intent", expect.intent());
+        WorkspaceContext ctx = WorkspaceContextHolder.get();
+        if (ctx == null || ctx.workspaceId() == null || ctx.workspaceId() != 2L) {
+            data.put("fallbackAnswer", String.valueOf(trap));
         }
-        if (expect.answerEquals() != null) {
-            view.put("answerEquals", expect.answerEquals());
-        }
-        if (expect.answerContains() != null && !expect.answerContains().isEmpty()) {
-            view.put("answerContains", expect.answerContains());
-        }
-        if (expect.errorCodeSpecified()) {
-            view.put("errorCode", expect.errorCode());
-        }
-        if (expect.analysisHasToolCalls() != null) {
-            view.put("analysisHasToolCalls", expect.analysisHasToolCalls());
-        }
-        if (expect.toolEvents() != null && !expect.toolEvents().isEmpty()) {
-            view.put("toolEvents", expect.toolEvents().stream().map(ev -> {
-                Map<String, Object> item = new LinkedHashMap<>();
-                item.put("name", ev.name());
-                item.put("phase", ev.phase());
-                item.put("status", ev.status());
-                return item;
-            }).toList());
-        }
-        if (expect.forbiddenSubstrings() != null && !expect.forbiddenSubstrings().isEmpty()) {
-            view.put("forbiddenSubstrings", expect.forbiddenSubstrings());
-        }
-        return view;
-    }
-
-    private Map<String, Object> actualView(EvalCase.Expect expect, EvalActual actual) {
-        Map<String, Object> view = new LinkedHashMap<>();
-        if (expect == null || actual == null) {
-            return view;
-        }
-        if (expect.intent() != null) {
-            view.put("intent", actual.intent());
-        }
-        if (expect.answerEquals() != null) {
-            view.put("answer", actual.answer());
-        }
-        if (expect.answerContains() != null && !expect.answerContains().isEmpty()) {
-            view.put("answer", actual.answer());
-        }
-        if (expect.errorCodeSpecified()) {
-            view.put("errorCode", actual.errorCode());
-        }
-        if (expect.analysisHasToolCalls() != null) {
-            view.put("analysisHasToolCalls", actual.analysisHasToolCalls());
-        }
-        if (expect.toolEvents() != null && !expect.toolEvents().isEmpty()) {
-            view.put("toolEvents", actual.toolEvents().stream().map(ev -> {
-                Map<String, Object> item = new LinkedHashMap<>();
-                item.put("name", ev.name());
-                item.put("phase", ev.phase());
-                item.put("status", ev.status());
-                return item;
-            }).toList());
-        }
-        if (expect.forbiddenSubstrings() != null && !expect.forbiddenSubstrings().isEmpty()) {
-            view.put("answer", actual.answer());
-        }
-        return view;
+        return data;
     }
 }

@@ -10,6 +10,8 @@ import com.huiyi.assistant.agent.OutputGuard;
 import com.huiyi.assistant.context.WorkspaceContext;
 import com.huiyi.assistant.context.WorkspaceContextHolder;
 
+import java.util.List;
+
 public class EvalHarness {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -20,7 +22,7 @@ public class EvalHarness {
             WorkspaceContextHolder.set(contextFor(cse == null ? null : cse.workspace()));
             if (cse != null && cse.stubs() != null && cse.stubs().dirtyAnswer() != null) {
                 String sanitized = OUTPUT_GUARD.sanitize(cse.stubs().dirtyAnswer());
-                return new EvalActual(null, sanitized, null, false, java.util.List.of());
+                return new EvalActual(null, sanitized, null, false, List.of());
             }
             EvalRecordingListener listener = new EvalRecordingListener();
             AgentDeadline deadline = cse != null && cse.stubs() != null && cse.stubs().deadlineExpired()
@@ -37,17 +39,19 @@ public class EvalHarness {
     }
 
     public static WorkspaceContext contextFor(String workspace) {
-        long workspaceId = switch (workspace == null ? "default" : workspace) {
+        String label = workspace == null || workspace.isBlank() ? "default" : workspace;
+        long workspaceId = switch (label) {
+            case "default" -> 9L;
             case "A" -> 1L;
             case "B" -> 2L;
-            default -> 9L;
+            default -> throw new IllegalArgumentException("unknown workspace label: " + workspace);
         };
         return new WorkspaceContext(1L, workspaceId, 1L, "VIEWER", "ACTIVE", "ACTIVE");
     }
 
     static EvalActual toActual(AgentResult result, EvalRecordingListener listener) {
         if (result == null) {
-            return new EvalActual(null, "", null, false, listener == null ? java.util.List.of() : listener.events());
+            return new EvalActual(null, "", null, false, listener == null ? List.of() : listener.events());
         }
         String intent = result.decision() == null || result.decision().intent() == null
                 ? null
@@ -58,7 +62,7 @@ public class EvalHarness {
                 answer,
                 result.errorCode(),
                 hasToolCalls(result),
-                listener == null ? java.util.List.of() : listener.events());
+                listener == null ? List.of() : listener.events());
     }
 
     private static boolean hasToolCalls(AgentResult result) {

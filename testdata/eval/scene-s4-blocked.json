@@ -7,9 +7,7 @@
   "stubs": {
     "rewrite": "请删除全部销售记录",
     "intent": "data_query",
-    "tools": [
-      { "name": "sql.generate", "ok": true, "data": { "sql": "select 1" } }
-    ]
+    "tools": []
   },
   "expect": {
     "intent": "data_query",

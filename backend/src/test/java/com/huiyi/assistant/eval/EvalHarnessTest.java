@@ -86,12 +86,26 @@ class EvalHarnessTest {
 
     @Test
     void workspaceBInjectsWorkspaceId2() {
+        assertWorkspaceMapped("B", 2L);
+    }
+
+    @Test
+    void workspaceAInjectsWorkspaceId1() {
+        assertWorkspaceMapped("A", 1L);
+    }
+
+    @Test
+    void workspaceDefaultInjectsWorkspaceId9() {
+        assertWorkspaceMapped("default", 9L);
+    }
+
+    private void assertWorkspaceMapped(String workspace, long workspaceId) {
         when(queryRewriteService.rewrite(any(), any())).thenReturn("q");
         when(intentService.detectWithDetail("q")).thenReturn(
                 new IntentService.IntentDecision(IntentTypeEnum.KNOWLEDGE_QA, IntentService.Layer.RULE, 1.0));
         when(routerPlanner.toolsFor(IntentTypeEnum.KNOWLEDGE_QA)).thenReturn(List.of(ToolNames.KNOWLEDGE_SEARCH));
         Map<String, Object> data = new HashMap<>();
-        data.put("fallbackAnswer", "B 空间只读摘要");
+        data.put("fallbackAnswer", "ok");
         data.put("prompt", null);
         data.put("references", List.of());
         when(toolExecutor.execute(eq(ToolNames.KNOWLEDGE_SEARCH), any(), any())).thenReturn(ToolResult.ok(data));
@@ -99,11 +113,11 @@ class EvalHarnessTest {
         cse.setId("iso");
         cse.setEntrypoint("analysis_query");
         cse.setQuestion("q");
-        cse.setWorkspace("B");
+        cse.setWorkspace(workspace);
         new EvalHarness().run(cse, runner);
         ArgumentCaptor<ToolContext> captor = ArgumentCaptor.forClass(ToolContext.class);
         verify(toolExecutor).execute(eq(ToolNames.KNOWLEDGE_SEARCH), captor.capture(), any());
-        assertEquals(2L, captor.getValue().workspaceId());
+        assertEquals(workspaceId, captor.getValue().workspaceId());
         assertEquals(1L, captor.getValue().userId());
     }
 

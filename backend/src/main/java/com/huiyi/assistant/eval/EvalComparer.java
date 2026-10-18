@@ -1,6 +1,8 @@
 package com.huiyi.assistant.eval;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class EvalComparer {
@@ -43,9 +45,16 @@ public class EvalComparer {
                 && expect.analysisHasToolCalls() != safe.analysisHasToolCalls()) {
             return Result.fail("analysisHasToolCalls");
         }
-        if (expect.toolEvents() != null && !expect.toolEvents().isEmpty()
-                && !isToolEventPrefix(expect.toolEvents(), safe.toolEvents())) {
-            return Result.fail("toolEvents");
+        if (expect.toolEventsSpecified()) {
+            List<EvalCase.ToolEventExpect> expectedEvents =
+                    expect.toolEvents() == null ? List.of() : expect.toolEvents();
+            if (expectedEvents.isEmpty()) {
+                if (!safe.toolEvents().isEmpty()) {
+                    return Result.fail("toolEvents");
+                }
+            } else if (!isToolEventPrefix(expectedEvents, safe.toolEvents())) {
+                return Result.fail("toolEvents");
+            }
         }
         if (expect.forbiddenSubstrings() != null) {
             for (String forbidden : expect.forbiddenSubstrings()) {
@@ -76,5 +85,77 @@ public class EvalComparer {
             }
         }
         return true;
+    }
+
+    public Map<String, Object> expectedView(EvalCase.Expect expect) {
+        Map<String, Object> view = new LinkedHashMap<>();
+        if (expect == null) {
+            return view;
+        }
+        if (expect.intent() != null) {
+            view.put("intent", expect.intent());
+        }
+        if (expect.answerEquals() != null) {
+            view.put("answerEquals", expect.answerEquals());
+        }
+        if (expect.answerContains() != null && !expect.answerContains().isEmpty()) {
+            view.put("answerContains", expect.answerContains());
+        }
+        if (expect.errorCodeSpecified()) {
+            view.put("errorCode", expect.errorCode());
+        }
+        if (expect.analysisHasToolCalls() != null) {
+            view.put("analysisHasToolCalls", expect.analysisHasToolCalls());
+        }
+        if (expect.toolEventsSpecified()) {
+            view.put("toolEvents", eventMaps(expect.toolEvents()));
+        }
+        if (expect.forbiddenSubstrings() != null && !expect.forbiddenSubstrings().isEmpty()) {
+            view.put("forbiddenSubstrings", expect.forbiddenSubstrings());
+        }
+        return view;
+    }
+
+    public Map<String, Object> actualView(EvalCase.Expect expect, EvalActual actual) {
+        Map<String, Object> view = new LinkedHashMap<>();
+        if (expect == null || actual == null) {
+            return view;
+        }
+        if (expect.intent() != null) {
+            view.put("intent", actual.intent());
+        }
+        if (expect.answerEquals() != null || (expect.answerContains() != null && !expect.answerContains().isEmpty())
+                || (expect.forbiddenSubstrings() != null && !expect.forbiddenSubstrings().isEmpty())) {
+            view.put("answer", actual.answer());
+        }
+        if (expect.errorCodeSpecified()) {
+            view.put("errorCode", actual.errorCode());
+        }
+        if (expect.analysisHasToolCalls() != null) {
+            view.put("analysisHasToolCalls", actual.analysisHasToolCalls());
+        }
+        if (expect.toolEventsSpecified()) {
+            view.put("toolEvents", actual.toolEvents().stream().map(ev -> {
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("name", ev.name());
+                item.put("phase", ev.phase());
+                item.put("status", ev.status());
+                return item;
+            }).toList());
+        }
+        return view;
+    }
+
+    private List<Map<String, Object>> eventMaps(List<EvalCase.ToolEventExpect> events) {
+        if (events == null) {
+            return List.of();
+        }
+        return events.stream().map(ev -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("name", ev.name());
+            item.put("phase", ev.phase());
+            item.put("status", ev.status());
+            return item;
+        }).toList();
     }
 }

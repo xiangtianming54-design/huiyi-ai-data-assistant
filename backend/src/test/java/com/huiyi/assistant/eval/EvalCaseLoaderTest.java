@@ -26,4 +26,10 @@ class EvalCaseLoaderTest {
         List<EvalCase> cases = loader.load(dir);
         assertEquals("ok", cases.get(0).id());
     }
+
+    @Test
+    void rejectsUserIdKey() throws Exception {
+        Files.writeString(dir.resolve("bad.json"), "{\"id\":\"bad\",\"userId\":1,\"question\":\"q\"}");
+        assertThrows(IllegalArgumentException.class, () -> new EvalCaseLoader().load(dir));
+    }
 }

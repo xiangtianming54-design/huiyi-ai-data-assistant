@@ -2,9 +2,11 @@ package com.huiyi.assistant.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.huiyi.assistant.agent.AgentDeadline;
 import com.huiyi.assistant.agent.AgentRequest;
 import com.huiyi.assistant.agent.AgentResult;
 import com.huiyi.assistant.agent.AgentRunner;
+import com.huiyi.assistant.agent.ToolEventListener;
 import com.huiyi.assistant.model.dto.ChatRequestDTO;
 import com.huiyi.assistant.model.enums.IntentTypeEnum;
 import com.huiyi.assistant.model.vo.ChatAskResponseVO;
@@ -21,7 +23,9 @@ import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -138,9 +142,12 @@ public class ChatService {
         requestTraceService.start("chat_stream", request.getQuestion(), request.getSessionId());
         String sessionId = resolveScopedSession(request.getSessionId());
         chatSessionService.saveUserMessage(sessionId, request.getQuestion(), null);
+        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
+        sendEvent(emitter, "session", sessionId);
         AgentResult result;
         try {
-            result = agentRunner.run(new AgentRequest("chat_stream", request.getQuestion(), sessionId));
+            result = agentRunner.run(new AgentRequest("chat_stream", request.getQuestion(), sessionId),
+                    toolSseListener(emitter), AgentDeadline.fromNow(SSE_TIMEOUT_MS));
         } catch (RuntimeException e) {
             requestTraceService.finish("FAILED", null, e.getMessage(), start);
             observabilityMetrics.chatFailed(Duration.ofNanos(System.nanoTime() - start));
@@ -148,9 +155,16 @@ public class ChatService {
         }
         IntentService.IntentDecision decision = result.decision();
         IntentTypeEnum intent = decision.intent();
-
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
-        sendEvent(emitter, "session", sessionId);
+        if (result.errorCode() != null) {
+            sendEvent(emitter, "error", AgentRunner.LIMIT_USER_MESSAGE);
+            emitter.complete();
+            chatSessionService.saveAssistantMessage(sessionId, AgentRunner.LIMIT_USER_MESSAGE,
+                    intent, null, List.of(),
+                    decision.layer().name().toLowerCase(), decision.score());
+            requestTraceService.finish("FAILED", intent.getCode(), result.errorCode(), start, result.errorCode());
+            observabilityMetrics.chatFailed(Duration.ofNanos(System.nanoTime() - start));
+            return emitter;
+        }
 
         List<ReferenceVO> references = result.references() == null ? List.of() : result.references();
         String sqlText = result.sql();
@@ -221,6 +235,38 @@ public class ChatService {
             return chatSessionService.resolveSessionId(sessionId);
         }
         return chatSessionService.ensureSession(context.workspaceId(), context.userId(), sessionId);
+    }
+
+    private ToolEventListener toolSseListener(SseEmitter emitter) {
+        return new ToolEventListener() {
+            @Override
+            public void onStarted(String toolName) {
+                sendEvent(emitter, "tool.started", toolEventJson(toolName, null));
+            }
+
+            @Override
+            public void onCompleted(String toolName, String status) {
+                sendEvent(emitter, "tool.completed", toolEventJson(toolName, status));
+            }
+
+            @Override
+            public void onFailed(String toolName, String status) {
+                sendEvent(emitter, "tool.failed", toolEventJson(toolName, status));
+            }
+        };
+    }
+
+    private String toolEventJson(String toolName, String status) {
+        Map<String, String> payload = new LinkedHashMap<>();
+        payload.put("tool", toolName);
+        if (status != null) {
+            payload.put("status", status);
+        }
+        try {
+            return OBJECT_MAPPER.writeValueAsString(payload);
+        } catch (JsonProcessingException e) {
+            return "{\"tool\":\"" + toolName + "\"}";
+        }
     }
 
     private void sendEvent(SseEmitter emitter, String name, String data) {

@@ -1,8 +1,10 @@
 package com.huiyi.assistant.service;
 
+import com.huiyi.assistant.agent.AgentDeadline;
 import com.huiyi.assistant.agent.AgentRequest;
 import com.huiyi.assistant.agent.AgentResult;
 import com.huiyi.assistant.agent.AgentRunner;
+import com.huiyi.assistant.agent.ToolEventListener;
 import com.huiyi.assistant.model.dto.ChatRequestDTO;
 import com.huiyi.assistant.model.enums.IntentTypeEnum;
 import com.huiyi.assistant.model.vo.ReferenceVO;
@@ -57,11 +59,29 @@ class ChatServiceFacadeTest {
     }
 
     @Test
-    void chatStreamEventNamesStayTokenOnly() throws Exception {
+    void chatStreamSourceOverlaysToolEvents() throws Exception {
         String src = Files.readString(Path.of("src/main/java/com/huiyi/assistant/service/ChatService.java"),
                 StandardCharsets.UTF_8);
-        assertFalse(src.contains("sendEvent(emitter, \"step\""));
+        assertTrue(src.contains("sendEvent(emitter, \"session\""));
+        String stream = src.substring(src.indexOf("public SseEmitter chatStream"));
+        assertTrue(stream.indexOf("new SseEmitter") < stream.indexOf("agentRunner.run"));
+        assertTrue(src.contains("tool.started"));
+        assertTrue(src.contains("tool.completed"));
+        assertTrue(src.contains("tool.failed"));
         assertTrue(src.contains("sendEvent(emitter, \"token\""));
+        assertFalse(src.contains("answer.token"));
+        assertFalse(src.contains("sendEvent(emitter, \"step\""));
+        assertFalse(src.contains("/agent/runs"));
+    }
+
+    @Test
+    void chatStreamDelegatesThreeArgRun() {
+        when(chatSessionService.resolveSessionId(any())).thenReturn("s1");
+        when(agentRunner.run(any(), any(), any())).thenReturn(sampleKnowledgeResult());
+        ChatRequestDTO request = new ChatRequestDTO();
+        request.setQuestion("什么是有效订单？");
+        chatService.chatStream(request);
+        verify(agentRunner).run(any(AgentRequest.class), any(ToolEventListener.class), any(AgentDeadline.class));
     }
 
     @Test
@@ -96,7 +116,7 @@ class ChatServiceFacadeTest {
     @Test
     void chatStreamFinishesRunAndSavesUserWhenRunnerThrows() {
         when(chatSessionService.resolveSessionId(any())).thenReturn("s1");
-        when(agentRunner.run(any())).thenThrow(new RuntimeException("boom"));
+        when(agentRunner.run(any(), any(), any())).thenThrow(new RuntimeException("boom"));
         ChatRequestDTO request = new ChatRequestDTO();
         request.setQuestion("什么是有效订单？");
         assertThrows(RuntimeException.class, () -> chatService.chatStream(request));

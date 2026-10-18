@@ -14,9 +14,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -31,6 +35,14 @@ class AnalysisServiceFacadeTest {
     @Mock ObservabilityMetrics observabilityMetrics;
 
     @InjectMocks AnalysisService analysisService;
+
+    @Test
+    void queryJsonHasNoToolCalls() throws Exception {
+        String src = Files.readString(Path.of("src/main/java/com/huiyi/assistant/service/AnalysisService.java"),
+                StandardCharsets.UTF_8);
+        assertFalse(src.contains("toolCalls"));
+        assertFalse(src.contains("tool.started"));
+    }
 
     @Test
     void queryDelegatesToRunner() {

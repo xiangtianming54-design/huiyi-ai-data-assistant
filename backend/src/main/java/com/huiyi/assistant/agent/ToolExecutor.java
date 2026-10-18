@@ -20,6 +20,7 @@ public class ToolExecutor {
     public static final String TIMEOUT_ERROR = "timeout";
 
     private final ToolRegistry registry;
+    private final ToolSchemaValidator schemaValidator = new ToolSchemaValidator();
     private final ExecutorService pool = Executors.newFixedThreadPool(8, runnable -> {
         Thread thread = new Thread(runnable, "huiyi-tool-exec");
         thread.setDaemon(true);
@@ -33,6 +34,9 @@ public class ToolExecutor {
     public ToolResult execute(String name, ToolContext context, Map<String, Object> arguments) {
         AgentTool tool = registry.require(name);
         Map<String, Object> stripped = stripTenant(arguments);
+        if (!schemaValidator.isValid(tool.spec().inputSchema(), stripped)) {
+            return ToolResult.fail(ToolSchemaValidator.SCHEMA_INVALID);
+        }
         long timeoutMs = tool.spec().timeoutMs();
         if (timeoutMs <= 0) {
             return tool.execute(context, stripped);

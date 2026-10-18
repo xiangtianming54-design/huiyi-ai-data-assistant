@@ -3,6 +3,7 @@ package com.huiyi.assistant.agent.tool;
 import com.huiyi.assistant.agent.ToolContext;
 import com.huiyi.assistant.agent.ToolNames;
 import com.huiyi.assistant.agent.ToolResult;
+import com.huiyi.assistant.agent.ToolSchemas;
 import com.huiyi.assistant.context.WorkspaceContext;
 import com.huiyi.assistant.model.dto.SqlValidateResponseDTO;
 import com.huiyi.assistant.service.PythonServiceClient;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,6 +29,11 @@ class SqlToolsTest {
     @Mock TextToSqlService textToSqlService;
     @Mock PythonServiceClient pythonServiceClient;
     @Mock SqlExecuteService sqlExecuteService;
+
+    @Test
+    void generateSpecIsNotEmptyObjectSchema() {
+        assertNotEquals("{}", new SqlGenerateTool(textToSqlService).spec().inputSchema());
+    }
 
     @Test
     void viewerContextCanExecuteReadonly() {

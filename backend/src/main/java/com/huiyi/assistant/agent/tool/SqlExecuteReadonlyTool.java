@@ -4,6 +4,7 @@ import com.huiyi.assistant.agent.AgentTool;
 import com.huiyi.assistant.agent.ToolContext;
 import com.huiyi.assistant.agent.ToolNames;
 import com.huiyi.assistant.agent.ToolResult;
+import com.huiyi.assistant.agent.ToolSchemas;
 import com.huiyi.assistant.agent.ToolSpec;
 import com.huiyi.assistant.service.SqlExecuteService;
 import org.springframework.stereotype.Component;
@@ -22,7 +23,7 @@ public class SqlExecuteReadonlyTool implements AgentTool {
 
     @Override
     public ToolSpec spec() {
-        return new ToolSpec(ToolNames.SQL_EXECUTE_READONLY, "执行只读 SQL", "{}", 15_000L,
+        return new ToolSpec(ToolNames.SQL_EXECUTE_READONLY, "执行只读 SQL", ToolSchemas.SQL_EXECUTE_READONLY, 15_000L,
                 ToolSpec.DANGER_READ, ToolSpec.PERMISSION_WORKSPACE_MEMBER);
     }
 

@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,6 +31,18 @@ class ToolExecutorTest {
         assertFalse(args.containsKey("workspaceId"));
         assertFalse(args.containsKey("userId"));
         assertEquals("select 1", args.get("sql"));
+    }
+
+    @Test
+    void invalidSchemaDoesNotExecute() {
+        AtomicBoolean ran = new AtomicBoolean(false);
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(recordingToolWithSchema("sql.validate", ToolSchemas.SQL_VALIDATE, ran));
+        ToolExecutor executor = new ToolExecutor(registry);
+        ToolResult result = executor.execute("sql.validate", new ToolContext(1L, 1L, "q"), Map.of());
+        assertFalse(result.ok());
+        assertEquals("schema_invalid", result.error());
+        assertFalse(ran.get());
     }
 
     @Test
@@ -92,6 +105,23 @@ class ToolExecutorTest {
         assertEquals(List.of("req_aaa", "req_bbb"), requestIds);
         assertEquals(List.of("run_aaa", "run_bbb"), runIds);
         assertEquals(List.of(1L, 9L), workspaceIds);
+    }
+
+    private static AgentTool recordingToolWithSchema(String name, String inputSchema, AtomicBoolean ran) {
+        ToolSpec spec = new ToolSpec(name, "t", inputSchema, 5_000L, ToolSpec.DANGER_READ,
+                ToolSpec.PERMISSION_WORKSPACE_MEMBER);
+        return new AgentTool() {
+            @Override
+            public ToolSpec spec() {
+                return spec;
+            }
+
+            @Override
+            public ToolResult execute(ToolContext context, Map<String, Object> arguments) {
+                ran.set(true);
+                return ToolResult.ok(Map.of());
+            }
+        };
     }
 
     private static AgentTool recordingTool(String name, long timeoutMs,

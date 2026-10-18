@@ -4,6 +4,7 @@ import com.huiyi.assistant.agent.AgentTool;
 import com.huiyi.assistant.agent.ToolContext;
 import com.huiyi.assistant.agent.ToolNames;
 import com.huiyi.assistant.agent.ToolResult;
+import com.huiyi.assistant.agent.ToolSchemas;
 import com.huiyi.assistant.agent.ToolSpec;
 import com.huiyi.assistant.service.TextToSqlService;
 import org.springframework.stereotype.Component;
@@ -22,7 +23,7 @@ public class SqlGenerateTool implements AgentTool {
 
     @Override
     public ToolSpec spec() {
-        return new ToolSpec(ToolNames.SQL_GENERATE, "生成只读 SQL", "{}", 30_000L,
+        return new ToolSpec(ToolNames.SQL_GENERATE, "生成只读 SQL", ToolSchemas.SQL_GENERATE, 30_000L,
                 ToolSpec.DANGER_READ, ToolSpec.PERMISSION_WORKSPACE_MEMBER);
     }
 

@@ -4,6 +4,7 @@ import com.huiyi.assistant.agent.AgentTool;
 import com.huiyi.assistant.agent.ToolContext;
 import com.huiyi.assistant.agent.ToolNames;
 import com.huiyi.assistant.agent.ToolResult;
+import com.huiyi.assistant.agent.ToolSchemas;
 import com.huiyi.assistant.agent.ToolSpec;
 import com.huiyi.assistant.service.RagService;
 import org.springframework.stereotype.Component;
@@ -22,7 +23,7 @@ public class KnowledgeSearchTool implements AgentTool {
 
     @Override
     public ToolSpec spec() {
-        return new ToolSpec(ToolNames.KNOWLEDGE_SEARCH, "知识检索", "{}", 15_000L,
+        return new ToolSpec(ToolNames.KNOWLEDGE_SEARCH, "知识检索", ToolSchemas.KNOWLEDGE_SEARCH, 15_000L,
                 ToolSpec.DANGER_READ, ToolSpec.PERMISSION_WORKSPACE_MEMBER);
     }
 

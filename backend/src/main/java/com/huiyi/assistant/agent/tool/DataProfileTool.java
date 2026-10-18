@@ -4,6 +4,7 @@ import com.huiyi.assistant.agent.AgentTool;
 import com.huiyi.assistant.agent.ToolContext;
 import com.huiyi.assistant.agent.ToolNames;
 import com.huiyi.assistant.agent.ToolResult;
+import com.huiyi.assistant.agent.ToolSchemas;
 import com.huiyi.assistant.agent.ToolSpec;
 import com.huiyi.assistant.model.dto.DataProfileResponseDTO;
 import com.huiyi.assistant.service.PythonServiceClient;
@@ -24,7 +25,7 @@ public class DataProfileTool implements AgentTool {
 
     @Override
     public ToolSpec spec() {
-        return new ToolSpec(ToolNames.DATA_PROFILE, "数据画像与图表类型", "{}", 10_000L,
+        return new ToolSpec(ToolNames.DATA_PROFILE, "数据画像与图表类型", ToolSchemas.DATA_PROFILE, 10_000L,
                 ToolSpec.DANGER_READ, ToolSpec.PERMISSION_WORKSPACE_MEMBER);
     }
 

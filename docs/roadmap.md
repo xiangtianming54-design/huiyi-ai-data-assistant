@@ -39,9 +39,13 @@
 
 ## 当前开发：v1.0.0 Stable Agent Assistant
 
-尚未开工。桌面文档 §10：ContextBuilder、TokenBudget、记忆与压缩、输入/工具/输出 Guard、反馈。规格待冻结。
+规格已冻结：[2026-10-18-v10-stable-agent-assistant.md](superpowers/specs/2026-10-18-v10-stable-agent-assistant.md)（按桌面 v1.0 规划 1–17 章同构改写，口径以 D01–D13 为准）。技术设计：[2026-10-18-v10-stable-agent-assistant-technical.md](superpowers/specs/2026-10-18-v10-stable-agent-assistant-technical.md)。实施计划：[2026-10-18-v10-stable-agent-assistant.md](superpowers/plans/2026-10-18-v10-stable-agent-assistant.md)。实现尚未开工。
 
-**本版不做（仍属后续）：** 生产多环境、语义层、评测集、MCP。
+P0：现网 `chat/stream` / `analysis/query` 上叠加 `tool.*` SSE、五工具 JSON Schema、Context Budget、现有角色 Guard、run 总超时与 `assistant_runs.error_code`。五场景默认仍 Router。
+
+P1 ReAct 已写入该规格，本周不开工。公开 `/agent/runs`、新工具面、评测页、细粒度权限不进本版。
+
+**本版不做（仍属后续）：** 生产多环境、语义层、评测平台、MCP、桌面全文 4 周范围。
 
 ## 后续版本（摘要）
 

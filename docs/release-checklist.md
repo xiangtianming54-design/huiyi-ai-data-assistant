@@ -32,8 +32,8 @@
 
 ## 发布动作
 
-- [ ] 语义化标签：`v1.0.0`（打 tag 后勾）
-- [ ] `git push origin main` 与 `git push origin v1.0.0`
+- [x] 语义化标签：`v1.0.0` → `2debba2`
+- [x] `git push origin main` 与 `git push origin v1.0.0`（2026-10-18）
 - [ ] GitHub Release 写清：新增 / 修复 / 不包含（本机无 `gh`，需在 GitHub 网页创建）
 - [ ] 若本版是公开里程碑：确认仓库可见性仍符合预期
 

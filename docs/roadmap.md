@@ -29,17 +29,17 @@
 | **v1.3.0** | Production Ready | 3–4 周 | staging/prod、备份、限流、压测、告警 |
 | **v1.4.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
 
-## 已发布：v1.0.0 Stable Agent Assistant
+## 已发布：v1.1.0 Eval & Prompt Governance
 
-标签 `v1.0.0`。规格：[2026-10-18-v10-stable-agent-assistant.md](superpowers/specs/2026-10-18-v10-stable-agent-assistant.md)。技术设计：[2026-10-18-v10-stable-agent-assistant-technical.md](superpowers/specs/2026-10-18-v10-stable-agent-assistant-technical.md)。计划：[2026-10-18-v10-stable-agent-assistant.md](superpowers/plans/2026-10-18-v10-stable-agent-assistant.md)。本版 P0：现网 `chat/stream` 叠加 `tool.*` SSE；五工具 JSON Schema；Context Budget；OutputGuard；90s run 帽；Flyway V11 `assistant_runs.error_code`。入口仍是 Chat/Analysis，默认 Router。
+标签 `v1.1.0`。规格：[2026-10-18-v11-eval-and-regression.md](superpowers/specs/2026-10-18-v11-eval-and-regression.md)。技术设计：[2026-10-18-v11-eval-and-regression-technical.md](superpowers/specs/2026-10-18-v11-eval-and-regression-technical.md)。计划：[2026-10-18-v11-eval-and-regression.md](superpowers/plans/2026-10-18-v11-eval-and-regression.md)。本版 P0：`testdata/eval/` 12 条金标 + Java `EvalGoldenRunner` + CI 独立 job `eval-goldens` 上传 `eval-report.json/.md`。无评测页、无新 API、无新表。Prompt 版本/灰度仍为 P1。
 
-未纳入本版：ReAct；`POST /agent/runs`；前端 `toolCalls`；评测页；细粒度权限；MCP；写库工具。v0.7 P1 UI、v0.8 P2 调试面板仍不自动滚入。
+未纳入本版：Prompt 灰度、评测页、ReAct、Compose e2e 进 Actions。
 
-上一发布：`v0.9.0` Tool Harness & Agent Runtime。
+上一发布：`v1.0.0` Stable Agent Assistant。
 
-## 当前开发：v1.1.0 Eval & Prompt Governance
+## 当前开发：v1.2.0 Enterprise Knowledge Plane
 
-规格已冻结：[2026-10-18-v11-eval-and-regression.md](superpowers/specs/2026-10-18-v11-eval-and-regression.md)。技术设计：[2026-10-18-v11-eval-and-regression-technical.md](superpowers/specs/2026-10-18-v11-eval-and-regression-technical.md)。实施计划：[2026-10-18-v11-eval-and-regression.md](superpowers/plans/2026-10-18-v11-eval-and-regression.md)。口径以 D01–D13 为准。P0：仓库金标夹具 + Java runner + CI `eval-goldens` 报告 Artifact。Prompt 版本/灰度、评测页不进本版 P0。P0 实现位于 `feature/v1.1-eval-regression`（未合并）。
+未开工。规格以桌面企业迭代文档 v1.2 章节为准，开工前仍按决策表逐项冻结。
 
 ## 后续版本（摘要）
 

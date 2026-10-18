@@ -2,7 +2,7 @@
 
 > 会意 · 企业经营数据智能分析助手
 
-当前发布：**v1.0.0 Stable Agent Assistant**（标签 `v1.0.0`）。规格 [v1.0 开发文档](docs/superpowers/specs/2026-10-18-v10-stable-agent-assistant.md)。基线对照 [docs/baseline.md](docs/baseline.md) · 踩坑 [docs/pitfalls.md](docs/pitfalls.md) · 路线图 [docs/roadmap.md](docs/roadmap.md)
+当前发布：**v1.1.0 Eval & Prompt Governance**（标签 `v1.1.0`）。规格 [v1.1 开发文档](docs/superpowers/specs/2026-10-18-v11-eval-and-regression.md)。基线对照 [docs/baseline.md](docs/baseline.md) · 踩坑 [docs/pitfalls.md](docs/pitfalls.md) · 路线图 [docs/roadmap.md](docs/roadmap.md)
 
 基于 **Java + Python 协同架构** 的企业经营数据智能分析助手，支持 **RAG 知识库问答** 与 **Text-to-SQL 数据分析** 两类核心能力。
 
@@ -14,7 +14,7 @@
 - **RAG 知识库问答**：Markdown / PDF / Word 解析 → 段落优先分块 → Chroma 向量化 → **向量 + BM25 RRF 混合检索** → 带引用来源的回答；无命中确定性兜底，不编造业务口径
 - **Text-to-SQL**：LLM 生成 SQL → **四道安全防线**（意图层拦截 → sqlglot 静态校验 → 只读账号执行 → 超时/行数/审计）→ pandas 数据画像与图表推荐
 - **SSE 流式问答**：自洽事件协议（session/token/references/error），前端 ReadableStream 逐 token 渲染
-- **工程化**：Docker Compose 一键启动、JWT / 工作区 RBAC / Flyway / 审计、请求级 Request/Run ID 与工具步骤 Trace、`/actuator/prometheus`；RAG / SQL / 画像收成只读工具，由 Router `AgentRunner` 编排；敏感配置全环境变量化；GitHub Actions CI（`mvn verify` / `pytest --cov` / `npm run build`）
+- **工程化**：Docker Compose 一键启动、JWT / 工作区 RBAC / Flyway / 审计、请求级 Request/Run ID 与工具步骤 Trace、`/actuator/prometheus`；RAG / SQL / 画像收成只读工具，由 Router `AgentRunner` 编排；敏感配置全环境变量化；GitHub Actions CI（`mvn verify` / `pytest --cov` / `npm run build` / `eval-goldens`）
 
 ## Architecture
 
@@ -160,8 +160,9 @@ huiyi-ai-data-assistant/
 - [x] **v0.8.0 Observability & Cost**：Request/Run ID、请求级 Trace、Metrics、Token/`cost_amount`、Python 访问日志、健康检查（[规格](docs/superpowers/specs/2026-10-16-v08-observability-and-cost.md)；不做 Grafana / Agent Loop）
 - [x] **v0.9.0 Tool Harness & Agent Runtime**：内存 ToolRegistry、Router AgentRunner、五个只读工具、Flyway V10 `tool_name`（[规格](docs/superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)）
 - [x] **v1.0.0 Stable Agent Assistant**：`tool.*` SSE、五工具 JSON Schema、Context Budget、OutputGuard、90s run 帽、Flyway V11 `error_code`（[规格](docs/superpowers/specs/2026-10-18-v10-stable-agent-assistant.md)；P1 ReAct 不在本版）
+- [x] **v1.1.0 Eval & Prompt Governance**：`testdata/eval/` 金标、`EvalGoldenRunner`、CI `eval-goldens` 报告 Artifact（[规格](docs/superpowers/specs/2026-10-18-v11-eval-and-regression.md)；P1 Prompt 灰度不在本版）
 
-按企业迭代文档演进：下一迭代 **v1.1.0** Eval & Prompt Governance。不把未做能力写成当前功能。
+按企业迭代文档演进：下一迭代 **v1.2.0** Enterprise Knowledge Plane。不把未做能力写成当前功能。
 
 ## License
 

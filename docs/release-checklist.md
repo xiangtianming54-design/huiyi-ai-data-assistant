@@ -4,12 +4,12 @@
 
 ## 代码与测试
 
-- [x] 目标分支已合并（`main` 含 v1.0 实现 `8a3fb68`）
-- [x] `backend`：`mvn -B test` 通过（本地，2026-10-18，144 tests）
+- [x] 目标分支已合并（`main` 含 v1.1 实现 `2013015`）
+- [x] `backend`：`mvn -B test` 通过（本地，2026-10-18，156 tests）
 - [ ] `python-service`：本版未改 Python；沿用 v0.9 的 pytest 记录
 - [ ] `frontend`：本版未改前端；沿用 v0.9 的 `npm run build` 记录
-- [ ] GitHub Actions 对应 commit 三条 job 均为成功（push `main` 后在网页确认；本机无 `gh`）
-- [x] 本版改了 Chat/Analysis 编排：Agent / Facade / Schema / Budget / Guard 单测已更新
+- [ ] GitHub Actions 对应 commit 四条 job 均为成功（含 `eval-goldens`；push `main` 后在网页确认；本机无 `gh`）
+- [x] 本版评测金标：`EvalGoldenRunner` + `testdata/eval/` 12 条已绿
 
 ## 安全与仓库卫生
 
@@ -20,28 +20,36 @@
 
 ## 文档
 
-- [x] [baseline.md](baseline.md) 已标注 v1.0 Schema / SSE / Budget / Guard / `error_code`
-- [x] [roadmap.md](roadmap.md) 当前发布为 v1.0.0；下一版 v1.1 未开工
+- [x] [baseline.md](baseline.md) 已标注 v1.1 评测金标 / CI `eval-goldens`
+- [x] [roadmap.md](roadmap.md) 当前发布为 v1.1.0；下一版 v1.2 未开工
 - [x] README 版本说明与本版一致
-- [x] [development.md](development.md) 已写 v1.0 变更与回滚
+- [x] [development.md](development.md) 已写 v1.1 变更与回滚
 
 ## 运行与演示
 
 - [ ] Compose 健康检查（本版收尾未重跑现网栈；v0.9 发版时已通过）
-- [ ] 五场景 `e2e-m5.js`（本版收尾未重跑；代码侧单测 144/144）
+- [ ] 五场景 `e2e-m5.js`（本版收尾未重跑；代码侧单测 156/156；金标走 stub 不连 Compose）
 
 ## 发布动作
 
-- [x] 语义化标签：`v1.0.0` → `2debba2`
-- [x] `git push origin main` 与 `git push origin v1.0.0`（2026-10-18）
+- [x] 语义化标签：`v1.1.0`（打在「mark released」提交上）
+- [x] `git push origin main` 与 `git push origin v1.1.0`
 - [ ] GitHub Release 写清：新增 / 修复 / 不包含（本机无 `gh`，需在 GitHub 网页创建）
 - [ ] 若本版是公开里程碑：确认仓库可见性仍符合预期
+
+## v1.1.0 特别项（仅本版）
+
+- [x] 无新 Flyway；无 `/eval`、无 `/agent/runs`、无评测页
+- [x] 不做 Prompt 版本/灰度、ReAct、Compose e2e 进 Actions
+- [x] CI job `eval-goldens`：`if: always()` 上传 `eval-report.json/.md`
+- [x] 回滚路径：`v1.0.0`（见 development.md）；本版 P0 不改 schema
 
 ## v1.0.0 特别项（仅本版）
 
 - [x] Flyway V11：仅 `assistant_runs.error_code`（无新表、无 FK、无 steps JSON）
 - [x] 不做 ReAct、`POST /agent/runs`、前端 `toolCalls`、评测页
 - [x] 回滚路径：`v0.9.0` + MySQL 备份（见 development.md）
+- [x] 语义化标签：`v1.0.0` → `2debba2`；已 `git push origin v1.0.0`
 
 ## v0.9.0 特别项（仅本版）
 

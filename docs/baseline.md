@@ -37,7 +37,7 @@
 | 缺少用户、工作区、RBAC；资源无明确归属 | v0.7.0（已交付，标签 `v0.7.0`） |
 | 无统一 Tool Registry / Agent Loop | v0.9.0（已交付内存 Registry + Router Runtime，标签 `v0.9.0`）；v1.0.0 补 Schema / `tool.*` SSE / Budget / Guard / `error_code`（标签 `v1.0.0`；ReAct / `/agent/runs` 仍非本版） |
 | 无系统化 Trace / Metrics / Cost | v0.8.0（已交付，标签 `v0.8.0`） |
-| 无评测集 / 回归报告；Prompt 散落在资源文件 | v1.1.0 |
+| 无评测集 / 回归报告；Prompt 散落在资源文件 | v1.1.0（已交付 `testdata/eval/` + `EvalGoldenRunner` + CI `eval-goldens`，标签 `v1.1.0`；Prompt 版本/灰度仍为 P1） |
 | Docker Compose 偏本地；无 staging / prod、备份、回滚 | v1.3.0 |
 | 无租户 / 配额；知识空间与权限过滤未完成 | v1.2.0 / v1.3.0 |
 

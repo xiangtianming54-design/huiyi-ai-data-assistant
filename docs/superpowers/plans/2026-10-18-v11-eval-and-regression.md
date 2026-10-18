@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> Status: 未开工。P0 only. P1 Prompt 灰度不在本计划。
+> Status: 已完成并发布。标签 `v1.1.0`。P0 only. P1 Prompt 灰度不在本计划。
 >
 > Execution workspace: isolated git worktree via superpowers:using-git-worktrees. Branch: `feature/v1.1-eval-regression`.
 

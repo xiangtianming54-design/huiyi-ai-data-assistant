@@ -37,15 +37,13 @@
 
 上一发布：`v0.7.0` Enterprise Foundation。
 
-## 当前准备：v0.9.0 Tool Harness & Agent Runtime
+## 当前开发：v0.9.0 Tool Harness & Agent Runtime
 
-口径：桌面规划 §9。规格草稿：[2026-10-17-v09-tool-harness-and-agent-runtime.md](superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)
+口径已冻结。规格：[2026-10-17-v09-tool-harness-and-agent-runtime.md](superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)。计划：[2026-10-17-v09-tool-harness-and-agent-runtime.md](superpowers/plans/2026-10-17-v09-tool-harness-and-agent-runtime.md)。分支 `feature/v0.9-tool-harness`。
 
-**本版要做：** 把 RAG / SQL / 画像收成 Tool，最小 Agent Runtime、Tool Registry、Agent Trace、SSE Agent 事件。
+**本版要做：** 现网 Chat/Analysis 门面 + 同一 Router `AgentRunner`；五个只读工具（画像与图表合在 `data.profile`）；内存 ToolRegistry；工具步骤写入 `assistant_run_steps.tool_name`（Flyway V10）。
 
-**明确不做：** 完整多 Agent、MCP、Grafana 生产大盘、评测平台。
-
-评审通过规格后再开 `feature/v0.9-tool-harness`。
+**明确不做：** `POST /agent/runs`；ReAct；步骤可见 SSE；前端改动；独立 `tool_invocations` / `tool_registry` 表；多 Agent；MCP；Grafana；写库工具。
 
 ## 后续版本（摘要）
 
@@ -55,7 +53,7 @@
 |---|---|---|
 | **v0.7.0** | 认证、工作区、成员、RBAC、资源归属、`/api/v1`、Flyway、审计、基础限流 | Agent Loop、换向量库、K8s |
 | **v0.8.0** | Request/Run ID、Request Trace、Token/成本字段、Metrics、Python 访问日志、健康检查 | Grafana 大盘、Agent Loop、评测平台、多模型路由 |
-| **v0.9.0** | 把 RAG / SQL / 画像收成 Tool，最小 Agent Runtime + Run Trace + SSE | 完整多 Agent、MCP |
+| **v0.9.0** | 把 RAG / SQL / 画像收成 Tool，Router Runtime + 工具步骤 Trace | ReAct、`/agent/runs`、步骤 SSE、多 Agent、MCP |
 | **v1.0.0** | ContextBuilder、TokenBudget、记忆与压缩、输入/工具/输出 Guard、反馈 | 生产多环境、语义层 |
 | **v1.1.0** | 评测集、回归报告、Prompt/模型版本与灰度 | 知识空间改造 |
 | **v1.2.0** | 知识空间、异步解析、对象存储、检索权限过滤 | 生产压测与告警大盘 |

@@ -1,7 +1,7 @@
 # HuiYi v0.9 · Tool Harness & Agent Runtime 开发文档
 
 > 版本：v0.9.0  
-> 状态：**口径已冻结**（P0 D01–D13、P1 D14–D21 均已拍板或本版关闭。未开分支、未实现）  
+> 状态：**口径已冻结**（P0 D01–D13、P1 D14–D21 均已拍板或本版关闭。实施计划已写，分支 `feature/v0.9-tool-harness`）  
 > 基线：`huiyi-ai-data-assistant v0.8.0`（标签 `v0.8.0` → `bc9ce6d`）  
 > 来源：桌面《HuiYi-Enterprise-Agent-Version-Iteration-Development-Plan》§9；[roadmap.md](../../roadmap.md)；需求评审决策 D01–D21  
 >

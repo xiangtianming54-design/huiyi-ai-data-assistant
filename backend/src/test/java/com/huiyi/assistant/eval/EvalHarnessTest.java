@@ -2,7 +2,10 @@ package com.huiyi.assistant.eval;
 
 import com.huiyi.assistant.agent.AgentRunner;
 import com.huiyi.assistant.agent.RouterPlanner;
+import com.huiyi.assistant.agent.ToolContext;
 import com.huiyi.assistant.agent.ToolExecutor;
+import com.huiyi.assistant.agent.ToolNames;
+import com.huiyi.assistant.agent.ToolResult;
 import com.huiyi.assistant.common.util.PromptTemplateLoader;
 import com.huiyi.assistant.model.enums.IntentTypeEnum;
 import com.huiyi.assistant.observability.ObservabilityMetrics;
@@ -15,11 +18,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
@@ -27,7 +33,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,6 +82,29 @@ class EvalHarnessTest {
         EvalActual actual = new EvalHarness().run(cse, runner);
         assertEquals(AgentRunner.LIMIT_USER_MESSAGE, actual.answer());
         assertEquals("AGENT_LIMIT_EXCEEDED", actual.errorCode());
+    }
+
+    @Test
+    void workspaceBInjectsWorkspaceId2() {
+        when(queryRewriteService.rewrite(any(), any())).thenReturn("q");
+        when(intentService.detectWithDetail("q")).thenReturn(
+                new IntentService.IntentDecision(IntentTypeEnum.KNOWLEDGE_QA, IntentService.Layer.RULE, 1.0));
+        when(routerPlanner.toolsFor(IntentTypeEnum.KNOWLEDGE_QA)).thenReturn(List.of(ToolNames.KNOWLEDGE_SEARCH));
+        Map<String, Object> data = new HashMap<>();
+        data.put("fallbackAnswer", "B 空间只读摘要");
+        data.put("prompt", null);
+        data.put("references", List.of());
+        when(toolExecutor.execute(eq(ToolNames.KNOWLEDGE_SEARCH), any(), any())).thenReturn(ToolResult.ok(data));
+        EvalCase cse = new EvalCase();
+        cse.setId("iso");
+        cse.setEntrypoint("analysis_query");
+        cse.setQuestion("q");
+        cse.setWorkspace("B");
+        new EvalHarness().run(cse, runner);
+        ArgumentCaptor<ToolContext> captor = ArgumentCaptor.forClass(ToolContext.class);
+        verify(toolExecutor).execute(eq(ToolNames.KNOWLEDGE_SEARCH), captor.capture(), any());
+        assertEquals(2L, captor.getValue().workspaceId());
+        assertEquals(1L, captor.getValue().userId());
     }
 
     @Test

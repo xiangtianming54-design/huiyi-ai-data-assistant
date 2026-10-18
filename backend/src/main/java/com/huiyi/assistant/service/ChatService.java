@@ -6,6 +6,7 @@ import com.huiyi.assistant.agent.AgentDeadline;
 import com.huiyi.assistant.agent.AgentRequest;
 import com.huiyi.assistant.agent.AgentResult;
 import com.huiyi.assistant.agent.AgentRunner;
+import com.huiyi.assistant.agent.OutputGuard;
 import com.huiyi.assistant.agent.ToolEventListener;
 import com.huiyi.assistant.model.dto.ChatRequestDTO;
 import com.huiyi.assistant.model.enums.IntentTypeEnum;
@@ -41,6 +42,7 @@ public class ChatService {
     private static final long SSE_TIMEOUT_MS = Duration.ofSeconds(90).toMillis();
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final OutputGuard OUTPUT_GUARD = new OutputGuard();
 
     private final AgentRunner agentRunner;
     private final IntentService intentService;
@@ -125,7 +127,7 @@ public class ChatService {
             observabilityMetrics.chatSuccess(Duration.ofNanos(System.nanoTime() - start), null);
             return ChatResponseVO.builder()
                     .sessionId(sessionId)
-                    .answer(result.answer())
+                    .answer(OUTPUT_GUARD.sanitize(result.answer()))
                     .intent(intent.getCode())
                     .references(result.references() == null ? List.of() : result.references())
                     .build();
@@ -156,9 +158,9 @@ public class ChatService {
         IntentService.IntentDecision decision = result.decision();
         IntentTypeEnum intent = decision.intent();
         if (result.errorCode() != null) {
-            sendEvent(emitter, "error", AgentRunner.LIMIT_USER_MESSAGE);
+            sendEvent(emitter, "error", OUTPUT_GUARD.sanitize(AgentRunner.LIMIT_USER_MESSAGE));
             emitter.complete();
-            chatSessionService.saveAssistantMessage(sessionId, AgentRunner.LIMIT_USER_MESSAGE,
+            chatSessionService.saveAssistantMessage(sessionId, OUTPUT_GUARD.sanitize(AgentRunner.LIMIT_USER_MESSAGE),
                     intent, null, List.of(),
                     decision.layer().name().toLowerCase(), decision.score());
             requestTraceService.finish("FAILED", intent.getCode(), result.errorCode(), start, result.errorCode());
@@ -184,15 +186,17 @@ public class ChatService {
                         firstTokenAt.set(System.nanoTime());
                     }
                     fullAnswer.append(token);
-                    sendEvent(emitter, "token", token);
+                    sendEvent(emitter, "token", OUTPUT_GUARD.sanitize(token));
                 },
                 error -> {
                     log.warn("流式问答中断: {}", error.getMessage());
-                    String partial = fullAnswer.toString();
-                    sendEvent(emitter, "error", "AI 服务暂不可用，请稍后重试。");
+                    String partial = OUTPUT_GUARD.sanitize(fullAnswer.toString());
+                    sendEvent(emitter, "error", OUTPUT_GUARD.sanitize("AI 服务暂不可用，请稍后重试。"));
                     emitter.complete();
                     chatSessionService.saveAssistantMessage(sessionId,
-                            partial.isEmpty() ? "AI 服务暂不可用，请稍后重试。" : partial,
+                            (partial == null || partial.isEmpty())
+                                    ? OUTPUT_GUARD.sanitize("AI 服务暂不可用，请稍后重试。")
+                                    : partial,
                             intent, null, references,
                             decision.layer().name().toLowerCase(), decision.score());
                     requestTraceService.finish("FAILED", intent.getCode(), error.getMessage(), start);
@@ -201,7 +205,7 @@ public class ChatService {
                 () -> {
                     sendEvent(emitter, "references", toJson(references));
                     emitter.complete();
-                    chatSessionService.saveAssistantMessage(sessionId, fullAnswer.toString(),
+                    chatSessionService.saveAssistantMessage(sessionId, OUTPUT_GUARD.sanitize(fullAnswer.toString()),
                             intent, sqlText, references,
                             decision.layer().name().toLowerCase(), decision.score());
                     requestTraceService.finish("SUCCEEDED", intent.getCode(), null, start);
@@ -216,7 +220,7 @@ public class ChatService {
         return ChatPartVO.builder()
                 .question(originalQuestion)
                 .intent(intent.getCode())
-                .answer(result.answer())
+                .answer(OUTPUT_GUARD.sanitize(result.answer()))
                 .references(result.references() == null ? List.of() : result.references())
                 .analysis(result.analysis())
                 .build();
@@ -224,7 +228,7 @@ public class ChatService {
 
     private void persistAssistant(String sessionId, AgentResult result) {
         IntentService.IntentDecision decision = result.decision();
-        chatSessionService.saveAssistantMessage(sessionId, result.answer(), decision.intent(),
+        chatSessionService.saveAssistantMessage(sessionId, OUTPUT_GUARD.sanitize(result.answer()), decision.intent(),
                 result.sql(), result.references() == null ? List.of() : result.references(),
                 decision.layer().name().toLowerCase(), decision.score());
     }

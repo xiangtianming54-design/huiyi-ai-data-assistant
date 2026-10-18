@@ -3,6 +3,7 @@ package com.huiyi.assistant.service;
 import com.huiyi.assistant.agent.AgentRequest;
 import com.huiyi.assistant.agent.AgentResult;
 import com.huiyi.assistant.agent.AgentRunner;
+import com.huiyi.assistant.agent.OutputGuard;
 import com.huiyi.assistant.model.dto.AnalysisRequestDTO;
 import com.huiyi.assistant.model.enums.IntentTypeEnum;
 import com.huiyi.assistant.model.vo.AnalysisResultVO;
@@ -21,6 +22,8 @@ import java.util.List;
 @Slf4j
 @Service
 public class AnalysisService {
+
+    private static final OutputGuard OUTPUT_GUARD = new OutputGuard();
 
     private final AgentRunner agentRunner;
     private final ChatSessionService chatSessionService;
@@ -51,6 +54,7 @@ public class AnalysisService {
                     .rows(List.of())
                     .build()
                     : agentResult.analysis();
+            result.setAnswer(OUTPUT_GUARD.sanitize(result.getAnswer()));
             result.setSessionId(sessionId);
             chatSessionService.saveAssistantMessage(sessionId, result.getAnswer(),
                     IntentTypeEnum.DATA_QUERY, result.getSql(), List.of());

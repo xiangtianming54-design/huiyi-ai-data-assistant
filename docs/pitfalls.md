@@ -11,20 +11,6 @@
 
 ---
 
-## 2026-10-16 HealthController 注入不存在的 jdbcTemplate 导致容器起不来
-
-- **现象**：Compose 重建 backend 后容器立刻退出。日志：`UnsatisfiedDependencyException: Error creating bean with name 'healthController'`，`No qualifying bean of type 'JdbcTemplate'`，依赖注解 `@Qualifier("jdbcTemplate")`。Flyway 已成功迁到 v9。
-- **原因**：`SqlExecuteConfig` 已声明 `readOnlyJdbcTemplate`（类型就是 `JdbcTemplate`）。Spring Boot 的 `JdbcTemplateAutoConfiguration` 是 `@ConditionalOnMissingBean(JdbcOperations.class)`，因此不会再创建名为 `jdbcTemplate` 的 Bean。`SchemaService` 无 Qualifier，吃到唯一的那一个所以一直能跑；Health 用了名字 Qualifier 就会启动失败。单测不拉完整 Spring 上下文，94 个测试全绿也拦不住。
-- **处理**：Health 探活改走 `@Primary DataSource` 做 `SELECT 1`。`HealthControllerTest` 锁住「不要 `@Qualifier("jdbcTemplate")`」以及依赖 map `code=0`。
-- **以后**：多数据源项目不要按 Boot 默认 Bean 名去 Qualifier。改了构造器注入后至少要有一个会真正 new 该 Bean 的测试；完整启动仍以 Docker health / `/api/health` 为准。
-
-## 2026-10-16 worktree 里 docker compose up 会新建项目并撞容器名
-
-- **现象**：在 `.worktrees/v0.8-observability-cost` 执行 `docker compose up --build`，镜像能编过，启动报 `Conflict. The container name "/huiyi-python" is already in use`。同时多出空卷 `v08-observability-cost_mysql-data` 等。
-- **原因**：Compose 项目名默认取目录名；worktree 项目是 `v08-observability-cost`，主仓库项目是 `huiyi-ai-data-assistant`。两边 `container_name` 都写死 `huiyi-python` / `huiyi-backend`。新项目不会复用已有 MySQL/Redis 卷。
-- **处理**：在 worktree 只 `build`，把镜像 tag 成现网名 `huiyi-ai-data-assistant-{backend,python-service,frontend}:latest`，再到主仓库目录用现网 `.env`：`docker compose up -d --no-build --force-recreate --no-deps backend python-service frontend`。不要用新空卷替换活库。
-- **以后**：已有 Compose 栈上验 feature 分支，不要从 worktree `up` 一整套。先 `docker inspect` 看 `com.docker.compose.project` 和 `.Config.Image`。PowerShell 里 `--format '{{index .Config.Labels "com.docker.compose.project"}}'` 会把 `com` 当函数，改用 `{{json .Config.Labels}}`。
-
 ## 2026-10-16 Docker Chroma 卷缺 workspace_id
 
 - **现象**：命名卷 `huiyi-ai-data-assistant_chroma-data` 里 `embedding_metadata` 没有 `workspace_id`（旧 v0.6 向量）。工作区隔离会拒掉或漏检。

@@ -40,6 +40,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -71,6 +72,29 @@ class AgentRunnerTest {
     @AfterEach
     void tearDown() {
         WorkspaceContextHolder.clear();
+    }
+
+    @Test
+    void schemaInvalidUsesUnknownToolCopyNotLimitCode() {
+        when(toolExecutor.execute(eq("sql.validate"), any(), any()))
+                .thenReturn(ToolResult.fail("schema_invalid"));
+        ToolResult result = runner.invoke("sql.validate", Map.of("sql", "select 1"));
+        assertEquals(AgentRunner.UNKNOWN_TOOL_USER_MESSAGE, result.error());
+        verify(requestTraceService).stepTool(eq("sql.validate"), eq("REJECTED"), anyLong(), any());
+    }
+
+    @Test
+    void deadlineStopsExecutor() {
+        when(queryRewriteService.rewrite(any(), eq("q"))).thenReturn("q");
+        when(intentService.detectWithDetail("q"))
+                .thenReturn(new IntentService.IntentDecision(IntentTypeEnum.DATA_QUERY, IntentService.Layer.RULE, 1.0));
+        when(routerPlanner.toolsFor(IntentTypeEnum.DATA_QUERY))
+                .thenReturn(List.of("sql.generate"));
+        AgentResult limited = runner.run(new AgentRequest("analysis_query", "q", "s1"),
+                ToolEventListener.NOOP, AgentDeadline.alreadyExpired());
+        assertEquals(AgentRunner.LIMIT_USER_MESSAGE, limited.answer());
+        assertEquals("AGENT_LIMIT_EXCEEDED", limited.errorCode());
+        verify(toolExecutor, never()).execute(any(), any(), any());
     }
 
     @Test

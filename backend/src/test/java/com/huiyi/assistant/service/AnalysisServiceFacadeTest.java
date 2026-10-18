@@ -38,7 +38,7 @@ class AnalysisServiceFacadeTest {
         AnalysisResultVO analysis = AnalysisResultVO.builder().answer("ok").sql("select 1").build();
         when(agentRunner.run(any())).thenReturn(new AgentResult(
                 new IntentService.IntentDecision(IntentTypeEnum.DATA_QUERY, IntentService.Layer.RULE, 1.0),
-                "ok", "select 1", List.of(), analysis, null));
+                "ok", "select 1", List.of(), analysis, null, null));
         AnalysisRequestDTO request = new AnalysisRequestDTO();
         request.setQuestion("上个月销售额？");
         analysisService.query(request);
@@ -50,7 +50,7 @@ class AnalysisServiceFacadeTest {
         when(chatSessionService.resolveSessionId(any())).thenReturn("s1");
         when(agentRunner.run(any())).thenReturn(new AgentResult(
                 new IntentService.IntentDecision(IntentTypeEnum.KNOWLEDGE_QA, IntentService.Layer.RULE, 1.0),
-                "有效订单是已支付订单", null, List.of(), null, null));
+                "有效订单是已支付订单", null, List.of(), null, null, null));
         AnalysisRequestDTO request = new AnalysisRequestDTO();
         request.setQuestion("什么是有效订单？");
         AnalysisResultVO result = analysisService.query(request);

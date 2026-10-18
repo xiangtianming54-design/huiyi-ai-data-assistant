@@ -111,6 +111,7 @@ class ChatServiceFacadeTest {
                 null,
                 List.of(new ReferenceVO("glossary.md", 0.9)),
                 null,
+                null,
                 null);
     }
 }

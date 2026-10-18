@@ -18,6 +18,14 @@ public class ObservabilityMetrics {
         this.registry = registry;
     }
 
+    public void agentLimitExceeded() {
+        increment("huiyi_agent_limit_exceeded");
+    }
+
+    public void toolSchemaRejected() {
+        increment("huiyi_tool_schema_rejected");
+    }
+
     public void chatRequest() {
         increment("chat_requests");
     }

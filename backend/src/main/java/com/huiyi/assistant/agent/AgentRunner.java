@@ -30,6 +30,9 @@ import java.util.concurrent.ExecutorService;
 public class AgentRunner {
 
     public static final String UNKNOWN_TOOL_USER_MESSAGE = "工具调用失败，请稍后重试。";
+    public static final String LIMIT_USER_MESSAGE = "当前问题较复杂，请缩小范围后重试。";
+    public static final String ERROR_AGENT_LIMIT = "AGENT_LIMIT_EXCEEDED";
+    static final String RUN_TIMEOUT_INTERNAL = "run_timeout";
 
     private static final String SUMMARY_PROMPT = "prompts/sql-result-summary.md";
     private static final int SUMMARY_ROWS_LIMIT = 20;
@@ -72,29 +75,56 @@ public class AgentRunner {
     }
 
     public ToolResult invoke(String toolName, Map<String, Object> arguments) {
-        return invoke(toolName, arguments, "");
+        return invoke(toolName, arguments, "", ToolEventListener.NOOP, AgentDeadline.fromNow(90_000L));
     }
 
-    private ToolResult invoke(String toolName, Map<String, Object> arguments, String question) {
+    private ToolResult invoke(String toolName, Map<String, Object> arguments, String question,
+                              ToolEventListener listener, AgentDeadline deadline) {
+        ToolEventListener safeListener = listener == null ? ToolEventListener.NOOP : listener;
+        if (deadline != null && deadline.expired()) {
+            notifyFailed(safeListener, toolName, "FAILED");
+            observabilityMetrics.agentLimitExceeded();
+            return ToolResult.fail(RUN_TIMEOUT_INTERNAL);
+        }
+        notifyStarted(safeListener, toolName);
         ToolContext context = toolContextForQuestion(question);
         long start = System.nanoTime();
         try {
             ToolResult result = toolExecutor.execute(toolName, context, arguments);
-            requestTraceService.stepTool(toolName, stepStatus(toolName, result), start, stepError(toolName, result));
+            if (!result.ok() && ToolSchemaValidator.SCHEMA_INVALID.equals(result.error())) {
+                observabilityMetrics.toolSchemaRejected();
+                requestTraceService.stepTool(toolName, "REJECTED", start, result.error());
+                notifyFailed(safeListener, toolName, "REJECTED");
+                return ToolResult.fail(UNKNOWN_TOOL_USER_MESSAGE);
+            }
+            String status = stepStatus(toolName, result);
+            requestTraceService.stepTool(toolName, status, start, stepError(toolName, result));
+            if ("SUCCESS".equals(status)) {
+                notifyCompleted(safeListener, toolName, status);
+            } else {
+                notifyFailed(safeListener, toolName, status);
+            }
             return result;
         } catch (UnknownToolException e) {
             requestTraceService.stepTool(e.toolName(), "FAILED", start, e.getMessage());
+            notifyFailed(safeListener, e.toolName(), "FAILED");
             return ToolResult.fail(UNKNOWN_TOOL_USER_MESSAGE);
         }
     }
 
     public AgentResult run(AgentRequest request) {
+        return run(request, ToolEventListener.NOOP, AgentDeadline.fromNow(90_000L));
+    }
+
+    public AgentResult run(AgentRequest request, ToolEventListener listener, AgentDeadline deadline) {
+        ToolEventListener safeListener = listener == null ? ToolEventListener.NOOP : listener;
+        AgentDeadline safeDeadline = deadline == null ? AgentDeadline.fromNow(90_000L) : deadline;
         String sessionId = request.sessionId();
         String rewritten = requestTraceService.timed("query_rewrite",
                 () -> queryRewriteService.rewrite(sessionId, request.question()));
         IntentService.IntentDecision decision = requestTraceService.timed("intent",
                 () -> intentService.detectWithDetail(rewritten));
-        return runIntent(request.entrypoint(), rewritten, decision);
+        return runIntent(request.entrypoint(), rewritten, decision, safeListener, safeDeadline);
     }
 
     public List<AgentResult> runAsk(AgentRequest request) {
@@ -104,42 +134,50 @@ public class AgentRunner {
         List<String> subQuestions = requestTraceService.timed("decompose",
                 () -> questionDecomposeService.decompose(rewritten));
         if (subQuestions.size() == 1) {
-            IntentService.IntentDecision decision = requestTraceService.timed("intent",
-                    () -> intentService.detectWithDetail(subQuestions.get(0)));
-            return List.of(runIntent(request.entrypoint(), subQuestions.get(0), decision));
+                    IntentService.IntentDecision decision = requestTraceService.timed("intent",
+                            () -> intentService.detectWithDetail(subQuestions.get(0)));
+            return List.of(runIntent(request.entrypoint(), subQuestions.get(0), decision,
+                    ToolEventListener.NOOP, AgentDeadline.fromNow(90_000L)));
         }
         List<CompletableFuture<AgentResult>> futures = subQuestions.stream()
                 .map(sub -> CompletableFuture.supplyAsync(() -> {
                     IntentService.IntentDecision decision = requestTraceService.timed("intent",
                             () -> intentService.detectWithDetail(sub));
-                    return runIntent(request.entrypoint(), sub, decision);
+                    return runIntent(request.entrypoint(), sub, decision,
+                            ToolEventListener.NOOP, AgentDeadline.fromNow(90_000L));
                 }, chatExecutor))
                 .toList();
         return futures.stream().map(CompletableFuture::join).toList();
     }
 
-    private AgentResult runIntent(String entrypoint, String question, IntentService.IntentDecision decision) {
+    private AgentResult runIntent(String entrypoint, String question, IntentService.IntentDecision decision,
+                                  ToolEventListener listener, AgentDeadline deadline) {
         if (decision.intent() == IntentTypeEnum.DATA_QUERY) {
-            return runDataQuery(question, decision);
+            return runDataQuery(question, decision, listener, deadline);
         }
-        return runKnowledge(entrypoint, question, decision);
+        return runKnowledge(entrypoint, question, decision, listener, deadline);
     }
 
-    private AgentResult runKnowledge(String entrypoint, String question, IntentService.IntentDecision decision) {
+    private AgentResult runKnowledge(String entrypoint, String question, IntentService.IntentDecision decision,
+                                     ToolEventListener listener, AgentDeadline deadline) {
         String searchName = routerPlanner.toolsFor(IntentTypeEnum.KNOWLEDGE_QA).get(0);
-        ToolResult search = invoke(searchName, Map.of(), question);
+        ToolResult search = invoke(searchName, Map.of(), question, listener, deadline);
+        if (isRunTimeout(search)) {
+            return limitResult(decision);
+        }
         RagService.RagContext ragContext = toRagContext(search);
         boolean hit = ragContext.references() != null && !ragContext.references().isEmpty();
         observabilityMetrics.ragSearch(java.time.Duration.ZERO, hit,
                 RagService.SEARCH_DEGRADED_FALLBACK.equals(ragContext.fallbackAnswer()));
         if ("chat_stream".equals(entrypoint) && ragContext.needLlm()) {
-            return new AgentResult(decision, null, null, ragContext.references(), null, ragContext);
+            return new AgentResult(decision, null, null, ragContext.references(), null, ragContext, null);
         }
         String answer = ragContext.needLlm() ? llmService.chat(ragContext.prompt()) : ragContext.fallbackAnswer();
-        return new AgentResult(decision, answer, null, ragContext.references(), null, ragContext);
+        return new AgentResult(decision, answer, null, ragContext.references(), null, ragContext, null);
     }
 
-    private AgentResult runDataQuery(String question, IntentService.IntentDecision decision) {
+    private AgentResult runDataQuery(String question, IntentService.IntentDecision decision,
+                                     ToolEventListener listener, AgentDeadline deadline) {
         if (containsModificationIntent(question)) {
             log.warn("数据修改意图被拦截: question={}", question);
             observabilityMetrics.sqlValidate(false);
@@ -152,7 +190,10 @@ public class AgentRunner {
         ToolResult profiled = ToolResult.ok(Map.of());
         for (String name : routerPlanner.toolsFor(IntentTypeEnum.DATA_QUERY)) {
             if (ToolNames.SQL_GENERATE.equals(name)) {
-                ToolResult generated = invoke(name, Map.of(), question);
+                ToolResult generated = invoke(name, Map.of(), question, listener, deadline);
+                if (isRunTimeout(generated)) {
+                    return limitResult(decision);
+                }
                 if (isTimeout(generated)) {
                     return analysisResult(decision, question, null, List.of(), null,
                             ResultCode.LLM_SERVICE_ERROR.getMessage());
@@ -163,7 +204,10 @@ public class AgentRunner {
                     return analysisResult(decision, question, null, List.of(), null, CANNOT_UNDERSTAND);
                 }
             } else if (ToolNames.SQL_VALIDATE.equals(name)) {
-                ToolResult validated = invoke(name, Map.of("sql", sql), question);
+                ToolResult validated = invoke(name, Map.of("sql", sql), question, listener, deadline);
+                if (isRunTimeout(validated)) {
+                    return limitResult(decision);
+                }
                 if (isTimeout(validated)) {
                     return analysisResult(decision, question, sql, List.of(), null,
                             ResultCode.PYTHON_SERVICE_UNAVAILABLE.getMessage());
@@ -182,7 +226,11 @@ public class AgentRunner {
                     safeSql = sql;
                 }
             } else if (ToolNames.SQL_EXECUTE_READONLY.equals(name)) {
-                ToolResult executed = invoke(name, Map.of("sql", safeSql == null ? sql : safeSql), question);
+                ToolResult executed = invoke(name, Map.of("sql", safeSql == null ? sql : safeSql), question,
+                        listener, deadline);
+                if (isRunTimeout(executed)) {
+                    return limitResult(decision);
+                }
                 if (!executed.ok()) {
                     String copy = isTimeout(executed) ? SQL_EXECUTE_FAIL : executed.error();
                     return analysisResult(decision, question, safeSql, List.of(), null, copy);
@@ -193,7 +241,10 @@ public class AgentRunner {
                         : List.of();
                 rows = executedRows;
             } else if (ToolNames.DATA_PROFILE.equals(name)) {
-                profiled = invoke(name, Map.of("rows", rows), question);
+                profiled = invoke(name, Map.of("rows", rows), question, listener, deadline);
+                if (isRunTimeout(profiled)) {
+                    return limitResult(decision);
+                }
             }
         }
         String chartType = profiled.ok() ? stringVal(profiled.data().get("chartType")) : "table";
@@ -236,7 +287,18 @@ public class AgentRunner {
                 .summary(summary)
                 .answer(answer)
                 .build();
-        return new AgentResult(decision, answer, sql, List.of(), analysis, null);
+        return new AgentResult(decision, answer, sql, List.of(), analysis, null, null);
+    }
+
+    private AgentResult limitResult(IntentService.IntentDecision decision) {
+        AnalysisResultVO analysis = AnalysisResultVO.builder()
+                .question(null)
+                .sql(null)
+                .rows(List.of())
+                .summary(null)
+                .answer(LIMIT_USER_MESSAGE)
+                .build();
+        return new AgentResult(decision, LIMIT_USER_MESSAGE, null, List.of(), analysis, null, ERROR_AGENT_LIMIT);
     }
 
     private ToolContext toolContextForQuestion(String question) {
@@ -268,8 +330,39 @@ public class AgentRunner {
         return result != null && !result.ok() && ToolExecutor.TIMEOUT_ERROR.equals(result.error());
     }
 
+    private static boolean isRunTimeout(ToolResult result) {
+        return result != null && !result.ok() && RUN_TIMEOUT_INTERNAL.equals(result.error());
+    }
+
+    private static void notifyStarted(ToolEventListener listener, String toolName) {
+        try {
+            listener.onStarted(toolName);
+        } catch (RuntimeException e) {
+            log.warn("tool listener onStarted failed tool={}", toolName, e);
+        }
+    }
+
+    private static void notifyCompleted(ToolEventListener listener, String toolName, String status) {
+        try {
+            listener.onCompleted(toolName, status);
+        } catch (RuntimeException e) {
+            log.warn("tool listener onCompleted failed tool={}", toolName, e);
+        }
+    }
+
+    private static void notifyFailed(ToolEventListener listener, String toolName, String status) {
+        try {
+            listener.onFailed(toolName, status);
+        } catch (RuntimeException e) {
+            log.warn("tool listener onFailed failed tool={}", toolName, e);
+        }
+    }
+
     private static String stepStatus(String toolName, ToolResult result) {
         if (!result.ok()) {
+            if (ToolSchemaValidator.SCHEMA_INVALID.equals(result.error())) {
+                return "REJECTED";
+            }
             return "FAILED";
         }
         if (Boolean.FALSE.equals(result.data().get("valid"))) {

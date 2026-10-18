@@ -13,6 +13,7 @@ public record AgentResult(
         String sql,
         List<ReferenceVO> references,
         AnalysisResultVO analysis,
-        RagService.RagContext ragContext
+        RagService.RagContext ragContext,
+        String errorCode
 ) {
 }

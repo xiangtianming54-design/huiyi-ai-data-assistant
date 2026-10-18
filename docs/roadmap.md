@@ -29,21 +29,19 @@
 | **v1.3.0** | Production Ready | 3–4 周 | staging/prod、备份、限流、压测、告警 |
 | **v1.4.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
 
-## 已发布：v0.8.0 Observability & Cost
+## 已发布：v0.9.0 Tool Harness & Agent Runtime
 
-标签 `v0.8.0`。规格：[2026-10-16-v08-observability-and-cost.md](superpowers/specs/2026-10-16-v08-observability-and-cost.md)。本版：Request/Run ID、请求级 Trace、结构化日志、LLM Token 与 `cost_amount`（默认 0）、`/actuator/prometheus`、Python 访问日志、健康检查依赖探测。Flyway V7–V9。
+标签 `v0.9.0`。规格：[2026-10-17-v09-tool-harness-and-agent-runtime.md](superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)。计划：[2026-10-17-v09-tool-harness-and-agent-runtime.md](superpowers/plans/2026-10-17-v09-tool-harness-and-agent-runtime.md)。本版：现网 Chat/Analysis 门面委托同一 Router `AgentRunner`；五个只读工具（画像与图表合在 `data.profile`）；内存 ToolRegistry；工具步骤写入 `assistant_run_steps.tool_name`（Flyway V10）。
 
-未纳入本版：P2 调试面板 / 反馈带 ID / Python embedding 向量指标；Grafana；Agent Loop。v0.7 P1（用户状态 API、前端工作区切换）仍不自动滚入后续版本。
+未纳入本版：`POST /agent/runs`；ReAct；步骤可见 SSE；前端 `toolCalls`；独立 `tool_invocations` / `tool_registry` 表；多 Agent；MCP；Grafana；写库工具。v0.7 P1 UI、v0.8 P2 调试面板仍不自动滚入。
 
-上一发布：`v0.7.0` Enterprise Foundation。
+上一发布：`v0.8.0` Observability & Cost。
 
-## 当前开发：v0.9.0 Tool Harness & Agent Runtime
+## 当前开发：v1.0.0 Stable Agent Assistant
 
-口径已冻结。规格：[2026-10-17-v09-tool-harness-and-agent-runtime.md](superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)。计划：[2026-10-17-v09-tool-harness-and-agent-runtime.md](superpowers/plans/2026-10-17-v09-tool-harness-and-agent-runtime.md)。分支 `feature/v0.9-tool-harness`。
+尚未开工。桌面文档 §10：ContextBuilder、TokenBudget、记忆与压缩、输入/工具/输出 Guard、反馈。规格待冻结。
 
-**本版要做：** 现网 Chat/Analysis 门面 + 同一 Router `AgentRunner`；五个只读工具（画像与图表合在 `data.profile`）；内存 ToolRegistry；工具步骤写入 `assistant_run_steps.tool_name`（Flyway V10）。
-
-**明确不做：** `POST /agent/runs`；ReAct；步骤可见 SSE；前端改动；独立 `tool_invocations` / `tool_registry` 表；多 Agent；MCP；Grafana；写库工具。
+**本版不做（仍属后续）：** 生产多环境、语义层、评测集、MCP。
 
 ## 后续版本（摘要）
 
@@ -75,7 +73,7 @@ hotfix/*    紧急修复
 
 发布：`feature` → PR 到日常集成 → CI + Review → staging → `release/*` → `main` → tag。
 
-**仓库现状：** GitHub 日常分支仍是 `dev`，CI 监听 `main` / `dev`。feature 按 `feature/v0.9-tool-harness` 这类命名；改名为 `develop` 单独立项，避免打断现有 PR。
+**仓库现状：** GitHub 日常分支仍是 `dev`，CI 监听 `main` / `dev`。下一版 feature 按 `feature/v1.0-*` 这类命名；改名为 `develop` 单独立项，避免打断现有 PR。
 
 版本号：Semantic Versioning。MAJOR = 不兼容 API/数据；MINOR = 兼容新功能；PATCH = 修复。
 

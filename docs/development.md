@@ -55,7 +55,7 @@ node scripts/e2e-m5.js
 ```text
 main            —— 稳定发布，里程碑打 tag
 dev             —— 当前 GitHub 日常集成（CI 监听 main / dev）
-feature/*       —— 功能分支；下一版示例：feature/v0.9-tool-harness
+feature/*       —— 功能分支；下一版示例：feature/v1.0-stable-agent
 提交规范        —— feat:/fix:/test:/docs:/chore: + 中文摘要
 ```
 
@@ -150,9 +150,15 @@ docs/             架构 / API / 演示 / 开发文档 / 踩坑手册 + Postman 
 
 ## v0.8 变更（2026-10-17，标签 v0.8.0，已发布）
 
-请求级可观测：`X-Request-Id` / `X-Run-Id`，Chat/Analysis 写入 `assistant_runs` / `assistant_run_steps` / `llm_calls`（Flyway V7–V9），审计行带 `request_id`，Micrometer 出口 `/actuator/prometheus`，Python 访问日志透传 ID，`/api/health` 探测 mysql/redis/python。`cost_amount` 默认 0。规格见 [v0.8 开发文档](superpowers/specs/2026-10-16-v08-observability-and-cost.md)。v0.9 冻结规格见 [v0.9 开发文档](superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)，实施计划见 [v0.9 计划](superpowers/plans/2026-10-17-v09-tool-harness-and-agent-runtime.md)。
+请求级可观测：`X-Request-Id` / `X-Run-Id`，Chat/Analysis 写入 `assistant_runs` / `assistant_run_steps` / `llm_calls`（Flyway V7–V9），审计行带 `request_id`，Micrometer 出口 `/actuator/prometheus`，Python 访问日志透传 ID，`/api/health` 探测 mysql/redis/python。`cost_amount` 默认 0。规格见 [v0.8 开发文档](superpowers/specs/2026-10-16-v08-observability-and-cost.md)。
 
 **回滚：** 切回标签 `v0.7.0`，恢复发版前 MySQL 备份后再起服务。V7–V9 已改 schema，不能只换镜像不还原库。
+
+## v0.9 变更（2026-10-18，标签 v0.9.0，已发布）
+
+Tool Harness + Router Runtime：RAG / Text-to-SQL / 数据画像收成五个只读工具，Chat 与 Analysis 门面委托同一 `AgentRunner`。工具步骤写入 `assistant_run_steps.tool_name`（Flyway V10）。未知工具返回「工具调用失败，请稍后重试。」。入口仍是 `/api/v1/workspaces/{id}/chat/stream` 与 `.../analysis/query`。规格见 [v0.9 开发文档](superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)。
+
+**回滚：** 切回标签 `v0.8.0`，恢复发版前 MySQL 备份后再起服务。V10 已改 schema，不能只换镜像不还原库。
 
 ## 常见坑（本仓库已踩过）
 

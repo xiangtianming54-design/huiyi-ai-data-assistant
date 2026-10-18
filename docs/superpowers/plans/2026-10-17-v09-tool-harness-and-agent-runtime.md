@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
+> Status: 已完成并发布。标签 `v0.9.0`。未纳入：`POST /agent/runs`、ReAct、步骤 SSE、前端 `toolCalls`。
+>
 > Execution workspace: create an isolated git worktree via superpowers:using-git-worktrees before Task 1. Branch name: `feature/v0.9-tool-harness`.
 
 **Goal:** Put RAG / Text-to-SQL / data profile behind a memory Tool Registry and one Router `AgentRunner`, with Chat and Analysis as facades — no ReAct, no `/agent/runs`, no frontend change.

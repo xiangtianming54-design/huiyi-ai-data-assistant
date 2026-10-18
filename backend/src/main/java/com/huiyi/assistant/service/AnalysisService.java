@@ -59,7 +59,12 @@ public class AnalysisService {
             chatSessionService.saveAssistantMessage(sessionId, result.getAnswer(),
                     IntentTypeEnum.DATA_QUERY, result.getSql(), List.of());
             if (ownsRun) {
-                requestTraceService.finish("SUCCEEDED", IntentTypeEnum.DATA_QUERY.getCode(), null, start);
+                if (agentResult.errorCode() != null) {
+                    requestTraceService.finish("FAILED", IntentTypeEnum.DATA_QUERY.getCode(),
+                            agentResult.errorCode(), start, agentResult.errorCode());
+                } else {
+                    requestTraceService.finish("SUCCEEDED", IntentTypeEnum.DATA_QUERY.getCode(), null, start);
+                }
             }
             return result;
         } catch (RuntimeException e) {

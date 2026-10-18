@@ -89,9 +89,9 @@ public class RagService {
 
         ContextBudget budget = new ContextBudget();
         String context = budget.trimKnowledge(buildContext(hits));
-        budget.assertFits("", context, "", "", question);
+        ContextBudget.Fitted fitted = budget.fit("", context, "", "", question);
         String prompt = promptTemplateLoader.render(RAG_PROMPT_LOCATION,
-                Map.of("context", context, "question", question));
+                Map.of("context", fitted.knowledge(), "question", question));
         return new RagContext(null, prompt, toReferences(hits));
     }
 

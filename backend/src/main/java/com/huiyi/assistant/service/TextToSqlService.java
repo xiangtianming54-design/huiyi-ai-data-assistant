@@ -57,10 +57,10 @@ public class TextToSqlService {
         ContextBudget budget = new ContextBudget();
         String schema = budget.trimSchema(schemaService.getSchemaDescription());
         String glossary = promptTemplateLoader.render(BUSINESS_GLOSSARY, Map.of());
-        budget.assertFits("", "", schema, glossary, question);
+        ContextBudget.Fitted fitted = budget.fit("", "", schema, glossary, question);
         String prompt = promptTemplateLoader.render(TEXT_TO_SQL_PROMPT, Map.of(
-                "schema", schema,
-                "business_glossary", glossary,
+                "schema", fitted.schema(),
+                "business_glossary", fitted.history(),
                 "question", question));
         String output = llmService.chat(prompt);
         log.info("LLM 原始输出: {}", output);

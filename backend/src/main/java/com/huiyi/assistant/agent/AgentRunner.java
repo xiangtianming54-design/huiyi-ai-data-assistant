@@ -205,6 +205,9 @@ public class AgentRunner {
                     return analysisResult(decision, question, null, List.of(), null,
                             ResultCode.LLM_SERVICE_ERROR.getMessage());
                 }
+                if (isUnknownToolFailure(generated)) {
+                    return analysisResult(decision, question, null, List.of(), null, UNKNOWN_TOOL_USER_MESSAGE);
+                }
                 sql = generated.ok() ? stringVal(generated.data().get("sql")) : null;
                 observabilityMetrics.sqlGenerate(sql != null);
                 if (sql == null) {
@@ -223,7 +226,9 @@ public class AgentRunner {
                 observabilityMetrics.sqlValidate(passed);
                 if (!passed) {
                     if (!validated.ok()) {
-                        return analysisResult(decision, question, sql, List.of(), null, "校验服务异常");
+                        String copy = isUnknownToolFailure(validated)
+                                ? UNKNOWN_TOOL_USER_MESSAGE : "校验服务异常";
+                        return analysisResult(decision, question, sql, List.of(), null, copy);
                     }
                     String reason = stringVal(validated.data().get("reason"));
                     return analysisResult(decision, question, sql, List.of(), null, refusalFor(reason));
@@ -281,17 +286,17 @@ public class AgentRunner {
                 rows == null ? List.of() : rows.stream().limit(SUMMARY_ROWS_LIMIT).toList());
         String profileJson = budget.trimSchema(toJson(profile));
         String rowsJson = toJson(limited);
-        while (limited.size() > 1 && profileJson.length() + rowsJson.length() > 24_000) {
+        while (limited.size() > 1 && profileJson.length() + rowsJson.length() > budget.maxChars()) {
             limited.remove(limited.size() - 1);
             rowsJson = toJson(limited);
         }
         rowsJson = budget.trimHistory(rowsJson);
-        budget.assertFits("", "", profileJson, rowsJson, question);
+        ContextBudget.Fitted fitted = budget.fit("", "", profileJson, rowsJson, question);
         String prompt = promptTemplateLoader.render(SUMMARY_PROMPT, Map.of(
                 "question", question,
                 "sql", sql == null ? "" : sql,
-                "profile", profileJson,
-                "rows", rowsJson));
+                "profile", fitted.schema(),
+                "rows", fitted.history()));
         return llmService.chat(prompt);
     }
 
@@ -350,6 +355,10 @@ public class AgentRunner {
 
     private static boolean isRunTimeout(ToolResult result) {
         return result != null && !result.ok() && RUN_TIMEOUT_INTERNAL.equals(result.error());
+    }
+
+    private static boolean isUnknownToolFailure(ToolResult result) {
+        return result != null && !result.ok() && UNKNOWN_TOOL_USER_MESSAGE.equals(result.error());
     }
 
     private static void notifyStarted(ToolEventListener listener, String toolName) {

@@ -8,10 +8,12 @@ public final class OutputGuard {
 
     private static final Pattern TAINT = Pattern.compile(
             "Exception in thread[^\\n]*"
-                    + "|at com\\.[^\\n]*"
                     + "|Traceback \\(most recent call last\\)[^\\n]*"
+                    + "|Caused by:[^\\n]*"
                     + "|sk-[A-Za-z0-9]{8,}"
-                    + "|API_KEY=\\S*",
+                    + "|API_KEY=\\S*"
+                    + "|\\bat (?:com|org|java|javax|jakarta|sun|jdk)\\.[^\\n]*"
+                    + "|[\\w$.]+(?:Exception|Error)(?::[^\\n]*)?",
             Pattern.MULTILINE);
 
     public String sanitize(String text) {
@@ -35,7 +37,6 @@ public final class OutputGuard {
 
     private static boolean containsTaint(String text) {
         return text.contains("Exception in thread")
-                || text.contains("at com.")
                 || text.contains("Traceback (most recent call last)")
                 || text.contains("API_KEY=")
                 || TAINT.matcher(text).find();

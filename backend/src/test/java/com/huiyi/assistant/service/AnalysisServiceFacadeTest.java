@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,6 +57,25 @@ class AnalysisServiceFacadeTest {
         request.setQuestion("上个月销售额？");
         analysisService.query(request);
         verify(agentRunner).run(any(AgentRequest.class));
+    }
+
+    @Test
+    void queryFinishesFailedWhenLimitExceeded() {
+        when(chatSessionService.resolveSessionId(any())).thenReturn("s1");
+        AnalysisResultVO analysis = AnalysisResultVO.builder()
+                .answer(AgentRunner.LIMIT_USER_MESSAGE)
+                .sql(null)
+                .rows(List.of())
+                .build();
+        when(agentRunner.run(any())).thenReturn(new AgentResult(
+                new IntentService.IntentDecision(IntentTypeEnum.DATA_QUERY, IntentService.Layer.RULE, 1.0),
+                AgentRunner.LIMIT_USER_MESSAGE, null, List.of(), analysis, null, "AGENT_LIMIT_EXCEEDED"));
+        AnalysisRequestDTO request = new AnalysisRequestDTO();
+        request.setQuestion("上个月销售额？");
+        AnalysisResultVO result = analysisService.query(request);
+        assertEquals(AgentRunner.LIMIT_USER_MESSAGE, result.getAnswer());
+        verify(requestTraceService).finish(eq("FAILED"), eq("data_query"), eq("AGENT_LIMIT_EXCEEDED"),
+                anyLong(), eq("AGENT_LIMIT_EXCEEDED"));
     }
 
     @Test

@@ -60,9 +60,9 @@ public class QueryRewriteService {
             String historyText = formatHistory(summary, history);
             ContextBudget budget = new ContextBudget();
             historyText = budget.trimHistory(historyText);
-            budget.assertFits("", "", "", historyText, question);
+            ContextBudget.Fitted fitted = budget.fit("", "", "", historyText, question);
             String prompt = promptTemplateLoader.render(CONDENSE_PROMPT,
-                    Map.of("history", historyText, "question", question));
+                    Map.of("history", fitted.history(), "question", question));
             String rewritten = llmService.chat(prompt);
             if (rewritten == null || rewritten.isBlank()) {
                 return question;

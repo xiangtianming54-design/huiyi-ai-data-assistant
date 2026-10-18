@@ -15,5 +15,13 @@ class OutputGuardTest {
         assertFalse(guard.sanitize("boom\nException in thread \"main\" java.lang.RuntimeException")
                 .contains("Exception in thread"));
         assertFalse(guard.sanitize("key sk-abcdefghijk").contains("sk-"));
+        String springStack = "java.lang.NullPointerException\n"
+                + "\tat org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1)\n"
+                + "\tat java.base/java.lang.Thread.run(Thread.java:1)";
+        String sanitizedStack = guard.sanitize(springStack);
+        assertFalse(sanitizedStack.contains("DispatcherServlet"));
+        assertFalse(sanitizedStack.contains("NullPointerException"));
+        assertFalse(guard.sanitize("at com.mysql.cj.jdbc.ClientPreparedStatement.execute(ClientPreparedStatement.java:1)")
+                .contains("com.mysql"));
     }
 }

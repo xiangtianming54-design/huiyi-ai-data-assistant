@@ -2,6 +2,9 @@ package com.huiyi.assistant.agent;
 
 public final class ContextBudget {
 
+    public record Fitted(String knowledge, String schema, String history) {
+    }
+
     private final int maxChars;
 
     public ContextBudget() {
@@ -10,6 +13,10 @@ public final class ContextBudget {
 
     public ContextBudget(int maxChars) {
         this.maxChars = Math.max(1, maxChars);
+    }
+
+    public int maxChars() {
+        return maxChars;
     }
 
     public String trimKnowledge(String knowledge) {
@@ -25,6 +32,10 @@ public final class ContextBudget {
     }
 
     public void assertFits(String system, String knowledge, String schema, String history, String question) {
+        fit(system, knowledge, schema, history, question);
+    }
+
+    public Fitted fit(String system, String knowledge, String schema, String history, String question) {
         String sys = nullToEmpty(system);
         String q = nullToEmpty(question);
         String k = nullToEmpty(knowledge);
@@ -36,6 +47,7 @@ public final class ContextBudget {
         if (sys.length() + q.length() + k.length() + s.length() + h.length() > maxChars) {
             throw new PromptBudgetExceededException();
         }
+        return new Fitted(k, s, h);
     }
 
     private String fitRemaining(String value, int others) {

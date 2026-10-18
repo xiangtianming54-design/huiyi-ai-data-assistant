@@ -83,6 +83,22 @@ class AgentRunnerTest {
     }
 
     @Test
+    void dataQuerySchemaInvalidUsesUnknownToolCopyNotLimitCode() {
+        when(queryRewriteService.rewrite(any(), eq("q"))).thenReturn("q");
+        when(intentService.detectWithDetail("q"))
+                .thenReturn(new IntentService.IntentDecision(IntentTypeEnum.DATA_QUERY, IntentService.Layer.RULE, 1.0));
+        when(routerPlanner.toolsFor(IntentTypeEnum.DATA_QUERY)).thenReturn(List.of(
+                ToolNames.SQL_GENERATE, ToolNames.SQL_VALIDATE));
+        when(toolExecutor.execute(eq(ToolNames.SQL_GENERATE), any(), any()))
+                .thenReturn(ToolResult.ok(Map.of("sql", "select 1")));
+        when(toolExecutor.execute(eq(ToolNames.SQL_VALIDATE), any(), any()))
+                .thenReturn(ToolResult.fail("schema_invalid"));
+        AgentResult result = runner.run(new AgentRequest("analysis_query", "q", "s1"));
+        assertEquals(AgentRunner.UNKNOWN_TOOL_USER_MESSAGE, result.answer());
+        assertNull(result.errorCode());
+    }
+
+    @Test
     void schemaInvalidUsesUnknownToolCopyNotLimitCode() {
         when(toolExecutor.execute(eq("sql.validate"), any(), any()))
                 .thenReturn(ToolResult.fail("schema_invalid"));

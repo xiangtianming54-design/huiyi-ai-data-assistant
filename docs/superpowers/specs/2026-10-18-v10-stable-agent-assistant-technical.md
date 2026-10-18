@@ -1,7 +1,7 @@
 # HuiYi v1.0 · Stable Agent Assistant 技术设计文档
 
 > 版本：`v1.0.0`  
-> 状态：**规格已冻结，实现尚未开工**  
+> 状态：**已发布**（标签 `v1.0.0`）  
 > 产品规格（桌面规划同构改写）：[2026-10-18-v10-stable-agent-assistant.md](2026-10-18-v10-stable-agent-assistant.md)  
 > 基线代码：`v0.9.0`（标签 `v0.9.0`）包 `com.huiyi.assistant.agent`  
 > 口径：需求评审 D01–D13，见产品规格 §18。本文只写 **怎么改代码**，不重新开范围。

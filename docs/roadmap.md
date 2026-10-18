@@ -29,23 +29,17 @@
 | **v1.3.0** | Production Ready | 3–4 周 | staging/prod、备份、限流、压测、告警 |
 | **v1.4.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
 
-## 已发布：v0.9.0 Tool Harness & Agent Runtime
+## 已发布：v1.0.0 Stable Agent Assistant
 
-标签 `v0.9.0`。规格：[2026-10-17-v09-tool-harness-and-agent-runtime.md](superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)。计划：[2026-10-17-v09-tool-harness-and-agent-runtime.md](superpowers/plans/2026-10-17-v09-tool-harness-and-agent-runtime.md)。本版：现网 Chat/Analysis 门面委托同一 Router `AgentRunner`；五个只读工具（画像与图表合在 `data.profile`）；内存 ToolRegistry；工具步骤写入 `assistant_run_steps.tool_name`（Flyway V10）。
+标签 `v1.0.0`。规格：[2026-10-18-v10-stable-agent-assistant.md](superpowers/specs/2026-10-18-v10-stable-agent-assistant.md)。技术设计：[2026-10-18-v10-stable-agent-assistant-technical.md](superpowers/specs/2026-10-18-v10-stable-agent-assistant-technical.md)。计划：[2026-10-18-v10-stable-agent-assistant.md](superpowers/plans/2026-10-18-v10-stable-agent-assistant.md)。本版 P0：现网 `chat/stream` 叠加 `tool.*` SSE；五工具 JSON Schema；Context Budget；OutputGuard；90s run 帽；Flyway V11 `assistant_runs.error_code`。入口仍是 Chat/Analysis，默认 Router。
 
-未纳入本版：`POST /agent/runs`；ReAct；步骤可见 SSE；前端 `toolCalls`；独立 `tool_invocations` / `tool_registry` 表；多 Agent；MCP；Grafana；写库工具。v0.7 P1 UI、v0.8 P2 调试面板仍不自动滚入。
+未纳入本版：ReAct；`POST /agent/runs`；前端 `toolCalls`；评测页；细粒度权限；MCP；写库工具。v0.7 P1 UI、v0.8 P2 调试面板仍不自动滚入。
 
-上一发布：`v0.8.0` Observability & Cost。
+上一发布：`v0.9.0` Tool Harness & Agent Runtime。
 
-## 当前开发：v1.0.0 Stable Agent Assistant
+## 当前开发：v1.1.0 Eval & Prompt Governance
 
-规格已冻结：[2026-10-18-v10-stable-agent-assistant.md](superpowers/specs/2026-10-18-v10-stable-agent-assistant.md)（按桌面 v1.0 规划 1–17 章同构改写，口径以 D01–D13 为准）。技术设计：[2026-10-18-v10-stable-agent-assistant-technical.md](superpowers/specs/2026-10-18-v10-stable-agent-assistant-technical.md)。实施计划：[2026-10-18-v10-stable-agent-assistant.md](superpowers/plans/2026-10-18-v10-stable-agent-assistant.md)。P0 实现落在分支 `feature/v1.0-agent-stable`：叠加 `tool.*` SSE、五工具 Schema、Context Budget、OutputGuard、90s run 帽、Flyway V11 `error_code`。尚未发版。
-
-P0：现网 `chat/stream` / `analysis/query` 上叠加 `tool.*` SSE、五工具 JSON Schema、Context Budget、现有角色 Guard、run 总超时与 `assistant_runs.error_code`。五场景默认仍 Router。
-
-P1 ReAct 已写入该规格，本周不开工。公开 `/agent/runs`、新工具面、评测页、细粒度权限不进本版。
-
-**本版不做（仍属后续）：** 生产多环境、语义层、评测平台、MCP、桌面全文 4 周范围。
+尚未开工。评测集、回归报告、Prompt/模型治理见路线图，不把未写规格的能力当已交付。
 
 ## 后续版本（摘要）
 
@@ -77,7 +71,7 @@ hotfix/*    紧急修复
 
 发布：`feature` → PR 到日常集成 → CI + Review → staging → `release/*` → `main` → tag。
 
-**仓库现状：** GitHub 日常分支仍是 `dev`，CI 监听 `main` / `dev`。下一版 feature 按 `feature/v1.0-*` 这类命名；改名为 `develop` 单独立项，避免打断现有 PR。
+**仓库现状：** GitHub 日常分支仍是 `dev`，CI 监听 `main` / `dev`。下一版 feature 按 `feature/v1.1-*` 这类命名；改名为 `develop` 单独立项，避免打断现有 PR。
 
 版本号：Semantic Versioning。MAJOR = 不兼容 API/数据；MINOR = 兼容新功能；PATCH = 修复。
 

@@ -1,7 +1,7 @@
 # HuiYi v1.0 · Stable Agent Assistant 迭代开发文档（仓库规格）
 
 > 版本：`v1.0.0`  
-> 状态：**规格已冻结，实施计划已写，P0 实现落在 `feature/v1.0-agent-stable`（尚未发版）**（P0 D01–D13 已拍板；P1 ReAct 只写入规格，本计划不含）  
+> 状态：**已发布**（标签 `v1.0.0`；P0 D01–D13 已拍板；P1 ReAct 只写入规格，本版不含）  
 > 基线：`huiyi-ai-data-assistant v0.9.0`（标签 `v0.9.0`）  
 > 上版本状态：已交付内存 ToolRegistry、RouterPlanner、AgentRunner、5 个只读工具、Flyway V10 `tool_name`。  
 > 对照原文：桌面《HuiYi-v1.0-Stable-Agent-Assistant-Development-Plan》（下称「桌面规划」）。  

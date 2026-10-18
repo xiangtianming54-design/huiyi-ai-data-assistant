@@ -160,7 +160,7 @@ Tool Harness + Router Runtime：RAG / Text-to-SQL / 数据画像收成五个只�
 
 **回滚：** 切回标签 `v0.8.0`，恢复发版前 MySQL 备份后再起服务。V10 已改 schema，不能只换镜像不还原库。
 
-## v1.0 变更（未发布）
+## v1.0 变更（2026-10-18，标签 v1.0.0，已发布）
 
 Stable Agent Assistant P0：现网 `/chat/stream` 叠加 `tool.*` SSE；五工具 JSON Schema 拒绝；Context Budget（默认 24000 字符）；OutputGuard 剥堆栈/密钥；run 墙钟 90s；Flyway V11 仅加 `assistant_runs.error_code`。入口仍是 `chat/stream` 与 `analysis/query`，无 `/agent/runs`，无 ReAct。规格：[v1.0 开发文档](superpowers/specs/2026-10-18-v10-stable-agent-assistant.md)。技术设计：[v1.0 技术设计](superpowers/specs/2026-10-18-v10-stable-agent-assistant-technical.md)。计划：[v1.0 实施计划](superpowers/plans/2026-10-18-v10-stable-agent-assistant.md)。
 

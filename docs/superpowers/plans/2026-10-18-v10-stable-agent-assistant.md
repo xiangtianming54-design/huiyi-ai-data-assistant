@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> Status: 未开工。P0 only. P1 ReAct 不在本计划。
+> Status: 已完成并发布。标签 `v1.0.0`。P0 only. P1 ReAct 不在本计划。
 >
 > Execution workspace: create an isolated git worktree via superpowers:using-git-worktrees before Task 1. Branch name: `feature/v1.0-agent-stable`.
 

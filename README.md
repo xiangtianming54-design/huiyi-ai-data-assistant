@@ -2,7 +2,7 @@
 
 > 会意 · 企业经营数据智能分析助手
 
-当前发布：**v0.9.0 Tool Harness & Agent Runtime**（标签 `v0.9.0`）。规格 [v0.9 开发文档](docs/superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)。基线对照 [docs/baseline.md](docs/baseline.md) · 踩坑 [docs/pitfalls.md](docs/pitfalls.md) · 路线图 [docs/roadmap.md](docs/roadmap.md)
+当前发布：**v1.0.0 Stable Agent Assistant**（标签 `v1.0.0`）。规格 [v1.0 开发文档](docs/superpowers/specs/2026-10-18-v10-stable-agent-assistant.md)。基线对照 [docs/baseline.md](docs/baseline.md) · 踩坑 [docs/pitfalls.md](docs/pitfalls.md) · 路线图 [docs/roadmap.md](docs/roadmap.md)
 
 基于 **Java + Python 协同架构** 的企业经营数据智能分析助手，支持 **RAG 知识库问答** 与 **Text-to-SQL 数据分析** 两类核心能力。
 
@@ -158,9 +158,10 @@ huiyi-ai-data-assistant/
 
 - [x] **v0.7.0 Enterprise Foundation**：认证、工作区、RBAC、资源隔离、审计、Flyway、`/api/v1`（见 [docs/development.md](docs/development.md)）
 - [x] **v0.8.0 Observability & Cost**：Request/Run ID、请求级 Trace、Metrics、Token/`cost_amount`、Python 访问日志、健康检查（[规格](docs/superpowers/specs/2026-10-16-v08-observability-and-cost.md)；不做 Grafana / Agent Loop）
-- [ ] **v0.9.0 Tool Harness & Agent Runtime**：Tool Registry、Agent Loop、Agent Trace（[规格草稿](docs/superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)）
+- [x] **v0.9.0 Tool Harness & Agent Runtime**：内存 ToolRegistry、Router AgentRunner、五个只读工具、Flyway V10 `tool_name`（[规格](docs/superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)）
+- [x] **v1.0.0 Stable Agent Assistant**：`tool.*` SSE、五工具 JSON Schema、Context Budget、OutputGuard、90s run 帽、Flyway V11 `error_code`（[规格](docs/superpowers/specs/2026-10-18-v10-stable-agent-assistant.md)；P1 ReAct 不在本版）
 
-按企业迭代文档演进：下一迭代 **v0.9.0** Tool Harness / Agent Runtime → **v1.0.0** 稳定助手。不把未做能力写成当前功能。
+按企业迭代文档演进：下一迭代 **v1.1.0** Eval & Prompt Governance。不把未做能力写成当前功能。
 
 ## License
 

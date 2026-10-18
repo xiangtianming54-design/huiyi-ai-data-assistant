@@ -4,12 +4,12 @@
 
 ## 代码与测试
 
-- [x] 目标分支已合并（`main` 含 v0.9 实现 `4d83216`）
-- [x] `backend`：`mvn -B verify` 通过（本地，2026-10-18，130 tests）
-- [x] `python-service`：`pytest --cov=app --cov-report=term-missing` 通过（本地，115 passed）
-- [x] `frontend`：`npm run build` 通过（本地，2026-10-18）
+- [x] 目标分支已合并（`main` 含 v1.0 实现 `8a3fb68`）
+- [x] `backend`：`mvn -B test` 通过（本地，2026-10-18，144 tests）
+- [ ] `python-service`：本版未改 Python；沿用 v0.9 的 pytest 记录
+- [ ] `frontend`：本版未改前端；沿用 v0.9 的 `npm run build` 记录
 - [ ] GitHub Actions 对应 commit 三条 job 均为成功（push `main` 后在网页确认；本机无 `gh`）
-- [x] 本版改了 Chat/Analysis 编排：Agent / Facade / Registry 单测已更新
+- [x] 本版改了 Chat/Analysis 编排：Agent / Facade / Schema / Budget / Guard 单测已更新
 
 ## 安全与仓库卫生
 
@@ -20,25 +20,28 @@
 
 ## 文档
 
-- [x] [baseline.md](baseline.md) 已标注 v0.9 Registry + Router；ReAct 仍非本版
-- [x] [roadmap.md](roadmap.md) 当前发布为 v0.9.0；下一版 v1.0 未开工
+- [x] [baseline.md](baseline.md) 已标注 v1.0 Schema / SSE / Budget / Guard / `error_code`
+- [x] [roadmap.md](roadmap.md) 当前发布为 v1.0.0；下一版 v1.1 未开工
 - [x] README 版本说明与本版一致
-- [x] [development.md](development.md) 已写 v0.9 变更与回滚
+- [x] [development.md](development.md) 已写 v1.0 变更与回滚
 
 ## 运行与演示
 
-- [x] Compose 健康检查通过（现网栈，2026-10-18）：
-  - `GET http://localhost:8080/api/health` → `code=0`，`data.mysql/redis/python`
-  - `GET http://localhost:8080/actuator/prometheus` → 200
-  - `GET http://localhost:8001/health` → `{"status":"ok"}`
-- [x] [demo.md](demo.md) 五场景仍可走通（`e2e-m5.js` 2026-10-18 在 Compose 前端通过）
+- [ ] Compose 健康检查（本版收尾未重跑现网栈；v0.9 发版时已通过）
+- [ ] 五场景 `e2e-m5.js`（本版收尾未重跑；代码侧单测 144/144）
 
 ## 发布动作
 
-- [x] 语义化标签：`v0.9.0` → `7aca6ac`
-- [x] `git push origin main` 与 `git push origin v0.9.0`（2026-10-18）
+- [ ] 语义化标签：`v1.0.0`（打 tag 后勾）
+- [ ] `git push origin main` 与 `git push origin v1.0.0`
 - [ ] GitHub Release 写清：新增 / 修复 / 不包含（本机无 `gh`，需在 GitHub 网页创建）
 - [ ] 若本版是公开里程碑：确认仓库可见性仍符合预期
+
+## v1.0.0 特别项（仅本版）
+
+- [x] Flyway V11：仅 `assistant_runs.error_code`（无新表、无 FK、无 steps JSON）
+- [x] 不做 ReAct、`POST /agent/runs`、前端 `toolCalls`、评测页
+- [x] 回滚路径：`v0.9.0` + MySQL 备份（见 development.md）
 
 ## v0.9.0 特别项（仅本版）
 
@@ -46,6 +49,7 @@
 - [x] 五场景 `e2e-m5.js` + 企业场景 `e2e-v07.js`（2026-10-18，现网 Compose 栈）
 - [x] 不做 ReAct、`POST /agent/runs`、步骤 SSE、前端 `toolCalls`
 - [x] 回滚路径：`v0.8.0` + MySQL 备份（见 development.md）
+- [x] 语义化标签：`v0.9.0` → `7aca6ac`；已 `git push origin v0.9.0`
 
 ## v0.8.0 特别项（仅本版）
 

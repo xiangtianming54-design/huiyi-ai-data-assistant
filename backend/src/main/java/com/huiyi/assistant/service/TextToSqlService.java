@@ -2,6 +2,7 @@ package com.huiyi.assistant.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.huiyi.assistant.agent.ContextBudget;
 import com.huiyi.assistant.common.util.PromptTemplateLoader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -53,9 +54,13 @@ public class TextToSqlService {
      * @return 提取出的 SQL；无法理解问题或提取失败时返回 null（不抛栈）
      */
     public String generateSql(String question) {
+        ContextBudget budget = new ContextBudget();
+        String schema = budget.trimSchema(schemaService.getSchemaDescription());
+        String glossary = promptTemplateLoader.render(BUSINESS_GLOSSARY, Map.of());
+        budget.assertFits("", "", schema, glossary, question);
         String prompt = promptTemplateLoader.render(TEXT_TO_SQL_PROMPT, Map.of(
-                "schema", schemaService.getSchemaDescription(),
-                "business_glossary", promptTemplateLoader.render(BUSINESS_GLOSSARY, Map.of()),
+                "schema", schema,
+                "business_glossary", glossary,
                 "question", question));
         String output = llmService.chat(prompt);
         log.info("LLM 原始输出: {}", output);

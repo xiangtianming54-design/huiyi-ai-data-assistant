@@ -1,5 +1,6 @@
 package com.huiyi.assistant.service;
 
+import com.huiyi.assistant.agent.ContextBudget;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.common.result.ResultCode;
 import com.huiyi.assistant.common.util.PromptTemplateLoader;
@@ -86,7 +87,9 @@ public class RagService {
             return new RagContext(NO_HIT_FALLBACK, null, List.of());
         }
 
-        String context = buildContext(hits);
+        ContextBudget budget = new ContextBudget();
+        String context = budget.trimKnowledge(buildContext(hits));
+        budget.assertFits("", context, "", "", question);
         String prompt = promptTemplateLoader.render(RAG_PROMPT_LOCATION,
                 Map.of("context", context, "question", question));
         return new RagContext(null, prompt, toReferences(hits));

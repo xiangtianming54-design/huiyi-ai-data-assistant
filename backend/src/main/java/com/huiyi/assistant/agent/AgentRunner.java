@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -120,11 +121,17 @@ public class AgentRunner {
         ToolEventListener safeListener = listener == null ? ToolEventListener.NOOP : listener;
         AgentDeadline safeDeadline = deadline == null ? AgentDeadline.fromNow(90_000L) : deadline;
         String sessionId = request.sessionId();
-        String rewritten = requestTraceService.timed("query_rewrite",
-                () -> queryRewriteService.rewrite(sessionId, request.question()));
-        IntentService.IntentDecision decision = requestTraceService.timed("intent",
-                () -> intentService.detectWithDetail(rewritten));
-        return runIntent(request.entrypoint(), rewritten, decision, safeListener, safeDeadline);
+        try {
+            String rewritten = requestTraceService.timed("query_rewrite",
+                    () -> queryRewriteService.rewrite(sessionId, request.question()));
+            IntentService.IntentDecision decision = requestTraceService.timed("intent",
+                    () -> intentService.detectWithDetail(rewritten));
+            return runIntent(request.entrypoint(), rewritten, decision, safeListener, safeDeadline);
+        } catch (PromptBudgetExceededException e) {
+            observabilityMetrics.agentLimitExceeded();
+            IntentService.IntentDecision decision = intentService.detectWithDetail(request.question());
+            return limitResult(decision);
+        }
     }
 
     public List<AgentResult> runAsk(AgentRequest request) {
@@ -269,11 +276,22 @@ public class AgentRunner {
 
     private String summarize(String question, String sql, Map<String, Object> profile,
                              List<Map<String, Object>> rows) {
+        ContextBudget budget = new ContextBudget();
+        List<Map<String, Object>> limited = new ArrayList<>(
+                rows == null ? List.of() : rows.stream().limit(SUMMARY_ROWS_LIMIT).toList());
+        String profileJson = budget.trimSchema(toJson(profile));
+        String rowsJson = toJson(limited);
+        while (limited.size() > 1 && profileJson.length() + rowsJson.length() > 24_000) {
+            limited.remove(limited.size() - 1);
+            rowsJson = toJson(limited);
+        }
+        rowsJson = budget.trimHistory(rowsJson);
+        budget.assertFits("", "", profileJson, rowsJson, question);
         String prompt = promptTemplateLoader.render(SUMMARY_PROMPT, Map.of(
                 "question", question,
-                "sql", sql,
-                "profile", toJson(profile),
-                "rows", toJson(rows.stream().limit(SUMMARY_ROWS_LIMIT).toList())));
+                "sql", sql == null ? "" : sql,
+                "profile", profileJson,
+                "rows", rowsJson));
         return llmService.chat(prompt);
     }
 

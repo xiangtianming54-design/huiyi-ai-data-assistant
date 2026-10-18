@@ -75,6 +75,14 @@ class AgentRunnerTest {
     }
 
     @Test
+    void budgetExceededUsesLimitCopy() {
+        when(queryRewriteService.rewrite(any(), any())).thenThrow(new PromptBudgetExceededException());
+        AgentResult result = runner.run(new AgentRequest("chat_stream", "q", "s1"));
+        assertEquals(AgentRunner.LIMIT_USER_MESSAGE, result.answer());
+        assertEquals("AGENT_LIMIT_EXCEEDED", result.errorCode());
+    }
+
+    @Test
     void schemaInvalidUsesUnknownToolCopyNotLimitCode() {
         when(toolExecutor.execute(eq("sql.validate"), any(), any()))
                 .thenReturn(ToolResult.fail("schema_invalid"));

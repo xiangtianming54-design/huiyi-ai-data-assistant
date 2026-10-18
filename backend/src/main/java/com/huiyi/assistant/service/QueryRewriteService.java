@@ -1,5 +1,7 @@
 package com.huiyi.assistant.service;
 
+import com.huiyi.assistant.agent.ContextBudget;
+import com.huiyi.assistant.agent.PromptBudgetExceededException;
 import com.huiyi.assistant.common.util.PromptTemplateLoader;
 import com.huiyi.assistant.model.entity.ChatMessage;
 import com.huiyi.assistant.model.entity.ChatSessionSummary;
@@ -56,6 +58,9 @@ public class QueryRewriteService {
         try {
             String summary = refreshSummary(sessionId, history);
             String historyText = formatHistory(summary, history);
+            ContextBudget budget = new ContextBudget();
+            historyText = budget.trimHistory(historyText);
+            budget.assertFits("", "", "", historyText, question);
             String prompt = promptTemplateLoader.render(CONDENSE_PROMPT,
                     Map.of("history", historyText, "question", question));
             String rewritten = llmService.chat(prompt);
@@ -65,6 +70,8 @@ public class QueryRewriteService {
             String condensed = rewritten.trim();
             log.info("问题改写: 「{}」→「{}」", question, condensed);
             return condensed;
+        } catch (PromptBudgetExceededException e) {
+            throw e;
         } catch (Exception e) {
             log.warn("问题改写失败，回退原问题: {}", e.getMessage());
             return question;

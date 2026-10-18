@@ -31,6 +31,11 @@ class FlywayMigrationFilesTest {
             assertTrue(sql.contains(table), "missing table " + table);
         }
         assertTrue(sql.contains("tool_name"), "V10 must add assistant_run_steps.tool_name");
+        assertTrue(sql.contains("error_code"), "V11 must add assistant_runs.error_code");
+        assertFalse(sql.contains("FOREIGN KEY"), "no MySQL FK");
+        assertFalse(sql.contains("arguments_json"), "no steps JSON columns");
+        assertFalse(sql.contains("CREATE TABLE IF NOT EXISTS agent_runs")
+                || sql.contains("CREATE TABLE agent_runs"), "no agent_runs table");
         assertFalse(sql.contains("tool_invocations"), "no tool_invocations table");
         assertFalse(sql.contains("tool_registry"), "no tool_registry table");
         assertTrue(sql.contains("username = 'migrated'") || sql.contains("username,'migrated'")

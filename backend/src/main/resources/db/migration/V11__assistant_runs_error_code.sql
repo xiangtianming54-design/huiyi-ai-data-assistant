@@ -1,0 +1,2 @@
+ALTER TABLE assistant_runs
+  ADD COLUMN error_code VARCHAR(64) NULL COMMENT '如 AGENT_LIMIT_EXCEEDED；无则空' AFTER status;

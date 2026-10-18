@@ -64,6 +64,16 @@ class AssistantRunRecorderTest {
     }
 
     @Test
+    void finishWritesErrorCode() {
+        recorder.start("chat_stream", "q", "s1");
+        recorder.finish("FAILED", "data_query", "run_timeout", 0, 0, 12, "AGENT_LIMIT_EXCEEDED");
+        ArgumentCaptor<AssistantRun> captor = ArgumentCaptor.forClass(AssistantRun.class);
+        verify(runMapper).update(captor.capture(), any());
+        assertEquals("AGENT_LIMIT_EXCEEDED", captor.getValue().getErrorCode());
+        assertEquals("FAILED", captor.getValue().getStatus());
+    }
+
+    @Test
     void stepWritesToolName() {
         recorder.start("chat_stream", "q", "s1");
         recorder.step("rag", "knowledge.search", "SUCCESS", 12, null);

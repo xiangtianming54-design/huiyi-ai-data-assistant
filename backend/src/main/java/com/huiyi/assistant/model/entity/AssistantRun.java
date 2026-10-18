@@ -23,6 +23,7 @@ public class AssistantRun {
     private String question;
     private String intent;
     private String status;
+    private String errorCode;
     private String errorMessage;
     private Integer promptTokens;
     private Integer completionTokens;

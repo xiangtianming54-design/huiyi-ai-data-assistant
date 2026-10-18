@@ -56,7 +56,11 @@ public class RequestTraceService {
     }
 
     public void finish(String status, String intent, String error, long startNanos) {
-        runRecorder.finish(status, intent, error, 0, 0, millis(startNanos));
+        finish(status, intent, error, startNanos, null);
+    }
+
+    public void finish(String status, String intent, String error, long startNanos, String errorCode) {
+        runRecorder.finish(status, intent, error, 0, 0, millis(startNanos), errorCode);
     }
 
     public static int millis(long startNanos) {

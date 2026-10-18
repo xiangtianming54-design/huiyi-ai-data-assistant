@@ -119,6 +119,11 @@ public class AssistantRunRecorder {
 
     public void finish(String status, String intent, String errorMessage, int promptTokens, int completionTokens,
                        Integer totalLatencyMs) {
+        finish(status, intent, errorMessage, promptTokens, completionTokens, totalLatencyMs, null);
+    }
+
+    public void finish(String status, String intent, String errorMessage, int promptTokens, int completionTokens,
+                       Integer totalLatencyMs, String errorCode) {
         String runId = ObservabilityContextHolder.runId();
         if (!properties.isEnabled() || runId == null) {
             stepSeq.remove();
@@ -128,6 +133,7 @@ public class AssistantRunRecorder {
             AssistantRun patch = new AssistantRun();
             patch.setStatus(status);
             patch.setIntent(intent);
+            patch.setErrorCode(errorCode);
             patch.setErrorMessage(trim(errorMessage, 1000));
             patch.setPromptTokens(promptTokens);
             patch.setCompletionTokens(completionTokens);

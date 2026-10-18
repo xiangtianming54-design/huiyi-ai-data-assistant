@@ -26,6 +26,9 @@ mybatis-plus:
     banner: false
 
 huiyi:
+  agent:
+    run-timeout-ms: ${HUIYI_AGENT_RUN_TIMEOUT_MS:90000}
+    prompt-max-chars: ${HUIYI_AGENT_PROMPT_MAX_CHARS:24000}
   auth:
     register-enabled: ${REGISTER_ENABLED:true}
     default-member-role: ${DEFAULT_MEMBER_ROLE:VIEWER}

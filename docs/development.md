@@ -166,6 +166,12 @@ Stable Agent Assistant P0：现网 `/chat/stream` 叠加 `tool.*` SSE；五工�
 
 **回滚：** 切回标签 `v0.9.0`，恢复发版前 MySQL 备份后再起服务。V11 已改 schema，不能只换镜像不还原库。
 
+## v1.1 变更（未发布）
+
+Eval 评测集与回归 P0：`testdata/eval/` 金标 + Java runner + GitHub Actions 独立 job 上传 `eval-report.json/.md`。无评测页、无新 API、无新表。Prompt 版本/灰度为 P1。规格：[v1.1 开发文档](superpowers/specs/2026-10-18-v11-eval-and-regression.md)。
+
+**回滚：** 切回标签 `v1.0.0`。本版 P0 不改 Flyway；若后续误加迁移，不能只换镜像不还原库。
+
 ## 常见坑（本仓库已踩过）
 
 完整记录（现象 / 原因 / 处理 / 以后）见 [pitfalls.md](pitfalls.md)。修好非显而易见的问题后往该文档**顶部**追加，不要只留在对话里。

@@ -1,0 +1,31 @@
+{
+  "id": "scene-s3-channel",
+  "entrypoint": "analysis_query",
+  "question": "各渠道销售额怎么对比？",
+  "sessionId": "eval-s3",
+  "workspace": "default",
+  "stubs": {
+    "rewrite": "各渠道销售额怎么对比？",
+    "intent": "data_query",
+    "tools": [
+      { "name": "sql.generate", "ok": true, "data": { "sql": "select channel, sum(amount) from sales group by channel" } },
+      { "name": "sql.validate", "ok": true, "data": { "valid": true, "sql": "select channel, sum(amount) from sales group by channel" } },
+      { "name": "sql.execute_readonly", "ok": true, "data": { "rows": [{ "channel": "online", "amount": 10 }] } },
+      { "name": "data.profile", "ok": true, "data": { "chartType": "bar", "rowCount": 1 } }
+    ]
+  },
+  "expect": {
+    "intent": "data_query",
+    "analysisHasToolCalls": false,
+    "toolEvents": [
+      { "name": "sql.generate", "phase": "started" },
+      { "name": "sql.generate", "phase": "completed", "status": "SUCCESS" },
+      { "name": "sql.validate", "phase": "started" },
+      { "name": "sql.validate", "phase": "completed", "status": "SUCCESS" },
+      { "name": "sql.execute_readonly", "phase": "started" },
+      { "name": "sql.execute_readonly", "phase": "completed", "status": "SUCCESS" },
+      { "name": "data.profile", "phase": "started" },
+      { "name": "data.profile", "phase": "completed", "status": "SUCCESS" }
+    ]
+  }
+}

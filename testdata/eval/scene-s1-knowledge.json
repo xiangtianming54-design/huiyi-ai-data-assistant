@@ -1,0 +1,29 @@
+{
+  "id": "scene-s1-knowledge",
+  "entrypoint": "chat_stream",
+  "question": "退货政策是什么？",
+  "sessionId": "eval-s1",
+  "workspace": "default",
+  "stubs": {
+    "rewrite": "退货政策是什么？",
+    "intent": "knowledge_qa",
+    "tools": [
+      {
+        "name": "knowledge.search",
+        "ok": true,
+        "data": {
+          "fallbackAnswer": null,
+          "prompt": "rag-prompt",
+          "references": [{ "source": "return-policy.md", "score": 0.91 }]
+        }
+      }
+    ]
+  },
+  "expect": {
+    "intent": "knowledge_qa",
+    "toolEvents": [
+      { "name": "knowledge.search", "phase": "started" },
+      { "name": "knowledge.search", "phase": "completed", "status": "SUCCESS" }
+    ]
+  }
+}

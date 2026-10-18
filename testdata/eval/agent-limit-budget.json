@@ -1,0 +1,17 @@
+{
+  "id": "agent-limit-budget",
+  "entrypoint": "analysis_query",
+  "question": "上个月销售额最高的 10 个商品是什么？",
+  "sessionId": "eval-budget",
+  "workspace": "default",
+  "stubs": {
+    "intent": "data_query",
+    "budgetExceeded": true
+  },
+  "expect": {
+    "intent": "data_query",
+    "answerEquals": "当前问题较复杂，请缩小范围后重试。",
+    "errorCode": "AGENT_LIMIT_EXCEEDED",
+    "analysisHasToolCalls": false
+  }
+}

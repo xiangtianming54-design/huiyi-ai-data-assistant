@@ -1,0 +1,27 @@
+{
+  "id": "agent-schema-rejected",
+  "entrypoint": "analysis_query",
+  "question": "上个月销售额最高的 10 个商品是什么？",
+  "sessionId": "eval-schema",
+  "workspace": "default",
+  "stubs": {
+    "rewrite": "上个月销售额最高的 10 个商品是什么？",
+    "intent": "data_query",
+    "tools": [
+      { "name": "sql.generate", "ok": true, "data": { "sql": "select 1" } },
+      { "name": "sql.validate", "ok": false, "error": "schema_invalid" }
+    ]
+  },
+  "expect": {
+    "intent": "data_query",
+    "answerEquals": "工具调用失败，请稍后重试。",
+    "errorCode": null,
+    "analysisHasToolCalls": false,
+    "toolEvents": [
+      { "name": "sql.generate", "phase": "started" },
+      { "name": "sql.generate", "phase": "completed", "status": "SUCCESS" },
+      { "name": "sql.validate", "phase": "started" },
+      { "name": "sql.validate", "phase": "failed", "status": "REJECTED" }
+    ]
+  }
+}

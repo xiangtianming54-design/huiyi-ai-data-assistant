@@ -1,0 +1,28 @@
+{
+  "id": "iso-workspace-b-isolated",
+  "entrypoint": "analysis_query",
+  "question": "B 空间知识摘要",
+  "sessionId": "eval-iso-b",
+  "workspace": "B",
+  "stubs": {
+    "rewrite": "B 空间知识摘要",
+    "intent": "knowledge_qa",
+    "tools": [
+      {
+        "name": "knowledge.search",
+        "ok": true,
+        "data": {
+          "fallbackAnswer": "B 空间只读摘要",
+          "prompt": null,
+          "references": [],
+          "trap": "WS_A_SECRET"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "intent": "knowledge_qa",
+    "answerContains": ["B 空间只读摘要"],
+    "forbiddenSubstrings": ["WS_A_SECRET"]
+  }
+}

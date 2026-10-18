@@ -1,0 +1,21 @@
+{
+  "id": "agent-limit-deadline",
+  "entrypoint": "analysis_query",
+  "question": "上个月销售额最高的 10 个商品是什么？",
+  "sessionId": "eval-deadline",
+  "workspace": "default",
+  "stubs": {
+    "rewrite": "上个月销售额最高的 10 个商品是什么？",
+    "intent": "data_query",
+    "deadlineExpired": true,
+    "tools": [
+      { "name": "sql.generate", "ok": true, "data": { "sql": "select 1" } }
+    ]
+  },
+  "expect": {
+    "intent": "data_query",
+    "answerEquals": "当前问题较复杂，请缩小范围后重试。",
+    "errorCode": "AGENT_LIMIT_EXCEEDED",
+    "analysisHasToolCalls": false
+  }
+}

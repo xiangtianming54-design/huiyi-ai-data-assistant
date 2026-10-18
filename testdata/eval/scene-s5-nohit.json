@@ -1,0 +1,31 @@
+{
+  "id": "scene-s5-nohit",
+  "entrypoint": "analysis_query",
+  "question": "不存在的制度条款编号 XYZ-404",
+  "sessionId": "eval-s5",
+  "workspace": "default",
+  "stubs": {
+    "rewrite": "不存在的制度条款编号 XYZ-404",
+    "intent": "knowledge_qa",
+    "tools": [
+      {
+        "name": "knowledge.search",
+        "ok": true,
+        "data": {
+          "fallbackAnswer": "当前知识库未找到足够信息，请上传相关制度文档后再试。",
+          "prompt": null,
+          "references": []
+        }
+      }
+    ]
+  },
+  "expect": {
+    "intent": "knowledge_qa",
+    "answerContains": ["当前知识库未找到足够信息"],
+    "errorCode": null,
+    "toolEvents": [
+      { "name": "knowledge.search", "phase": "started" },
+      { "name": "knowledge.search", "phase": "completed", "status": "SUCCESS" }
+    ]
+  }
+}

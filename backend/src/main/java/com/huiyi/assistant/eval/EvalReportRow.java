@@ -1,5 +1,6 @@
 package com.huiyi.assistant.eval;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public record EvalReportRow(
@@ -10,7 +11,7 @@ public record EvalReportRow(
         String mismatch
 ) {
     public EvalReportRow {
-        expected = expected == null ? Map.of() : Map.copyOf(expected);
-        actual = actual == null ? Map.of() : Map.copyOf(actual);
+        expected = expected == null ? Map.of() : new LinkedHashMap<>(expected);
+        actual = actual == null ? Map.of() : new LinkedHashMap<>(actual);
     }
 }

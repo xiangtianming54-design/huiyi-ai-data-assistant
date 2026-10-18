@@ -1,0 +1,31 @@
+{
+  "id": "agent-tool-event-names",
+  "entrypoint": "analysis_query",
+  "question": "上个月销售额最高的 10 个商品是什么？",
+  "sessionId": "eval-events",
+  "workspace": "default",
+  "stubs": {
+    "rewrite": "上个月销售额最高的 10 个商品是什么？",
+    "intent": "data_query",
+    "tools": [
+      { "name": "sql.generate", "ok": true, "data": { "sql": "select 1" } },
+      { "name": "sql.validate", "ok": true, "data": { "valid": true, "sql": "select 1" } },
+      { "name": "sql.execute_readonly", "ok": true, "data": { "rows": [{ "n": 1 }] } },
+      { "name": "data.profile", "ok": true, "data": { "chartType": "bar", "rowCount": 1 } }
+    ]
+  },
+  "expect": {
+    "intent": "data_query",
+    "analysisHasToolCalls": false,
+    "toolEvents": [
+      { "name": "sql.generate", "phase": "started" },
+      { "name": "sql.generate", "phase": "completed", "status": "SUCCESS" },
+      { "name": "sql.validate", "phase": "started" },
+      { "name": "sql.validate", "phase": "completed", "status": "SUCCESS" },
+      { "name": "sql.execute_readonly", "phase": "started" },
+      { "name": "sql.execute_readonly", "phase": "completed", "status": "SUCCESS" },
+      { "name": "data.profile", "phase": "started" },
+      { "name": "data.profile", "phase": "completed", "status": "SUCCESS" }
+    ]
+  }
+}

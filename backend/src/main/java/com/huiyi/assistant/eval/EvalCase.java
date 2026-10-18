@@ -79,6 +79,7 @@ public class EvalCase {
         private String rewrite;
         private String intent;
         private boolean deadlineExpired;
+        private boolean budgetExceeded;
         private String dirtyAnswer;
         private List<ToolStub> tools = new ArrayList<>();
 
@@ -104,6 +105,14 @@ public class EvalCase {
 
         public void setDeadlineExpired(boolean deadlineExpired) {
             this.deadlineExpired = deadlineExpired;
+        }
+
+        public boolean budgetExceeded() {
+            return budgetExceeded;
+        }
+
+        public void setBudgetExceeded(boolean budgetExceeded) {
+            this.budgetExceeded = budgetExceeded;
         }
 
         public String dirtyAnswer() {

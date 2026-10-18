@@ -1,0 +1,24 @@
+{
+  "id": "agent-unknown-tool",
+  "entrypoint": "analysis_query",
+  "question": "上个月销售额最高的 10 个商品是什么？",
+  "sessionId": "eval-unknown",
+  "workspace": "default",
+  "stubs": {
+    "rewrite": "上个月销售额最高的 10 个商品是什么？",
+    "intent": "data_query",
+    "tools": [
+      { "name": "sql.generate", "ok": false, "error": "unknown" }
+    ]
+  },
+  "expect": {
+    "intent": "data_query",
+    "answerEquals": "工具调用失败，请稍后重试。",
+    "errorCode": null,
+    "analysisHasToolCalls": false,
+    "toolEvents": [
+      { "name": "sql.generate", "phase": "started" },
+      { "name": "sql.generate", "phase": "failed", "status": "FAILED" }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "agent-output-guard",
+  "entrypoint": "analysis_query",
+  "question": "q",
+  "sessionId": "eval-guard",
+  "workspace": "default",
+  "stubs": {
+    "dirtyAnswer": "visible\nException in thread \"main\" java.lang.RuntimeException: boom"
+  },
+  "expect": {
+    "forbiddenSubstrings": ["Exception in thread"]
+  }
+}

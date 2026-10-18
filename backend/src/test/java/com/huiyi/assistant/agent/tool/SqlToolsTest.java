@@ -40,6 +40,7 @@ class SqlToolsTest {
         verify(sqlExecuteService).execute("select 1", "q");
         assertEquals(ToolNames.SQL_EXECUTE_READONLY, tool.spec().name());
         assertEquals(ToolSpecRead.permissions(), tool.spec().permissions());
+        assertTrue(tool.spec().timeoutMs() > 5_000L);
     }
 
     @Test

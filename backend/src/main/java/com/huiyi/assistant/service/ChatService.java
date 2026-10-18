@@ -88,10 +88,9 @@ public class ChatService {
         requestTraceService.start("chat_ask", request.getQuestion(), request.getSessionId());
         try {
             String sessionId = resolveScopedSession(request.getSessionId());
+            chatSessionService.saveUserMessage(sessionId, request.getQuestion(), null);
             List<AgentResult> results = agentRunner.runAsk(
                     new AgentRequest("chat_ask", request.getQuestion(), sessionId));
-            IntentTypeEnum userIntent = results.size() == 1 ? results.get(0).decision().intent() : null;
-            chatSessionService.saveUserMessage(sessionId, request.getQuestion(), userIntent);
             List<ChatPartVO> parts = results.stream()
                     .map(result -> toPart(result, request.getQuestion()))
                     .toList();
@@ -114,9 +113,9 @@ public class ChatService {
         requestTraceService.start("chat", request.getQuestion(), request.getSessionId());
         try {
             String sessionId = resolveScopedSession(request.getSessionId());
+            chatSessionService.saveUserMessage(sessionId, request.getQuestion(), null);
             AgentResult result = agentRunner.run(new AgentRequest("chat", request.getQuestion(), sessionId));
             IntentTypeEnum intent = result.decision().intent();
-            chatSessionService.saveUserMessage(sessionId, request.getQuestion(), intent);
             persistAssistant(sessionId, result);
             requestTraceService.finish("SUCCEEDED", intent.getCode(), null, start);
             observabilityMetrics.chatSuccess(Duration.ofNanos(System.nanoTime() - start), null);
@@ -138,10 +137,17 @@ public class ChatService {
         long start = System.nanoTime();
         requestTraceService.start("chat_stream", request.getQuestion(), request.getSessionId());
         String sessionId = resolveScopedSession(request.getSessionId());
-        AgentResult result = agentRunner.run(new AgentRequest("chat_stream", request.getQuestion(), sessionId));
+        chatSessionService.saveUserMessage(sessionId, request.getQuestion(), null);
+        AgentResult result;
+        try {
+            result = agentRunner.run(new AgentRequest("chat_stream", request.getQuestion(), sessionId));
+        } catch (RuntimeException e) {
+            requestTraceService.finish("FAILED", null, e.getMessage(), start);
+            observabilityMetrics.chatFailed(Duration.ofNanos(System.nanoTime() - start));
+            throw e;
+        }
         IntentService.IntentDecision decision = result.decision();
         IntentTypeEnum intent = decision.intent();
-        chatSessionService.saveUserMessage(sessionId, request.getQuestion(), intent);
 
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
         sendEvent(emitter, "session", sessionId);

@@ -16,6 +16,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,5 +43,19 @@ class AnalysisServiceFacadeTest {
         request.setQuestion("上个月销售额？");
         analysisService.query(request);
         verify(agentRunner).run(any(AgentRequest.class));
+    }
+
+    @Test
+    void knowledgeResultHasEmptyRowsNotNull() {
+        when(chatSessionService.resolveSessionId(any())).thenReturn("s1");
+        when(agentRunner.run(any())).thenReturn(new AgentResult(
+                new IntentService.IntentDecision(IntentTypeEnum.KNOWLEDGE_QA, IntentService.Layer.RULE, 1.0),
+                "有效订单是已支付订单", null, List.of(), null, null));
+        AnalysisRequestDTO request = new AnalysisRequestDTO();
+        request.setQuestion("什么是有效订单？");
+        AnalysisResultVO result = analysisService.query(request);
+        assertNotNull(result.getRows());
+        assertEquals(List.of(), result.getRows());
+        assertEquals("有效订单是已支付订单", result.getAnswer());
     }
 }

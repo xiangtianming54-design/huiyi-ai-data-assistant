@@ -22,7 +22,7 @@ public class SqlExecuteReadonlyTool implements AgentTool {
 
     @Override
     public ToolSpec spec() {
-        return new ToolSpec(ToolNames.SQL_EXECUTE_READONLY, "执行只读 SQL", "{}", 5_000L,
+        return new ToolSpec(ToolNames.SQL_EXECUTE_READONLY, "执行只读 SQL", "{}", 15_000L,
                 ToolSpec.DANGER_READ, ToolSpec.PERMISSION_WORKSPACE_MEMBER);
     }
 

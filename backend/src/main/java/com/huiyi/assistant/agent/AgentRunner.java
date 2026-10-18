@@ -2,6 +2,7 @@ package com.huiyi.assistant.agent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.huiyi.assistant.common.result.ResultCode;
 import com.huiyi.assistant.common.util.PromptTemplateLoader;
 import com.huiyi.assistant.context.WorkspaceContext;
 import com.huiyi.assistant.context.WorkspaceContextHolder;
@@ -35,6 +36,7 @@ public class AgentRunner {
     private static final String CANNOT_UNDERSTAND = "未能理解您的问题，请换一种问法，例如「上个月销售额最高的 10 个商品是什么？」。";
     private static final String SAFE_REFUSAL = "该请求涉及数据修改操作，已被安全策略拒绝。系统仅支持只读查询。";
     private static final String EMPTY_RESULT = "查询完成，但没有符合条件的数据。";
+    private static final String SQL_EXECUTE_FAIL = "SQL 执行失败，请调整问题后重试";
     private static final List<String> MODIFICATION_KEYWORDS = List.of(
             "删除", "修改", "更新", "清空", "插入",
             "delete", "update", "insert", "drop", "truncate", "alter");
@@ -78,7 +80,7 @@ public class AgentRunner {
         long start = System.nanoTime();
         try {
             ToolResult result = toolExecutor.execute(toolName, context, arguments);
-            requestTraceService.stepTool(toolName, result.ok() ? "SUCCESS" : "FAILED", start, result.error());
+            requestTraceService.stepTool(toolName, stepStatus(toolName, result), start, stepError(toolName, result));
             return result;
         } catch (UnknownToolException e) {
             requestTraceService.stepTool(e.toolName(), "FAILED", start, e.getMessage());
@@ -151,6 +153,10 @@ public class AgentRunner {
         for (String name : routerPlanner.toolsFor(IntentTypeEnum.DATA_QUERY)) {
             if (ToolNames.SQL_GENERATE.equals(name)) {
                 ToolResult generated = invoke(name, Map.of(), question);
+                if (isTimeout(generated)) {
+                    return analysisResult(decision, question, null, List.of(), null,
+                            ResultCode.LLM_SERVICE_ERROR.getMessage());
+                }
                 sql = generated.ok() ? stringVal(generated.data().get("sql")) : null;
                 observabilityMetrics.sqlGenerate(sql != null);
                 if (sql == null) {
@@ -158,10 +164,17 @@ public class AgentRunner {
                 }
             } else if (ToolNames.SQL_VALIDATE.equals(name)) {
                 ToolResult validated = invoke(name, Map.of("sql", sql), question);
+                if (isTimeout(validated)) {
+                    return analysisResult(decision, question, sql, List.of(), null,
+                            ResultCode.PYTHON_SERVICE_UNAVAILABLE.getMessage());
+                }
                 boolean passed = validated.ok() && Boolean.TRUE.equals(validated.data().get("valid"));
                 observabilityMetrics.sqlValidate(passed);
                 if (!passed) {
-                    String reason = validated.ok() ? stringVal(validated.data().get("reason")) : "校验服务异常";
+                    if (!validated.ok()) {
+                        return analysisResult(decision, question, sql, List.of(), null, "校验服务异常");
+                    }
+                    String reason = stringVal(validated.data().get("reason"));
                     return analysisResult(decision, question, sql, List.of(), null, refusalFor(reason));
                 }
                 safeSql = stringVal(validated.data().get("sql"));
@@ -171,7 +184,8 @@ public class AgentRunner {
             } else if (ToolNames.SQL_EXECUTE_READONLY.equals(name)) {
                 ToolResult executed = invoke(name, Map.of("sql", safeSql == null ? sql : safeSql), question);
                 if (!executed.ok()) {
-                    return analysisResult(decision, question, safeSql, List.of(), null, executed.error());
+                    String copy = isTimeout(executed) ? SQL_EXECUTE_FAIL : executed.error();
+                    return analysisResult(decision, question, safeSql, List.of(), null, copy);
                 }
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> executedRows = executed.data().get("rows") instanceof List<?> list
@@ -248,6 +262,36 @@ public class AgentRunner {
     private boolean containsModificationIntent(String question) {
         String lower = question.toLowerCase();
         return MODIFICATION_KEYWORDS.stream().anyMatch(lower::contains);
+    }
+
+    private static boolean isTimeout(ToolResult result) {
+        return result != null && !result.ok() && ToolExecutor.TIMEOUT_ERROR.equals(result.error());
+    }
+
+    private static String stepStatus(String toolName, ToolResult result) {
+        if (!result.ok()) {
+            return "FAILED";
+        }
+        if (Boolean.FALSE.equals(result.data().get("valid"))) {
+            return "REJECTED";
+        }
+        if (ToolNames.SQL_GENERATE.equals(toolName) && result.data().get("sql") == null) {
+            return "FAILED";
+        }
+        return "SUCCESS";
+    }
+
+    private static String stepError(String toolName, ToolResult result) {
+        if (!result.ok()) {
+            return result.error();
+        }
+        if (Boolean.FALSE.equals(result.data().get("valid"))) {
+            return stringVal(result.data().get("reason"));
+        }
+        if (ToolNames.SQL_GENERATE.equals(toolName) && result.data().get("sql") == null) {
+            return "empty_sql";
+        }
+        return null;
     }
 
     private String refusalFor(String reason) {

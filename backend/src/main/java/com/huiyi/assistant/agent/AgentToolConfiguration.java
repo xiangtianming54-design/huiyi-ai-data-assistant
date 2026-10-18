@@ -17,7 +17,7 @@ public class AgentToolConfiguration {
         return registry;
     }
 
-    @Bean
+    @Bean(destroyMethod = "shutdown")
     public ToolExecutor toolExecutor(ToolRegistry registry) {
         return new ToolExecutor(registry);
     }

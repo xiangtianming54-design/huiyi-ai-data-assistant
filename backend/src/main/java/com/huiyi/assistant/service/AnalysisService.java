@@ -45,7 +45,11 @@ public class AnalysisService {
             AgentResult agentResult = agentRunner.run(
                     new AgentRequest("analysis_query", request.getQuestion(), sessionId));
             AnalysisResultVO result = agentResult.analysis() == null
-                    ? AnalysisResultVO.builder().answer(agentResult.answer()).sql(agentResult.sql()).build()
+                    ? AnalysisResultVO.builder()
+                    .answer(agentResult.answer())
+                    .sql(agentResult.sql())
+                    .rows(List.of())
+                    .build()
                     : agentResult.analysis();
             result.setSessionId(sessionId);
             chatSessionService.saveAssistantMessage(sessionId, result.getAnswer(),

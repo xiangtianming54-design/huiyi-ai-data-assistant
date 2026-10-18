@@ -10,6 +10,7 @@ import com.huiyi.assistant.observability.ObservabilityMetrics;
 import com.huiyi.assistant.observability.RequestTraceService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -20,8 +21,14 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,6 +69,39 @@ class ChatServiceFacadeTest {
         String src = Files.readString(Path.of("src/main/java/com/huiyi/assistant/service/ChatService.java"),
                 StandardCharsets.UTF_8);
         assertFalse(src.contains("executeQuery("));
+    }
+
+    @Test
+    void askPersistsUserMessageBeforeRunner() {
+        when(chatSessionService.resolveSessionId(any())).thenReturn("s1");
+        when(agentRunner.runAsk(any())).thenReturn(List.of(sampleKnowledgeResult()));
+        ChatRequestDTO request = new ChatRequestDTO();
+        request.setQuestion("什么是有效订单？");
+        chatService.ask(request);
+        InOrder order = inOrder(chatSessionService, agentRunner);
+        order.verify(chatSessionService).saveUserMessage(eq("s1"), eq("什么是有效订单？"), nullable(IntentTypeEnum.class));
+        order.verify(agentRunner).runAsk(any(AgentRequest.class));
+    }
+
+    @Test
+    void askKeepsUserMessageWhenRunnerThrows() {
+        when(chatSessionService.resolveSessionId(any())).thenReturn("s1");
+        when(agentRunner.runAsk(any())).thenThrow(new RuntimeException("boom"));
+        ChatRequestDTO request = new ChatRequestDTO();
+        request.setQuestion("什么是有效订单？");
+        assertThrows(RuntimeException.class, () -> chatService.ask(request));
+        verify(chatSessionService).saveUserMessage(eq("s1"), eq("什么是有效订单？"), nullable(IntentTypeEnum.class));
+    }
+
+    @Test
+    void chatStreamFinishesRunAndSavesUserWhenRunnerThrows() {
+        when(chatSessionService.resolveSessionId(any())).thenReturn("s1");
+        when(agentRunner.run(any())).thenThrow(new RuntimeException("boom"));
+        ChatRequestDTO request = new ChatRequestDTO();
+        request.setQuestion("什么是有效订单？");
+        assertThrows(RuntimeException.class, () -> chatService.chatStream(request));
+        verify(chatSessionService).saveUserMessage(eq("s1"), eq("什么是有效订单？"), nullable(IntentTypeEnum.class));
+        verify(requestTraceService).finish(eq("FAILED"), nullable(String.class), anyString(), anyLong());
     }
 
     private static AgentResult sampleKnowledgeResult() {

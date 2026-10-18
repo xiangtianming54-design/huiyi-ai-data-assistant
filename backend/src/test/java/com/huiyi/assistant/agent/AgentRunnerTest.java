@@ -1,5 +1,6 @@
 package com.huiyi.assistant.agent;
 
+import com.huiyi.assistant.common.result.ResultCode;
 import com.huiyi.assistant.common.util.PromptTemplateLoader;
 import com.huiyi.assistant.context.WorkspaceContext;
 import com.huiyi.assistant.context.WorkspaceContextHolder;
@@ -22,6 +23,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -139,5 +141,68 @@ class AgentRunnerTest {
         ArgumentCaptor<ToolContext> captor = ArgumentCaptor.forClass(ToolContext.class);
         verify(toolExecutor).execute(eq(ToolNames.KNOWLEDGE_SEARCH), captor.capture(), any());
         assertEquals(2L, captor.getValue().workspaceId());
+    }
+
+    @Test
+    void generateTimeoutUsesLlmOutageCopy() {
+        stubDataQuery();
+        when(toolExecutor.execute(eq(ToolNames.SQL_GENERATE), any(), any()))
+                .thenReturn(ToolResult.fail("timeout"));
+        AgentResult result = runner.run(new AgentRequest("analysis_query", "q", "s1"));
+        assertEquals(ResultCode.LLM_SERVICE_ERROR.getMessage(), result.answer());
+    }
+
+    @Test
+    void validateTimeoutUsesServiceCopyNotModificationRefusal() {
+        stubDataQuery();
+        when(toolExecutor.execute(eq(ToolNames.SQL_GENERATE), any(), any()))
+                .thenReturn(ToolResult.ok(Map.of("sql", "select 1")));
+        when(toolExecutor.execute(eq(ToolNames.SQL_VALIDATE), any(), any()))
+                .thenReturn(ToolResult.fail("timeout"));
+        AgentResult result = runner.run(new AgentRequest("analysis_query", "q", "s1"));
+        assertEquals(ResultCode.PYTHON_SERVICE_UNAVAILABLE.getMessage(), result.answer());
+    }
+
+    @Test
+    void executeTimeoutUsesSqlExecuteFailureCopy() {
+        stubDataQuery();
+        when(toolExecutor.execute(eq(ToolNames.SQL_GENERATE), any(), any()))
+                .thenReturn(ToolResult.ok(Map.of("sql", "select 1")));
+        when(toolExecutor.execute(eq(ToolNames.SQL_VALIDATE), any(), any()))
+                .thenReturn(ToolResult.ok(Map.of("valid", true, "sql", "select 1")));
+        when(toolExecutor.execute(eq(ToolNames.SQL_EXECUTE_READONLY), any(), any()))
+                .thenReturn(ToolResult.fail("timeout"));
+        AgentResult result = runner.run(new AgentRequest("analysis_query", "q", "s1"));
+        assertEquals("SQL 执行失败，请调整问题后重试", result.answer());
+    }
+
+    @Test
+    void rejectedSqlIsTracedRejectedNotSuccess() {
+        stubDataQuery();
+        when(toolExecutor.execute(eq(ToolNames.SQL_GENERATE), any(), any()))
+                .thenReturn(ToolResult.ok(Map.of("sql", "select 1")));
+        when(toolExecutor.execute(eq(ToolNames.SQL_VALIDATE), any(), any()))
+                .thenReturn(ToolResult.ok(Map.of("valid", false, "reason", "表不在白名单")));
+        runner.run(new AgentRequest("analysis_query", "q", "s1"));
+        verify(requestTraceService).stepTool(eq(ToolNames.SQL_VALIDATE), eq("REJECTED"), anyLong(), eq("表不在白名单"));
+    }
+
+    @Test
+    void emptyGenerateIsTracedFailed() {
+        stubDataQuery();
+        Map<String, Object> data = new HashMap<>();
+        data.put("sql", null);
+        when(toolExecutor.execute(eq(ToolNames.SQL_GENERATE), any(), any()))
+                .thenReturn(ToolResult.ok(data));
+        runner.run(new AgentRequest("analysis_query", "q", "s1"));
+        verify(requestTraceService).stepTool(eq(ToolNames.SQL_GENERATE), eq("FAILED"), anyLong(), any());
+    }
+
+    private void stubDataQuery() {
+        when(queryRewriteService.rewrite(any(), eq("q"))).thenReturn("q");
+        when(intentService.detectWithDetail("q"))
+                .thenReturn(new IntentService.IntentDecision(IntentTypeEnum.DATA_QUERY, IntentService.Layer.RULE, 1.0));
+        when(routerPlanner.toolsFor(IntentTypeEnum.DATA_QUERY)).thenReturn(List.of(
+                ToolNames.SQL_GENERATE, ToolNames.SQL_VALIDATE, ToolNames.SQL_EXECUTE_READONLY, ToolNames.DATA_PROFILE));
     }
 }

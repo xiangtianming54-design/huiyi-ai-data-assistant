@@ -39,7 +39,7 @@
 
 ## 当前开发：v1.2.0 Enterprise Knowledge Plane
 
-未开工。规格以桌面企业迭代文档 v1.2 章节为准，开工前仍按决策表逐项冻结。
+规格已冻结：[2026-10-19-v12-enterprise-knowledge-plane.md](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane.md)。技术设计：[2026-10-19-v12-enterprise-knowledge-plane-technical.md](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane-technical.md)。实施计划：[2026-10-19-v12-enterprise-knowledge-plane.md](superpowers/plans/2026-10-19-v12-enterprise-knowledge-plane.md)。P0：工作区内知识空间 + 文档归属 + RAG 按空间过滤。实现进行中。异步解析、对象存储、细权限、前端空间 UI 不进本版。
 
 ## 后续版本（摘要）
 

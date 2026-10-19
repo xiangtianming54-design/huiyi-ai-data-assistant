@@ -24,6 +24,8 @@ mybatis-plus:
     banner: false
 
 huiyi:
+  knowledge:
+    backfill-vector-space-ids: ${HUIYI_KNOWLEDGE_BACKFILL_VECTOR_SPACE_IDS:true}
   agent:
     run-timeout-ms: ${HUIYI_AGENT_RUN_TIMEOUT_MS:90000}
     prompt-max-chars: ${HUIYI_AGENT_PROMPT_MAX_CHARS:24000}

@@ -8,6 +8,7 @@ import com.huiyi.assistant.model.dto.ParseChunkDTO;
 import com.huiyi.assistant.model.dto.ParseResultDTO;
 import com.huiyi.assistant.model.dto.SimilarityResponseDTO;
 import com.huiyi.assistant.model.dto.SqlValidateResponseDTO;
+import com.huiyi.assistant.model.dto.VectorBackfillRequestDTO;
 import com.huiyi.assistant.model.dto.VectorSearchRequestDTO;
 import com.huiyi.assistant.model.dto.VectorSearchResponseDTO;
 import com.huiyi.assistant.model.dto.VectorUpsertRequestDTO;
@@ -141,6 +142,17 @@ public class PythonServiceClient {
 
     public VectorSearchResponseDTO searchVectors(String query, int topK, Long workspaceId, List<Long> knowledgeSpaceIds) {
         return searchVectors(query, topK, COLLECTION_NAME, workspaceId, knowledgeSpaceIds);
+    }
+
+    public void backfillSpaceIds(List<VectorBackfillRequestDTO.Assignment> assignments) {
+        if (assignments == null || assignments.isEmpty()) {
+            return;
+        }
+        VectorBackfillRequestDTO request = new VectorBackfillRequestDTO(COLLECTION_NAME, assignments);
+        post("/api/vector/backfill-space-ids",
+                spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(request),
+                String.class);
+        log.info("向量空间 id 回填完成: assignments={}", assignments.size());
     }
 
     public VectorSearchResponseDTO searchVectors(String query, int topK, String collectionName, Long workspaceId,

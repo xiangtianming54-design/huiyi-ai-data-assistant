@@ -11,6 +11,10 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+huiyi:
+  knowledge:
+    backfill-vector-space-ids: ${HUIYI_KNOWLEDGE_BACKFILL_VECTOR_SPACE_IDS:true}
+
 # 日志
 logging:
   level:

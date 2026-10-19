@@ -175,6 +175,10 @@ Eval 评测集与回归 P0：`testdata/eval/` 金标 + Java `EvalGoldenRunner` +
 
 **回滚：** 切回标签 `v1.0.0`。本版 P0 不改 Flyway；若后续误加迁移，不能只换镜像不还原库。
 
+## v1.2 变更（Enterprise Knowledge Plane，进行中）
+
+工作区内知识空间：Flyway `V12__knowledge_spaces.sql` 建表并回填 `knowledge_docs.knowledge_space_id`。空间 HTTP `/api/v1/workspaces/{id}/knowledge-spaces`；文档上传/列表可选 `spaceId`；旧 `/knowledge/upload` 写入默认空间。RAG 把 ACTIVE 空间 id 列表传给 Python，`huiyi_knowledge` 检索用 `workspace_id` + `knowledge_space_id $in`。评测仍走 `EvalGoldenRunner`（含空间隔离金标）。启动时 `huiyi.knowledge.backfill-vector-space-ids`（默认 true）回填向量 metadata，Python 不可用不阻断启动。无前端空间 UI。规格：[v1.2 开发文档](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane.md)。技术设计：[v1.2 技术设计](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane-technical.md)。计划：[v1.2 实施计划](superpowers/plans/2026-10-19-v12-enterprise-knowledge-plane.md)。
+
 ## 常见坑（本仓库已踩过）
 
 完整记录（现象 / 原因 / 处理 / 以后）见 [pitfalls.md](pitfalls.md)。修好非显而易见的问题后往该文档**顶部**追加，不要只留在对话里。

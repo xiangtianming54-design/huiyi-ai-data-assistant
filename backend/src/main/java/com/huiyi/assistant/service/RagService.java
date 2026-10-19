@@ -66,15 +66,21 @@ public class RagService {
      * @return RAG 上下文
      */
     public RagContext prepare(String question) {
-        return prepare(question, null);
+        return prepare(question, null, List.of());
     }
 
     public RagContext prepare(String question, Long workspaceId) {
+        return prepare(question, workspaceId, List.of());
+    }
+
+    public RagContext prepare(String question, Long workspaceId, List<Long> knowledgeSpaceIds) {
+        if (knowledgeSpaceIds == null || knowledgeSpaceIds.isEmpty()) {
+            return new RagContext(NO_HIT_FALLBACK, null, List.of());
+        }
         List<VectorSearchResponseDTO.Hit> hits;
         try {
-            VectorSearchResponseDTO response = workspaceId == null
-                    ? pythonServiceClient.searchVectors(question, TOP_K)
-                    : pythonServiceClient.searchVectors(question, TOP_K, workspaceId);
+            VectorSearchResponseDTO response = pythonServiceClient.searchVectors(
+                    question, TOP_K, workspaceId, knowledgeSpaceIds);
             hits = response == null ? null : response.getHits();
         } catch (BizException e) {
             // Python 检索服务不可用 → 降级兜底（4.8）
@@ -116,7 +122,11 @@ public class RagService {
     }
 
     public RagAnswer answer(String question, LlmService llmService, Long workspaceId) {
-        RagContext context = prepare(question, workspaceId);
+        return answer(question, llmService, workspaceId, List.of());
+    }
+
+    public RagAnswer answer(String question, LlmService llmService, Long workspaceId, List<Long> knowledgeSpaceIds) {
+        RagContext context = prepare(question, workspaceId, knowledgeSpaceIds);
         if (!context.needLlm()) {
             return new RagAnswer(context.fallbackAnswer(), context.references());
         }

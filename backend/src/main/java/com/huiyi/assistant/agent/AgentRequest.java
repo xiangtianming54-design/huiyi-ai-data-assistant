@@ -1,4 +1,10 @@
 package com.huiyi.assistant.agent;
 
-public record AgentRequest(String entrypoint, String question, String sessionId) {
+import java.util.List;
+
+public record AgentRequest(String entrypoint, String question, String sessionId, List<Long> spaceIds) {
+
+    public AgentRequest(String entrypoint, String question, String sessionId) {
+        this(entrypoint, question, sessionId, null);
+    }
 }

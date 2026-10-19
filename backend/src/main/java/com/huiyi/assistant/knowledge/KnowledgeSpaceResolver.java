@@ -1,11 +1,14 @@
 package com.huiyi.assistant.knowledge;
 
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public final class KnowledgeSpaceResolver {
+@Component
+public class KnowledgeSpaceResolver {
 
     public List<Long> resolve(List<Long> httpSpaceIds, List<Long> toolSpaceIds, List<Long> activeIds) {
         List<Long> active = activeIds == null ? List.of() : List.copyOf(activeIds);

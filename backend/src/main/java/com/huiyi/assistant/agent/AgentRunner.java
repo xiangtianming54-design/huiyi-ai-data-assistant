@@ -126,7 +126,7 @@ public class AgentRunner {
                     () -> queryRewriteService.rewrite(sessionId, request.question()));
             IntentService.IntentDecision decision = requestTraceService.timed("intent",
                     () -> intentService.detectWithDetail(rewritten));
-            return runIntent(request.entrypoint(), rewritten, decision, safeListener, safeDeadline);
+            return runIntent(request, rewritten, decision, safeListener, safeDeadline);
         } catch (PromptBudgetExceededException e) {
             observabilityMetrics.agentLimitExceeded();
             IntentService.IntentDecision decision = intentService.detectWithDetail(request.question());
@@ -143,32 +143,35 @@ public class AgentRunner {
         if (subQuestions.size() == 1) {
                     IntentService.IntentDecision decision = requestTraceService.timed("intent",
                             () -> intentService.detectWithDetail(subQuestions.get(0)));
-            return List.of(runIntent(request.entrypoint(), subQuestions.get(0), decision,
+            return List.of(runIntent(request, subQuestions.get(0), decision,
                     ToolEventListener.NOOP, AgentDeadline.fromNow(90_000L)));
         }
         List<CompletableFuture<AgentResult>> futures = subQuestions.stream()
                 .map(sub -> CompletableFuture.supplyAsync(() -> {
                     IntentService.IntentDecision decision = requestTraceService.timed("intent",
                             () -> intentService.detectWithDetail(sub));
-                    return runIntent(request.entrypoint(), sub, decision,
+                    return runIntent(request, sub, decision,
                             ToolEventListener.NOOP, AgentDeadline.fromNow(90_000L));
                 }, chatExecutor))
                 .toList();
         return futures.stream().map(CompletableFuture::join).toList();
     }
 
-    private AgentResult runIntent(String entrypoint, String question, IntentService.IntentDecision decision,
+    private AgentResult runIntent(AgentRequest request, String question, IntentService.IntentDecision decision,
                                   ToolEventListener listener, AgentDeadline deadline) {
         if (decision.intent() == IntentTypeEnum.DATA_QUERY) {
             return runDataQuery(question, decision, listener, deadline);
         }
-        return runKnowledge(entrypoint, question, decision, listener, deadline);
+        return runKnowledge(request, question, decision, listener, deadline);
     }
 
-    private AgentResult runKnowledge(String entrypoint, String question, IntentService.IntentDecision decision,
+    private AgentResult runKnowledge(AgentRequest request, String question, IntentService.IntentDecision decision,
                                      ToolEventListener listener, AgentDeadline deadline) {
         String searchName = routerPlanner.toolsFor(IntentTypeEnum.KNOWLEDGE_QA).get(0);
-        ToolResult search = invoke(searchName, Map.of(), question, listener, deadline);
+        Map<String, Object> searchArgs = request.spaceIds() == null
+                ? Map.of()
+                : Map.of("spaceIds", request.spaceIds());
+        ToolResult search = invoke(searchName, searchArgs, question, listener, deadline);
         if (isRunTimeout(search)) {
             return limitResult(decision);
         }
@@ -176,7 +179,7 @@ public class AgentRunner {
         boolean hit = ragContext.references() != null && !ragContext.references().isEmpty();
         observabilityMetrics.ragSearch(java.time.Duration.ZERO, hit,
                 RagService.SEARCH_DEGRADED_FALLBACK.equals(ragContext.fallbackAnswer()));
-        if ("chat_stream".equals(entrypoint) && ragContext.needLlm()) {
+        if ("chat_stream".equals(request.entrypoint()) && ragContext.needLlm()) {
             return new AgentResult(decision, null, null, ragContext.references(), null, ragContext, null);
         }
         String answer = ragContext.needLlm() ? llmService.chat(ragContext.prompt()) : ragContext.fallbackAnswer();

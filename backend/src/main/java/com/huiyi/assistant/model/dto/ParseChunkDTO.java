@@ -42,5 +42,8 @@ public class ParseChunkDTO {
 
         @JsonProperty("doc_id")
         private String docId;
+
+        @JsonProperty("knowledge_space_id")
+        private String knowledgeSpaceId;
     }
 }

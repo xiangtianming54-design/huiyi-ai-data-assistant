@@ -148,7 +148,8 @@ public class ChatService {
         sendEvent(emitter, "session", sessionId);
         AgentResult result;
         try {
-            result = agentRunner.run(new AgentRequest("chat_stream", request.getQuestion(), sessionId),
+            result = agentRunner.run(new AgentRequest("chat_stream", request.getQuestion(), sessionId,
+                            request.getSpaceIds()),
                     toolSseListener(emitter), AgentDeadline.fromNow(SSE_TIMEOUT_MS));
         } catch (RuntimeException e) {
             requestTraceService.finish("FAILED", null, e.getMessage(), start);

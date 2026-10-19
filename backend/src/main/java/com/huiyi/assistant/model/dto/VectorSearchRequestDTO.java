@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * Python /api/vector/search 请求体。
  *
@@ -29,7 +31,14 @@ public class VectorSearchRequestDTO {
     @JsonProperty("workspace_id")
     private Long workspaceId;
 
+    @JsonProperty("knowledge_space_ids")
+    private List<Long> knowledgeSpaceIds;
+
     public VectorSearchRequestDTO(String query, Integer topK, String collectionName) {
-        this(query, topK, collectionName, null);
+        this(query, topK, collectionName, null, null);
+    }
+
+    public VectorSearchRequestDTO(String query, Integer topK, String collectionName, Long workspaceId) {
+        this(query, topK, collectionName, workspaceId, null);
     }
 }

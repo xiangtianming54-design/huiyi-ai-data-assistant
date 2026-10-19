@@ -178,6 +178,25 @@ class AgentRunnerTest {
     }
 
     @Test
+    void knowledgeSearchReceivesHttpSpaceIds() {
+        when(queryRewriteService.rewrite(any(), eq("q"))).thenReturn("q");
+        when(intentService.detectWithDetail("q"))
+                .thenReturn(new IntentService.IntentDecision(IntentTypeEnum.KNOWLEDGE_QA, IntentService.Layer.RULE, 1.0));
+        when(routerPlanner.toolsFor(IntentTypeEnum.KNOWLEDGE_QA)).thenReturn(List.of(ToolNames.KNOWLEDGE_SEARCH));
+        Map<String, Object> searchData = new HashMap<>();
+        searchData.put("fallbackAnswer", "fb");
+        searchData.put("prompt", null);
+        searchData.put("references", List.of());
+        when(toolExecutor.execute(eq(ToolNames.KNOWLEDGE_SEARCH), any(), any()))
+                .thenReturn(ToolResult.ok(searchData));
+        runner.run(new AgentRequest("chat_stream", "q", "s1", List.of(101L)));
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(toolExecutor).execute(eq(ToolNames.KNOWLEDGE_SEARCH), any(), captor.capture());
+        assertEquals(List.of(101L), captor.getValue().get("spaceIds"));
+    }
+
+    @Test
     void invokeIgnoresArgumentWorkspaceId() {
         Map<String, Object> data = new java.util.HashMap<>();
         data.put("fallbackAnswer", "x");

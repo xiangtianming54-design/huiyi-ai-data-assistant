@@ -88,15 +88,23 @@ public class PythonServiceClient {
     }
 
     public void upsertVectors(ParseResultDTO parseResult, Long workspaceId, Long docId) {
+        upsertVectors(parseResult, workspaceId, docId, null);
+    }
+
+    public void upsertVectors(ParseResultDTO parseResult, Long workspaceId, Long docId, Long spaceId) {
         if (parseResult.getChunks() != null && workspaceId != null && docId != null) {
             String workspace = String.valueOf(workspaceId);
             String document = String.valueOf(docId);
+            String space = spaceId == null ? null : String.valueOf(spaceId);
             parseResult.getChunks().forEach(chunk -> {
                 if (chunk.getMetadata() == null) {
                     chunk.setMetadata(new ParseChunkDTO.Metadata());
                 }
                 chunk.getMetadata().setWorkspaceId(workspace);
                 chunk.getMetadata().setDocId(document);
+                if (space != null) {
+                    chunk.getMetadata().setKnowledgeSpaceId(space);
+                }
             });
         }
         VectorUpsertRequestDTO request = new VectorUpsertRequestDTO(COLLECTION_NAME, workspaceId, parseResult.getChunks());
@@ -128,7 +136,17 @@ public class PythonServiceClient {
     }
 
     public VectorSearchResponseDTO searchVectors(String query, int topK, String collectionName, Long workspaceId) {
-        VectorSearchRequestDTO request = new VectorSearchRequestDTO(query, topK, collectionName, workspaceId);
+        return searchVectors(query, topK, collectionName, workspaceId, null);
+    }
+
+    public VectorSearchResponseDTO searchVectors(String query, int topK, Long workspaceId, List<Long> knowledgeSpaceIds) {
+        return searchVectors(query, topK, COLLECTION_NAME, workspaceId, knowledgeSpaceIds);
+    }
+
+    public VectorSearchResponseDTO searchVectors(String query, int topK, String collectionName, Long workspaceId,
+                                                 List<Long> knowledgeSpaceIds) {
+        VectorSearchRequestDTO request = new VectorSearchRequestDTO(query, topK, collectionName, workspaceId,
+                knowledgeSpaceIds);
         return post("/api/vector/search",
                 spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(request),
                 VectorSearchResponseDTO.class);

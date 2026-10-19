@@ -72,7 +72,7 @@ public class KnowledgeDocService {
             if (parseResult == null) {
                 throw new BizException(ResultCode.PYTHON_SERVICE_UNAVAILABLE);
             }
-            pythonServiceClient.upsertVectors(parseResult, workspaceId, doc.getId());
+            pythonServiceClient.upsertVectors(parseResult, workspaceId, doc.getId(), resolvedSpaceId);
             doc.setDocName(parseResult.getFilename());
             doc.setChunkCount(parseResult.getChunkCount());
             doc.setStatus(DocStatusEnum.READY.name());

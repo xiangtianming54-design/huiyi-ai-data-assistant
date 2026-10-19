@@ -15,8 +15,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -41,12 +45,12 @@ class RagServiceTest {
 
     @Test
     void hitsAboveThresholdBuildPromptAndReferences() {
-        when(pythonServiceClient.searchVectors(anyString(), anyInt()))
+        when(pythonServiceClient.searchVectors(anyString(), anyInt(), nullable(Long.class), anyList()))
                 .thenReturn(searchResponse(List.of(
                         hit("c1", "有效订单是指支付成功且未退款的订单。", "business-glossary.md", 0.74),
                         hit("c2", "销售额默认只统计 PAID 订单。", "business-glossary.md", 0.66))));
 
-        RagService.RagContext context = ragService.prepare("什么是有效订单？");
+        RagService.RagContext context = ragService.prepare("什么是有效订单？", 1L, List.of(100L));
 
         assertTrue(context.needLlm());
         assertTrue(context.prompt().contains("什么是有效订单？"));
@@ -59,10 +63,10 @@ class RagServiceTest {
 
     @Test
     void emptyHitsReturnNoHitFallback() {
-        when(pythonServiceClient.searchVectors(anyString(), anyInt()))
+        when(pythonServiceClient.searchVectors(anyString(), anyInt(), nullable(Long.class), anyList()))
                 .thenReturn(searchResponse(List.of()));
 
-        RagService.RagContext context = ragService.prepare("公司年假有多少天？");
+        RagService.RagContext context = ragService.prepare("公司年假有多少天？", 1L, List.of(100L));
 
         assertFalse(context.needLlm());
         assertEquals(RagService.NO_HIT_FALLBACK, context.fallbackAnswer());
@@ -71,11 +75,11 @@ class RagServiceTest {
 
     @Test
     void keywordOnlyHitIsNotDropped() {
-        when(pythonServiceClient.searchVectors(anyString(), anyInt()))
+        when(pythonServiceClient.searchVectors(anyString(), anyInt(), nullable(Long.class), anyList()))
                 .thenReturn(searchResponse(List.of(
                         hit("c1", "有效订单是指支付成功且未退款的订单。", "business-glossary.md", 0.0))));
 
-        RagService.RagContext context = ragService.prepare("有效订单未退款怎么算？");
+        RagService.RagContext context = ragService.prepare("有效订单未退款怎么算？", 1L, List.of(100L));
 
         assertTrue(context.needLlm());
         assertTrue(context.prompt().contains("有效订单是指支付成功且未退款的订单。"));
@@ -83,10 +87,10 @@ class RagServiceTest {
 
     @Test
     void pythonUnavailableReturnsDegradedFallback() {
-        when(pythonServiceClient.searchVectors(anyString(), anyInt()))
+        when(pythonServiceClient.searchVectors(anyString(), anyInt(), nullable(Long.class), anyList()))
                 .thenThrow(new BizException(ResultCode.PYTHON_SERVICE_UNAVAILABLE));
 
-        RagService.RagContext context = ragService.prepare("什么是有效订单？");
+        RagService.RagContext context = ragService.prepare("什么是有效订单？", 1L, List.of(100L));
 
         assertFalse(context.needLlm());
         assertEquals(RagService.SEARCH_DEGRADED_FALLBACK, context.fallbackAnswer());
@@ -94,15 +98,23 @@ class RagServiceTest {
 
     @Test
     void answerReturnsLlmContentWithReferences() {
-        when(pythonServiceClient.searchVectors(anyString(), anyInt()))
+        when(pythonServiceClient.searchVectors(anyString(), anyInt(), nullable(Long.class), anyList()))
                 .thenReturn(searchResponse(List.of(
                         hit("c1", "有效订单定义", "business-glossary.md", 0.74))));
         when(llmService.chat(anyString())).thenReturn("有效订单是指支付成功且未退款的订单。");
 
-        RagService.RagAnswer answer = ragService.answer("什么是有效订单？", llmService);
+        RagService.RagAnswer answer = ragService.answer("什么是有效订单？", llmService, 1L, List.of(100L));
 
         assertEquals("有效订单是指支付成功且未退款的订单。", answer.answer());
         assertEquals(1, answer.references().size());
+    }
+
+    @Test
+    void emptySpaceIdsSkipPython() {
+        RagService.RagContext context = ragService.prepare("q", 9L, List.of());
+        assertFalse(context.needLlm());
+        assertEquals(RagService.NO_HIT_FALLBACK, context.fallbackAnswer());
+        verify(pythonServiceClient, never()).searchVectors(anyString(), anyInt(), nullable(Long.class), anyList());
     }
 
     private VectorSearchResponseDTO.Hit hit(String id, String text, String filename, double score) {

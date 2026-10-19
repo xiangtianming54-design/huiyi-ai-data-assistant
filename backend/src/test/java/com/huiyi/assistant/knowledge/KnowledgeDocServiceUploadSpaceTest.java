@@ -62,7 +62,7 @@ class KnowledgeDocServiceUploadSpaceTest {
         ArgumentCaptor<KnowledgeDoc> captor = ArgumentCaptor.forClass(KnowledgeDoc.class);
         verify(knowledgeDocMapper).insert(captor.capture());
         assertEquals(100L, captor.getValue().getKnowledgeSpaceId());
-        verify(pythonServiceClient).upsertVectors(parsed, 9L, 55L);
+        verify(pythonServiceClient).upsertVectors(parsed, 9L, 55L, 100L);
     }
 
     @Test

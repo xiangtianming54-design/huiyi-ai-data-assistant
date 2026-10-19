@@ -3,7 +3,7 @@ package com.huiyi.assistant.agent;
 public final class ToolSchemas {
 
     public static final String KNOWLEDGE_SEARCH = """
-            {"type":"object","additionalProperties":false,"properties":{"query":{"type":"string","description":"可选；缺省用当前问题"}}}
+            {"type":"object","additionalProperties":false,"properties":{"query":{"type":"string","description":"可选；缺省用当前问题"},"spaceIds":{"type":"array","items":{"type":"integer"}}}}
             """;
 
     public static final String SQL_GENERATE = """

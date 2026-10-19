@@ -12,6 +12,7 @@ import com.huiyi.assistant.observability.ObservabilityMetrics;
 import com.huiyi.assistant.observability.RequestTraceService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -22,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -72,6 +74,24 @@ class ChatServiceFacadeTest {
         assertFalse(src.contains("answer.token"));
         assertFalse(src.contains("sendEvent(emitter, \"step\""));
         assertFalse(src.contains("/agent/runs"));
+    }
+
+    @Test
+    void askAndChatPassDtoSpaceIds() {
+        when(chatSessionService.resolveSessionId(any())).thenReturn("s1");
+        when(agentRunner.runAsk(any())).thenReturn(List.of(sampleKnowledgeResult()));
+        when(agentRunner.run(any(AgentRequest.class))).thenReturn(sampleKnowledgeResult());
+        ChatRequestDTO request = new ChatRequestDTO();
+        request.setQuestion("什么是有效订单？");
+        request.setSpaceIds(List.of(101L));
+        chatService.ask(request);
+        ArgumentCaptor<AgentRequest> askCaptor = ArgumentCaptor.forClass(AgentRequest.class);
+        verify(agentRunner).runAsk(askCaptor.capture());
+        assertEquals(List.of(101L), askCaptor.getValue().spaceIds());
+        chatService.chat(request);
+        ArgumentCaptor<AgentRequest> chatCaptor = ArgumentCaptor.forClass(AgentRequest.class);
+        verify(agentRunner).run(chatCaptor.capture());
+        assertEquals(List.of(101L), chatCaptor.getValue().spaceIds());
     }
 
     @Test

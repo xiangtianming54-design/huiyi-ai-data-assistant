@@ -52,7 +52,8 @@ public class KnowledgeSpaceV1Controller {
         WorkspaceContext context = workspaceService.requireKnowledgeWrite(user, workspaceId);
         String name = request == null ? null : request.getName();
         String description = request == null ? null : request.getDescription();
-        return Result.ok(knowledgeSpaceService.update(context.workspaceId(), spaceId, name, description));
+        return Result.ok(knowledgeSpaceService.update(context.workspaceId(), spaceId, name, description,
+                context.userId()));
     }
 
     @PatchMapping("/{spaceId}/status")
@@ -60,7 +61,7 @@ public class KnowledgeSpaceV1Controller {
                                 @PathVariable Long spaceId, @RequestBody ChangeStatusRequest request) {
         WorkspaceContext context = workspaceService.requireKnowledgeWrite(user, workspaceId);
         if (request != null && "ARCHIVED".equalsIgnoreCase(request.getStatus())) {
-            knowledgeSpaceService.archive(context.workspaceId(), spaceId);
+            knowledgeSpaceService.archive(context.workspaceId(), spaceId, context.userId());
         }
         return Result.ok();
     }

@@ -244,7 +244,7 @@ class VectorStore:
             if change_ids:
                 collection.update(ids=change_ids, metadatas=new_metas)
                 updated += len(change_ids)
-            self._keyword.update_space_id(collection_name, workspace_id, doc_id, knowledge_space_id)
+        self._keyword.update_space_ids(collection_name, assignments)
         return updated
 
     def _vector_search(

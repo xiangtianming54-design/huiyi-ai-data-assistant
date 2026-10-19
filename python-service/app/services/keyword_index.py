@@ -89,17 +89,27 @@ class KeywordIndex:
         return len(remove)
 
     def update_space_id(self, collection_name: str, workspace_id: int, doc_id: int, knowledge_space_id: int) -> None:
+        self.update_space_ids(collection_name, [(workspace_id, doc_id, knowledge_space_id)])
+
+    def update_space_ids(self, collection_name: str, assignments: list[tuple[int, int, int]]) -> None:
         docs = self._load(collection_name)
-        workspace = str(workspace_id)
-        document = str(doc_id)
-        target = str(knowledge_space_id)
-        for doc in docs.values():
-            if str(doc.get("workspace_id") or "") == workspace and str(doc.get("doc_id") or "") == document:
+        changed = False
+        for workspace_id, doc_id, knowledge_space_id in assignments:
+            workspace = str(workspace_id)
+            document = str(doc_id)
+            target = str(knowledge_space_id)
+            for doc in docs.values():
+                if str(doc.get("workspace_id") or "") != workspace or str(doc.get("doc_id") or "") != document:
+                    continue
+                if str(doc.get("knowledge_space_id") or "") == target:
+                    continue
                 doc["knowledge_space_id"] = target
                 metadata = dict(doc.get("metadata") or {})
                 metadata["knowledge_space_id"] = target
                 doc["metadata"] = metadata
-        self._save(collection_name, docs)
+                changed = True
+        if changed:
+            self._save(collection_name, docs)
 
     def search(
         self,

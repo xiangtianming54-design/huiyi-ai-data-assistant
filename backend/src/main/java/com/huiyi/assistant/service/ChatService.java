@@ -96,7 +96,7 @@ public class ChatService {
             String sessionId = resolveScopedSession(request.getSessionId());
             chatSessionService.saveUserMessage(sessionId, request.getQuestion(), null);
             List<AgentResult> results = agentRunner.runAsk(
-                    new AgentRequest("chat_ask", request.getQuestion(), sessionId));
+                    new AgentRequest("chat_ask", request.getQuestion(), sessionId, request.getSpaceIds()));
             List<ChatPartVO> parts = results.stream()
                     .map(result -> toPart(result, request.getQuestion()))
                     .toList();
@@ -120,7 +120,8 @@ public class ChatService {
         try {
             String sessionId = resolveScopedSession(request.getSessionId());
             chatSessionService.saveUserMessage(sessionId, request.getQuestion(), null);
-            AgentResult result = agentRunner.run(new AgentRequest("chat", request.getQuestion(), sessionId));
+            AgentResult result = agentRunner.run(new AgentRequest("chat", request.getQuestion(), sessionId,
+                    request.getSpaceIds()));
             IntentTypeEnum intent = result.decision().intent();
             persistAssistant(sessionId, result);
             requestTraceService.finish("SUCCEEDED", intent.getCode(), null, start);

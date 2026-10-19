@@ -6,6 +6,7 @@ import com.huiyi.assistant.audit.AuditService;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.mapper.KnowledgeSpaceMapper;
 import com.huiyi.assistant.model.entity.KnowledgeSpace;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -21,6 +22,7 @@ public class KnowledgeSpaceService {
     public static final String ERR_MISSING = "知识空间不存在或不属于当前工作区";
     public static final String ERR_DEFAULT_ARCHIVE = "默认知识空间不可归档";
     public static final String ERR_ARCHIVED_UPLOAD = "不能向已归档空间上传";
+    public static final String ERR_DUPLICATE_NAME = "知识空间名称已存在";
 
     private final KnowledgeSpaceMapper knowledgeSpaceMapper;
     private final AuditService auditService;
@@ -81,13 +83,13 @@ public class KnowledgeSpaceService {
         space.setStatus(STATUS_ACTIVE);
         space.setIsDefault(false);
         space.setCreatedBy(userId);
-        knowledgeSpaceMapper.insert(space);
+        persistInsert(space);
         auditService.record(AuditAction.KNOWLEDGE_SPACE_CREATED, "SUCCESS", userId, null, workspaceId,
                 "knowledge_space", String.valueOf(space.getId()), Map.of("name", space.getName()));
         return space;
     }
 
-    public KnowledgeSpace update(long workspaceId, long spaceId, String name, String description) {
+    public KnowledgeSpace update(long workspaceId, long spaceId, String name, String description, long actorUserId) {
         KnowledgeSpace space = loadInWorkspace(workspaceId, spaceId);
         if (StringUtils.hasText(name)) {
             space.setName(name.trim());
@@ -95,21 +97,37 @@ public class KnowledgeSpaceService {
         if (description != null) {
             space.setDescription(description);
         }
-        knowledgeSpaceMapper.updateById(space);
-        auditService.record(AuditAction.KNOWLEDGE_SPACE_UPDATED, "SUCCESS", space.getCreatedBy(), null, workspaceId,
+        persistUpdate(space);
+        auditService.record(AuditAction.KNOWLEDGE_SPACE_UPDATED, "SUCCESS", actorUserId, null, workspaceId,
                 "knowledge_space", String.valueOf(spaceId), Map.of());
         return space;
     }
 
-    public void archive(long workspaceId, long spaceId) {
+    public void archive(long workspaceId, long spaceId, long actorUserId) {
         KnowledgeSpace space = loadInWorkspace(workspaceId, spaceId);
         if (Boolean.TRUE.equals(space.getIsDefault())) {
             throw new BizException(400, ERR_DEFAULT_ARCHIVE);
         }
         space.setStatus(STATUS_ARCHIVED);
-        knowledgeSpaceMapper.updateById(space);
-        auditService.record(AuditAction.KNOWLEDGE_SPACE_ARCHIVED, "SUCCESS", space.getCreatedBy(), null, workspaceId,
+        persistUpdate(space);
+        auditService.record(AuditAction.KNOWLEDGE_SPACE_ARCHIVED, "SUCCESS", actorUserId, null, workspaceId,
                 "knowledge_space", String.valueOf(spaceId), Map.of());
+    }
+
+    private void persistInsert(KnowledgeSpace space) {
+        try {
+            knowledgeSpaceMapper.insert(space);
+        } catch (DuplicateKeyException e) {
+            throw new BizException(400, ERR_DUPLICATE_NAME);
+        }
+    }
+
+    private void persistUpdate(KnowledgeSpace space) {
+        try {
+            knowledgeSpaceMapper.updateById(space);
+        } catch (DuplicateKeyException e) {
+            throw new BizException(400, ERR_DUPLICATE_NAME);
+        }
     }
 
     private KnowledgeSpace findDefault(long workspaceId) {

@@ -1,6 +1,7 @@
 package com.huiyi.assistant.workspace;
 
 import com.huiyi.assistant.audit.AuditService;
+import com.huiyi.assistant.knowledge.KnowledgeSpaceService;
 import com.huiyi.assistant.mapper.UserMapper;
 import com.huiyi.assistant.mapper.WorkspaceMapper;
 import com.huiyi.assistant.mapper.WorkspaceMemberMapper;
@@ -29,13 +30,15 @@ class MemberPageTest {
     @Mock WorkspaceMemberMapper workspaceMemberMapper;
     @Mock UserMapper userMapper;
     @Mock AuditService auditService;
+    @Mock KnowledgeSpaceService knowledgeSpaceService;
 
     WorkspaceService workspaceService;
     AuthUser actor;
 
     @BeforeEach
     void setUp() {
-        workspaceService = new WorkspaceService(workspaceMapper, workspaceMemberMapper, userMapper, auditService);
+        workspaceService = new WorkspaceService(workspaceMapper, workspaceMemberMapper, userMapper, auditService,
+                knowledgeSpaceService);
         actor = new AuthUser(10L, "alice", 0);
         User account = new User();
         account.setId(10L);

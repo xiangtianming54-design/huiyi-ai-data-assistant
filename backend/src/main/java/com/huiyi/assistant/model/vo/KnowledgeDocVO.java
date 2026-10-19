@@ -32,6 +32,9 @@ public class KnowledgeDocVO {
     /** 状态 */
     private String status;
 
+    /** 所属知识空间 */
+    private Long knowledgeSpaceId;
+
     /** 创建时间 */
     private LocalDateTime createdAt;
 }

@@ -6,6 +6,7 @@ import com.huiyi.assistant.audit.AuditService;
 import com.huiyi.assistant.auth.AuthService;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.context.WorkspaceContext;
+import com.huiyi.assistant.knowledge.KnowledgeSpaceService;
 import com.huiyi.assistant.mapper.UserMapper;
 import com.huiyi.assistant.mapper.WorkspaceMapper;
 import com.huiyi.assistant.mapper.WorkspaceMemberMapper;
@@ -35,13 +36,16 @@ public class WorkspaceService {
     private final WorkspaceMemberMapper workspaceMemberMapper;
     private final UserMapper userMapper;
     private final AuditService auditService;
+    private final KnowledgeSpaceService knowledgeSpaceService;
 
     public WorkspaceService(WorkspaceMapper workspaceMapper, WorkspaceMemberMapper workspaceMemberMapper,
-                            UserMapper userMapper, AuditService auditService) {
+                            UserMapper userMapper, AuditService auditService,
+                            KnowledgeSpaceService knowledgeSpaceService) {
         this.workspaceMapper = workspaceMapper;
         this.workspaceMemberMapper = workspaceMemberMapper;
         this.userMapper = userMapper;
         this.auditService = auditService;
+        this.knowledgeSpaceService = knowledgeSpaceService;
     }
 
     public WorkspaceContext requireMember(AuthUser user, Long workspaceId) {
@@ -99,6 +103,7 @@ public class WorkspaceService {
         member.setStatus(AuthService.STATUS_ACTIVE);
         member.setJoinedAt(LocalDateTime.now());
         workspaceMemberMapper.insert(member);
+        knowledgeSpaceService.ensureDefault(workspace.getId(), user.userId());
         auditService.record(AuditAction.WORKSPACE_CREATED, "SUCCESS", user.userId(), user.username(),
                 workspace.getId(), "workspace", String.valueOf(workspace.getId()), Map.of("code", normalized));
         return workspace;

@@ -2,6 +2,7 @@ package com.huiyi.assistant.workspace;
 
 import com.huiyi.assistant.audit.AuditService;
 import com.huiyi.assistant.common.exception.BizException;
+import com.huiyi.assistant.knowledge.KnowledgeSpaceService;
 import com.huiyi.assistant.mapper.UserMapper;
 import com.huiyi.assistant.mapper.WorkspaceMapper;
 import com.huiyi.assistant.mapper.WorkspaceMemberMapper;
@@ -29,13 +30,15 @@ class WorkspaceServiceTest {
     @Mock WorkspaceMemberMapper workspaceMemberMapper;
     @Mock UserMapper userMapper;
     @Mock AuditService auditService;
+    @Mock KnowledgeSpaceService knowledgeSpaceService;
 
     WorkspaceService workspaceService;
     AuthUser actor;
 
     @BeforeEach
     void setUp() {
-        workspaceService = new WorkspaceService(workspaceMapper, workspaceMemberMapper, userMapper, auditService);
+        workspaceService = new WorkspaceService(workspaceMapper, workspaceMemberMapper, userMapper, auditService,
+                knowledgeSpaceService);
         actor = new AuthUser(10L, "alice", 0);
     }
 
@@ -53,6 +56,7 @@ class WorkspaceServiceTest {
         verify(workspaceMemberMapper).insert(member.capture());
         assertEquals("OWNER", member.getValue().getRoleCode());
         assertEquals("ACTIVE", member.getValue().getStatus());
+        verify(knowledgeSpaceService).ensureDefault(2L, 10L);
     }
 
     @Test

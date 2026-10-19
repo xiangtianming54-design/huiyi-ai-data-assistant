@@ -34,18 +34,20 @@ public class KnowledgeV1Controller {
 
     @PostMapping("/upload")
     public Result<KnowledgeDocVO> upload(@AuthenticationPrincipal AuthUser user, @PathVariable Long workspaceId,
-                                         @RequestParam("file") MultipartFile file) {
+                                         @RequestParam("file") MultipartFile file,
+                                         @RequestParam(required = false) Long spaceId) {
         WorkspaceContext context = workspaceService.requireKnowledgeWrite(user, workspaceId);
-        return Result.ok(knowledgeDocService.upload(file, context.workspaceId(), context.userId()));
+        return Result.ok(knowledgeDocService.upload(file, context.workspaceId(), context.userId(), spaceId));
     }
 
     @GetMapping("/docs")
     public Result<PageResult<KnowledgeDocVO>> list(@AuthenticationPrincipal AuthUser user,
                                                    @PathVariable Long workspaceId,
                                                    @RequestParam(required = false, defaultValue = "1") Integer page,
-                                                   @RequestParam(required = false, defaultValue = "20") Integer pageSize) {
+                                                   @RequestParam(required = false, defaultValue = "20") Integer pageSize,
+                                                   @RequestParam(required = false) Long spaceId) {
         workspaceService.requireMember(user, workspaceId);
-        return Result.ok(knowledgeDocService.listDocs(workspaceId, page, pageSize));
+        return Result.ok(knowledgeDocService.listDocs(workspaceId, page, pageSize, spaceId));
     }
 
     @GetMapping("/docs/{docId}")

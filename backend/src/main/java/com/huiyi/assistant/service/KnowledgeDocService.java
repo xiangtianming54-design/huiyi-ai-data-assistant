@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.huiyi.assistant.audit.AuditAction;
 import com.huiyi.assistant.audit.AuditService;
 import com.huiyi.assistant.common.exception.BizException;
+import com.huiyi.assistant.knowledge.KnowledgeSpaceService;
 import com.huiyi.assistant.common.result.ResultCode;
 import com.huiyi.assistant.mapper.KnowledgeDocMapper;
 import com.huiyi.assistant.model.dto.ParseResultDTO;
@@ -25,12 +26,14 @@ public class KnowledgeDocService {
     private final PythonServiceClient pythonServiceClient;
     private final KnowledgeDocMapper knowledgeDocMapper;
     private final AuditService auditService;
+    private final KnowledgeSpaceService knowledgeSpaceService;
 
     public KnowledgeDocService(PythonServiceClient pythonServiceClient, KnowledgeDocMapper knowledgeDocMapper,
-                               AuditService auditService) {
+                               AuditService auditService, KnowledgeSpaceService knowledgeSpaceService) {
         this.pythonServiceClient = pythonServiceClient;
         this.knowledgeDocMapper = knowledgeDocMapper;
         this.auditService = auditService;
+        this.knowledgeSpaceService = knowledgeSpaceService;
     }
 
     public KnowledgeDocVO upload(MultipartFile file) {
@@ -38,11 +41,20 @@ public class KnowledgeDocService {
     }
 
     public KnowledgeDocVO upload(MultipartFile file, Long workspaceId, Long userId) {
+        return upload(file, workspaceId, userId, null);
+    }
+
+    public KnowledgeDocVO upload(MultipartFile file, Long workspaceId, Long userId, Long spaceId) {
         if (file == null || file.isEmpty()) {
             throw new BizException(ResultCode.PARAM_ERROR.getCode(), "上传文件不能为空");
         }
         String filename = file.getOriginalFilename();
         log.info("开始处理上传文档: {}, size={}", filename, file.getSize());
+
+        Long resolvedSpaceId = null;
+        if (workspaceId != null) {
+            resolvedSpaceId = knowledgeSpaceService.requireActiveSpace(workspaceId, spaceId).getId();
+        }
 
         KnowledgeDoc doc = new KnowledgeDoc();
         doc.setDocName(filename);
@@ -51,6 +63,7 @@ public class KnowledgeDocService {
         doc.setChunkCount(0);
         doc.setStatus(DocStatusEnum.UPLOADED.name());
         doc.setWorkspaceId(workspaceId);
+        doc.setKnowledgeSpaceId(resolvedSpaceId);
         doc.setCreatedBy(userId);
         knowledgeDocMapper.insert(doc);
 
@@ -84,11 +97,26 @@ public class KnowledgeDocService {
     }
 
     public PageResult<KnowledgeDocVO> listDocs(Long workspaceId, Integer page, Integer pageSize) {
+        return listDocs(workspaceId, page, pageSize, null);
+    }
+
+    public PageResult<KnowledgeDocVO> listDocs(Long workspaceId, Integer page, Integer pageSize, Long spaceId) {
         LambdaQueryWrapper<KnowledgeDoc> wrapper = new LambdaQueryWrapper<KnowledgeDoc>()
                 .ne(KnowledgeDoc::getStatus, DocStatusEnum.ARCHIVED.name())
                 .orderByDesc(KnowledgeDoc::getCreatedAt);
         if (workspaceId != null) {
             wrapper.eq(KnowledgeDoc::getWorkspaceId, workspaceId);
+            List<Long> activeIds = knowledgeSpaceService.listActiveIds(workspaceId);
+            if (spaceId != null) {
+                if (!activeIds.contains(spaceId)) {
+                    return PageResult.of(List.of(), page, pageSize);
+                }
+                wrapper.eq(KnowledgeDoc::getKnowledgeSpaceId, spaceId);
+            } else if (activeIds.isEmpty()) {
+                return PageResult.of(List.of(), page, pageSize);
+            } else {
+                wrapper.in(KnowledgeDoc::getKnowledgeSpaceId, activeIds);
+            }
         }
         return PageResult.of(knowledgeDocMapper.selectList(wrapper).stream().map(this::toVO).toList(), page, pageSize);
     }
@@ -136,6 +164,7 @@ public class KnowledgeDocService {
                 .fileSize(doc.getFileSize())
                 .chunkCount(doc.getChunkCount())
                 .status(doc.getStatus())
+                .knowledgeSpaceId(doc.getKnowledgeSpaceId())
                 .createdAt(doc.getCreatedAt())
                 .build();
     }

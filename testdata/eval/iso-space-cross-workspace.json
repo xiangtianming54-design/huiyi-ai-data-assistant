@@ -1,0 +1,29 @@
+{
+  "id": "iso-space-cross-workspace",
+  "entrypoint": "chat_stream",
+  "question": "B 工作区 extra 空间知识摘要",
+  "sessionId": "eval-iso-space-cross",
+  "workspace": "B",
+  "spaces": ["extra"],
+  "stubs": {
+    "rewrite": "B 工作区 extra 空间知识摘要",
+    "intent": "knowledge_qa",
+    "tools": [
+      {
+        "name": "knowledge.search",
+        "ok": true,
+        "data": {
+          "fallbackAnswer": "B extra 空间只读摘要",
+          "prompt": null,
+          "references": [],
+          "trap": "WS_A_SECRET"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "intent": "knowledge_qa",
+    "answerContains": ["B extra 空间只读摘要"],
+    "forbiddenSubstrings": ["WS_A_SECRET"]
+  }
+}

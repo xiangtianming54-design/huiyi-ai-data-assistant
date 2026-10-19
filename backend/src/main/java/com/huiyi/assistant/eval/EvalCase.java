@@ -15,6 +15,8 @@ public class EvalCase {
     private String question;
     private String sessionId;
     private String workspace = "default";
+    private boolean spacesSpecified;
+    private List<String> spaces;
     private Stubs stubs = new Stubs();
     private Expect expect = new Expect();
 
@@ -56,6 +58,16 @@ public class EvalCase {
 
     public void setWorkspace(String workspace) {
         this.workspace = workspace;
+    }
+
+    public List<String> spaces() {
+        return spacesSpecified ? spaces : null;
+    }
+
+    @JsonSetter("spaces")
+    public void setSpaces(List<String> spaces) {
+        this.spacesSpecified = true;
+        this.spaces = spaces == null ? List.of() : spaces;
     }
 
     public Stubs stubs() {

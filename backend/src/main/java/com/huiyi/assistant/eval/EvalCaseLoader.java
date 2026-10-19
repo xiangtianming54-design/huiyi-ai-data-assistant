@@ -27,7 +27,8 @@ public class EvalCaseLoader {
                     .toList();
             for (Path file : files) {
                 String raw = Files.readString(file);
-                if (raw.contains("\"workspaceId\"") || raw.contains("\"userId\"")) {
+                if (raw.contains("\"workspaceId\"") || raw.contains("\"userId\"")
+                        || raw.contains("\"knowledgeSpaceId\"")) {
                     throw new IllegalArgumentException("tenant keys forbidden: " + file);
                 }
                 cases.add(MAPPER.readValue(raw, EvalCase.class));

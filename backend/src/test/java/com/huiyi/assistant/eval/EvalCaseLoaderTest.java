@@ -32,4 +32,10 @@ class EvalCaseLoaderTest {
         Files.writeString(dir.resolve("bad.json"), "{\"id\":\"bad\",\"userId\":1,\"question\":\"q\"}");
         assertThrows(IllegalArgumentException.class, () -> new EvalCaseLoader().load(dir));
     }
+
+    @Test
+    void rejectsNumericKnowledgeSpaceId() throws Exception {
+        Files.writeString(dir.resolve("bad.json"), "{\"id\":\"bad\",\"knowledgeSpaceId\":1,\"question\":\"q\"}");
+        assertThrows(IllegalArgumentException.class, () -> new EvalCaseLoader().load(dir));
+    }
 }

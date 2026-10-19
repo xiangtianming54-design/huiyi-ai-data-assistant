@@ -1,0 +1,29 @@
+{
+  "id": "iso-space-archived-excluded",
+  "entrypoint": "chat_stream",
+  "question": "未指定空间不含归档",
+  "sessionId": "eval-iso-space-archived",
+  "workspace": "default",
+  "stubs": {
+    "rewrite": "未指定空间不含归档",
+    "intent": "knowledge_qa",
+    "tools": [
+      {
+        "name": "knowledge.search",
+        "ok": true,
+        "data": {
+          "fallbackAnswer": "仅活跃空间摘要",
+          "prompt": null,
+          "references": [],
+          "space": "archived",
+          "trap": "SPACE_ARCHIVED_SECRET"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "intent": "knowledge_qa",
+    "answerContains": ["仅活跃空间摘要"],
+    "forbiddenSubstrings": ["SPACE_ARCHIVED_SECRET"]
+  }
+}

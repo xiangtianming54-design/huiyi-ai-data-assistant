@@ -1,0 +1,28 @@
+{
+  "id": "iso-space-unspecified-multi",
+  "entrypoint": "chat_stream",
+  "question": "未指定空间知识摘要",
+  "sessionId": "eval-iso-space-unspecified",
+  "workspace": "default",
+  "stubs": {
+    "rewrite": "未指定空间知识摘要",
+    "intent": "knowledge_qa",
+    "tools": [
+      {
+        "name": "knowledge.search",
+        "ok": true,
+        "data": {
+          "fallbackAnswer": "多空间只读摘要",
+          "prompt": null,
+          "references": [],
+          "space": "extra",
+          "trap": "SPACE_EXTRA_SECRET"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "intent": "knowledge_qa",
+    "answerContains": ["SPACE_EXTRA_SECRET"]
+  }
+}

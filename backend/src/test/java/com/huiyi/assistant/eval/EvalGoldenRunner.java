@@ -52,7 +52,11 @@ class EvalGoldenRunner {
             "agent-limit-deadline",
             "agent-limit-budget",
             "agent-output-guard",
-            "iso-workspace-b-isolated");
+            "iso-workspace-b-isolated",
+            "iso-space-extra-isolated",
+            "iso-space-unspecified-multi",
+            "iso-space-archived-excluded",
+            "iso-space-cross-workspace");
 
     @Test
     void allGoldensPass() throws Exception {
@@ -120,7 +124,7 @@ class EvalGoldenRunner {
         lenient().when(planner.toolsFor(any())).thenReturn(toolNames);
 
         lenient().when(executor.execute(any(), any(), any()))
-                .thenAnswer(invocation -> executeStub(cse, invocation.getArgument(0)));
+                .thenAnswer(invocation -> executeStub(cse, invocation.getArgument(0), invocation.getArgument(2)));
         lenient().when(prompts.render(anyString(), any())).thenReturn("p");
         lenient().when(llm.chat(any())).thenReturn("eval-summary");
 
@@ -128,7 +132,7 @@ class EvalGoldenRunner {
                 llm, prompts, metrics, chatExecutor);
     }
 
-    private ToolResult executeStub(EvalCase cse, String name) {
+    private ToolResult executeStub(EvalCase cse, String name, Map<String, Object> arguments) {
         for (EvalCase.ToolStub stub : cse.stubs().tools()) {
             if (!name.equals(stub.name())) {
                 continue;
@@ -137,7 +141,7 @@ class EvalGoldenRunner {
                 throw new UnknownToolException(name);
             }
             if (stub.ok()) {
-                return ToolResult.ok(isolateTrap(adaptData(stub.data())));
+                return ToolResult.ok(isolateTrap(adaptData(stub.data()), arguments));
             }
             return ToolResult.fail(stub.error() == null ? "eval_stub_missing" : stub.error());
         }
@@ -167,9 +171,19 @@ class EvalGoldenRunner {
         return copy;
     }
 
-    private Map<String, Object> isolateTrap(Map<String, Object> data) {
+    private Map<String, Object> isolateTrap(Map<String, Object> data, Map<String, Object> arguments) {
         Object trap = data.get("trap");
         if (trap == null) {
+            return data;
+        }
+        Object spaceLabel = data.get("space");
+        if (spaceLabel != null) {
+            String label = String.valueOf(spaceLabel);
+            long spaceId = EvalHarness.spaceIdFor(label);
+            List<Long> requested = requestedSpaceIds(arguments);
+            if (shouldLeakSpace(requested, label, spaceId)) {
+                data.put("fallbackAnswer", String.valueOf(trap));
+            }
             return data;
         }
         WorkspaceContext ctx = WorkspaceContextHolder.get();
@@ -177,5 +191,29 @@ class EvalGoldenRunner {
             data.put("fallbackAnswer", String.valueOf(trap));
         }
         return data;
+    }
+
+    private static boolean shouldLeakSpace(List<Long> requested, String label, long spaceId) {
+        if (requested == null) {
+            return "default".equals(label) || "extra".equals(label);
+        }
+        return requested.contains(spaceId);
+    }
+
+    private static List<Long> requestedSpaceIds(Map<String, Object> arguments) {
+        if (arguments == null || !arguments.containsKey("spaceIds")) {
+            return null;
+        }
+        Object raw = arguments.get("spaceIds");
+        if (!(raw instanceof List<?> list)) {
+            return List.of();
+        }
+        List<Long> ids = new ArrayList<>();
+        for (Object item : list) {
+            if (item instanceof Number number) {
+                ids.add(number.longValue());
+            }
+        }
+        return ids;
     }
 }

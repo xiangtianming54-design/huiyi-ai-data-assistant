@@ -10,6 +10,7 @@ import com.huiyi.assistant.agent.OutputGuard;
 import com.huiyi.assistant.context.WorkspaceContext;
 import com.huiyi.assistant.context.WorkspaceContextHolder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class EvalHarness {
@@ -31,7 +32,9 @@ public class EvalHarness {
             String entrypoint = cse == null ? "analysis_query" : cse.entrypoint();
             String question = cse == null || cse.question() == null ? "" : cse.question();
             String sessionId = cse == null ? null : cse.sessionId();
-            AgentResult result = runner.run(new AgentRequest(entrypoint, question, sessionId), listener, deadline);
+            AgentResult result = runner.run(
+                    new AgentRequest(entrypoint, question, sessionId, spaceIdsFor(cse == null ? null : cse.spaces())),
+                    listener, deadline);
             return toActual(result, listener);
         } finally {
             WorkspaceContextHolder.clear();
@@ -47,6 +50,29 @@ public class EvalHarness {
             default -> throw new IllegalArgumentException("unknown workspace label: " + workspace);
         };
         return new WorkspaceContext(1L, workspaceId, 1L, "VIEWER", "ACTIVE", "ACTIVE");
+    }
+
+    public static List<Long> spaceIdsFor(List<String> labels) {
+        if (labels == null) {
+            return null;
+        }
+        List<Long> ids = new ArrayList<>();
+        for (String label : labels) {
+            ids.add(spaceIdFor(label));
+        }
+        return ids;
+    }
+
+    public static long spaceIdFor(String label) {
+        if (label == null) {
+            throw new IllegalArgumentException("unknown space label: null");
+        }
+        return switch (label) {
+            case "default" -> 100L;
+            case "extra" -> 101L;
+            case "archived" -> 102L;
+            default -> throw new IllegalArgumentException("unknown space label: " + label);
+        };
     }
 
     static EvalActual toActual(AgentResult result, EvalRecordingListener listener) {

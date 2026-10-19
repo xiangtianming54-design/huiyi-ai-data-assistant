@@ -3,6 +3,9 @@
 from fastapi import APIRouter, Depends
 
 from app.core.schema import (
+    DEFAULT_COLLECTION,
+    BackfillSpaceIdsRequest,
+    BackfillSpaceIdsResponse,
     DeleteRequest,
     DeleteResponse,
     SearchRequest,
@@ -34,11 +37,36 @@ def search(
     request: SearchRequest,
     store: VectorStore = Depends(get_vector_store),
 ) -> SearchResponse:
+    if request.collection_name == DEFAULT_COLLECTION and not request.knowledge_space_ids:
+        return SearchResponse(success=True, hits=[])
     if request.workspace_id is not None:
-        hits = store.search_by_workspace(request.query, request.workspace_id, request.top_k, request.collection_name)
+        hits = store.search_by_workspace(
+            request.query,
+            request.workspace_id,
+            request.top_k,
+            request.collection_name,
+            knowledge_space_ids=request.knowledge_space_ids,
+        )
     else:
-        hits = store.search(request.query, request.top_k, request.collection_name)
+        hits = store.search(
+            request.query,
+            request.top_k,
+            request.collection_name,
+            knowledge_space_ids=request.knowledge_space_ids,
+        )
     return SearchResponse(success=True, hits=hits)
+
+
+@router.post("/backfill-space-ids", response_model=BackfillSpaceIdsResponse, summary="回填 chunk 的知识空间 id")
+def backfill_space_ids(
+    request: BackfillSpaceIdsRequest,
+    store: VectorStore = Depends(get_vector_store),
+) -> BackfillSpaceIdsResponse:
+    assignments = [
+        (item.workspace_id, item.doc_id, item.knowledge_space_id) for item in request.assignments
+    ]
+    count = store.assign_knowledge_spaces(request.collection_name, assignments)
+    return BackfillSpaceIdsResponse(success=True, updated_count=count)
 
 
 @router.post("/delete", response_model=DeleteResponse, summary="按工作区文档或 chunk 删除向量")

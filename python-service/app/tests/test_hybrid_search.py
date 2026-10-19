@@ -89,7 +89,13 @@ def test_hybrid_api_search(tmp_path):
         client = TestClient(app)
         resp = client.post(
             "/api/vector/search",
-            json={"query": "什么是有效订单？", "top_k": 5, "collection_name": "huiyi_knowledge", "workspace_id": 1},
+            json={
+                "query": "什么是有效订单？",
+                "top_k": 5,
+                "collection_name": "huiyi_knowledge",
+                "workspace_id": 1,
+                "knowledge_space_ids": [100],
+            },
         )
         assert resp.status_code == 200
         assert resp.json()["success"] is True

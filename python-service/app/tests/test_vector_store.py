@@ -16,6 +16,7 @@ GLOSSARY_CHUNK = Chunk(
         source_type="md",
         workspace_id="1",
         doc_id="1",
+        knowledge_space_id="100",
     ),
 )
 CHANNEL_CHUNK = Chunk(
@@ -27,6 +28,7 @@ CHANNEL_CHUNK = Chunk(
         source_type="md",
         workspace_id="1",
         doc_id="1",
+        knowledge_space_id="100",
     ),
 )
 
@@ -145,7 +147,13 @@ class TestVectorApi:
 
         search_resp = client.post(
             "/api/vector/search",
-            json={"query": "什么是有效订单？", "top_k": 5, "collection_name": "huiyi_knowledge", "workspace_id": 1},
+            json={
+                "query": "什么是有效订单？",
+                "top_k": 5,
+                "collection_name": "huiyi_knowledge",
+                "workspace_id": 1,
+                "knowledge_space_ids": [100],
+            },
         )
         assert search_resp.status_code == 200
         body = search_resp.json()

@@ -21,6 +21,7 @@ def _chunk(chunk_id: str, text: str, workspace_id: int, doc_id: int, filename: s
             source_type="md",
             workspace_id=str(workspace_id),
             doc_id=str(doc_id),
+            knowledge_space_id="100",
         ),
     )
 
@@ -102,6 +103,7 @@ class TestWorkspaceSearchIsolation:
                     "top_k": 5,
                     "collection_name": "huiyi_knowledge",
                     "workspace_id": WS1,
+                    "knowledge_space_ids": [100],
                 },
             )
             assert resp.status_code == 200

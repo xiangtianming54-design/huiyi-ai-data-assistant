@@ -47,6 +47,9 @@ class KeywordIndex:
                 "filename": chunk.metadata.filename,
                 "workspace_id": str(chunk.metadata.workspace_id) if chunk.metadata.workspace_id is not None else "",
                 "doc_id": str(chunk.metadata.doc_id) if chunk.metadata.doc_id is not None else "",
+                "knowledge_space_id": str(chunk.metadata.knowledge_space_id)
+                if chunk.metadata.knowledge_space_id is not None
+                else "",
                 "chunk_id": chunk.id,
             }
         self._save(collection_name, docs)
@@ -85,14 +88,44 @@ class KeywordIndex:
         self._save(collection_name, docs)
         return len(remove)
 
-    def search(self, collection_name: str, query: str, top_k: int, workspace_id: int | None = None) -> list[dict]:
+    def update_space_id(self, collection_name: str, workspace_id: int, doc_id: int, knowledge_space_id: int) -> None:
+        docs = self._load(collection_name)
+        workspace = str(workspace_id)
+        document = str(doc_id)
+        target = str(knowledge_space_id)
+        for doc in docs.values():
+            if str(doc.get("workspace_id") or "") == workspace and str(doc.get("doc_id") or "") == document:
+                doc["knowledge_space_id"] = target
+                metadata = dict(doc.get("metadata") or {})
+                metadata["knowledge_space_id"] = target
+                doc["metadata"] = metadata
+        self._save(collection_name, docs)
+
+    def search(
+        self,
+        collection_name: str,
+        query: str,
+        top_k: int,
+        workspace_id: int | None = None,
+        knowledge_space_ids: list[int] | None = None,
+    ) -> list[dict]:
         query_tokens = tokenize(query)
         if not query_tokens or top_k <= 0:
+            return []
+        if knowledge_space_ids is not None and len(knowledge_space_ids) == 0:
             return []
         docs = list(self._load(collection_name).values())
         if workspace_id is not None:
             workspace = str(workspace_id)
             docs = [doc for doc in docs if str(doc.get("workspace_id") or "") == workspace]
+        if knowledge_space_ids:
+            allowed = {str(space_id) for space_id in knowledge_space_ids}
+            docs = [
+                doc
+                for doc in docs
+                if str(doc.get("knowledge_space_id") or (doc.get("metadata") or {}).get("knowledge_space_id") or "")
+                in allowed
+            ]
         if not docs:
             return []
         tokenized = [tokenize(doc["text"]) for doc in docs]

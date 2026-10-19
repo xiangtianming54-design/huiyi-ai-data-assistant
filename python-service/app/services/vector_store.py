@@ -57,15 +57,28 @@ class VectorStore:
                 raise ValueError("不允许混合多个 workspace")
         return self.upsert(chunks, collection_name)
 
-    def search(self, query: str, top_k: int, collection_name: str, workspace_id: int | None = None) -> list[SearchHit]:
+    def search(
+        self,
+        query: str,
+        top_k: int,
+        collection_name: str,
+        workspace_id: int | None = None,
+        knowledge_space_ids: list[int] | None = None,
+    ) -> list[SearchHit]:
         """知识库 collection 走向量+关键词 RRF；其它 collection 仍只做向量。"""
+        if knowledge_space_ids is not None and len(knowledge_space_ids) == 0:
+            return []
         fetch = top_k * 2 if collection_name == settings.chroma_collection else top_k
-        vector_hits = self._vector_search(query, fetch, collection_name, workspace_id=workspace_id)
+        vector_hits = self._vector_search(
+            query, fetch, collection_name, workspace_id=workspace_id, knowledge_space_ids=knowledge_space_ids
+        )
         if collection_name != settings.chroma_collection:
             return vector_hits[:top_k]
         qualified = [hit for hit in vector_hits if hit.score >= VECTOR_SCORE_THRESHOLD]
         try:
-            keyword_raw = self._keyword.search(collection_name, query, fetch, workspace_id=workspace_id)
+            keyword_raw = self._keyword.search(
+                collection_name, query, fetch, workspace_id=workspace_id, knowledge_space_ids=knowledge_space_ids
+            )
         except Exception:
             return qualified[:top_k]
         if not keyword_raw:
@@ -86,9 +99,18 @@ class VectorStore:
                 )
         return [by_id[doc_id] for doc_id, _ in merged_ids if doc_id in by_id]
 
-    def search_by_workspace(self, query: str, workspace_id: int, top_k: int, collection_name: str) -> list[SearchHit]:
-        """在检索阶段按 workspace_id 过滤，禁止先全库 Top-K 再过滤。"""
-        return self.search(query, top_k, collection_name, workspace_id=workspace_id)
+    def search_by_workspace(
+        self,
+        query: str,
+        workspace_id: int,
+        top_k: int,
+        collection_name: str,
+        knowledge_space_ids: list[int] | None = None,
+    ) -> list[SearchHit]:
+        """在检索阶段按 workspace_id（及可选空间列表）过滤，禁止先全库 Top-K 再过滤。"""
+        return self.search(
+            query, top_k, collection_name, workspace_id=workspace_id, knowledge_space_ids=knowledge_space_ids
+        )
 
     def similarity(self, text_a: str, text_b: str) -> float:
         """两条文本的 cosine 相似度，范围 [0, 1]（向量夹角，负值截断为 0）。"""
@@ -193,12 +215,45 @@ class VectorStore:
         self._keyword.delete_by_chunk_ids(collection_name, workspace_id, ids)
         return len(ids)
 
+    def assign_knowledge_spaces(self, collection_name: str, assignments: list[tuple[int, int, int]]) -> int:
+        """按 workspace+doc 更新 knowledge_space_id，保留 embedding。"""
+        collection = self._collection(collection_name)
+        updated = 0
+        for workspace_id, doc_id, knowledge_space_id in assignments:
+            existing = collection.get(
+                where={
+                    "$and": [
+                        {"workspace_id": {"$eq": str(workspace_id)}},
+                        {"doc_id": {"$eq": str(doc_id)}},
+                    ]
+                },
+                include=["metadatas"],
+            )
+            ids = existing.get("ids") or []
+            metadatas = existing.get("metadatas") or []
+            target = str(knowledge_space_id)
+            change_ids: list[str] = []
+            new_metas: list[dict] = []
+            for chunk_id, metadata in zip(ids, metadatas):
+                current = dict(metadata or {})
+                if str(current.get("knowledge_space_id") or "") == target:
+                    continue
+                current["knowledge_space_id"] = target
+                change_ids.append(chunk_id)
+                new_metas.append(current)
+            if change_ids:
+                collection.update(ids=change_ids, metadatas=new_metas)
+                updated += len(change_ids)
+            self._keyword.update_space_id(collection_name, workspace_id, doc_id, knowledge_space_id)
+        return updated
+
     def _vector_search(
         self,
         query: str,
         top_k: int,
         collection_name: str,
         workspace_id: int | None = None,
+        knowledge_space_ids: list[int] | None = None,
     ) -> list[SearchHit]:
         """query embed → top_k 检索，score 为 cosine 相似度。知识库必须带 where 过滤。"""
         collection = self._collection(collection_name)
@@ -210,8 +265,9 @@ class VectorStore:
             "n_results": min(top_k, collection.count()),
             "include": ["documents", "metadatas", "distances"],
         }
-        if workspace_id is not None:
-            kwargs["where"] = {"workspace_id": {"$eq": str(workspace_id)}}
+        where = _workspace_space_where(workspace_id, knowledge_space_ids)
+        if where is not None:
+            kwargs["where"] = where
         try:
             result = collection.query(**kwargs)
         except Exception:
@@ -239,6 +295,19 @@ class VectorStore:
 # ===== 延迟初始化的模块级单例（测试可通过依赖注入替换） =====
 
 _vector_store: VectorStore | None = None
+
+
+def _workspace_space_where(workspace_id: int | None, knowledge_space_ids: list[int] | None) -> dict | None:
+    clauses: list[dict] = []
+    if workspace_id is not None:
+        clauses.append({"workspace_id": {"$eq": str(workspace_id)}})
+    if knowledge_space_ids:
+        clauses.append({"knowledge_space_id": {"$in": [str(space_id) for space_id in knowledge_space_ids]}})
+    if not clauses:
+        return None
+    if len(clauses) == 1:
+        return clauses[0]
+    return {"$and": clauses}
 
 
 def cosine(left: list[float], right: list[float]) -> float:

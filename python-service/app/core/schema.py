@@ -13,6 +13,7 @@ class ChunkMetadata(BaseModel):
     source_type: str = Field(description="来源文件类型：md/txt/pdf/docx")
     workspace_id: str | None = Field(default=None, description="工作区 ID，知识库分块必填")
     doc_id: str | None = Field(default=None, description="知识文档 ID")
+    knowledge_space_id: str | None = Field(default=None, description="知识空间 ID")
 
     @model_serializer(mode="wrap")
     def _omit_empty_scope_fields(self, handler):
@@ -62,6 +63,11 @@ class UpsertRequest(BaseModel):
                 raise ValueError("不允许混合多个 workspace")
             if not chunk.metadata.doc_id:
                 raise ValueError("每个 chunk.metadata.doc_id 必填")
+            if not chunk.metadata.knowledge_space_id:
+                raise ValueError("每个 chunk.metadata.knowledge_space_id 必填")
+        spaces = {str(chunk.metadata.knowledge_space_id) for chunk in self.chunks}
+        if len(spaces) > 1:
+            raise ValueError("不允许混合多个 knowledge_space")
         return self
 
 
@@ -80,6 +86,7 @@ class SearchRequest(BaseModel):
     top_k: int = Field(default=5, ge=1, le=20)
     collection_name: str = Field(default=DEFAULT_COLLECTION)
     workspace_id: int | None = None
+    knowledge_space_ids: list[int] | None = None
 
     @model_validator(mode="after")
     def knowledge_search_requires_workspace(self):
@@ -146,6 +153,22 @@ class SimilarityResponse(BaseModel):
 
     success: bool
     score: float
+
+
+class SpaceAssignment(BaseModel):
+    workspace_id: int
+    doc_id: int
+    knowledge_space_id: int
+
+
+class BackfillSpaceIdsRequest(BaseModel):
+    collection_name: str = Field(default=DEFAULT_COLLECTION)
+    assignments: list[SpaceAssignment]
+
+
+class BackfillSpaceIdsResponse(BaseModel):
+    success: bool
+    updated_count: int = Field(ge=0)
 
 
 # ===== SQL 校验与数据画像接口（/api/sql/*、/api/data/*），契约与《开发文档》7.2 节一致 =====

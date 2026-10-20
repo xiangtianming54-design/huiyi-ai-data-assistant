@@ -30,19 +30,17 @@
 | **v1.4.0** | Production Ready | 3–4 周 | staging/prod、备份、限流、压测、告警 |
 | **v1.5.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
 
-## 已发布：v1.2.0 Enterprise Knowledge Plane
+## 已发布：v1.3.0 Async Ingestion
 
-标签 `v1.2.0`。规格：[2026-10-19-v12-enterprise-knowledge-plane.md](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane.md)。技术设计：[2026-10-19-v12-enterprise-knowledge-plane-technical.md](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane-technical.md)。计划：[2026-10-19-v12-enterprise-knowledge-plane.md](superpowers/plans/2026-10-19-v12-enterprise-knowledge-plane.md)。本版 P0：工作区内知识空间 + 文档归属 + RAG 按 ACTIVE 空间过滤 + 空间隔离金标。Flyway `V12__knowledge_spaces.sql`。无前端空间 UI。异步解析、对象存储、细权限码不在本版。
+标签 `v1.3.0`。规格：[2026-10-20-v13-async-ingestion.md](superpowers/specs/2026-10-20-v13-async-ingestion.md)。技术设计：[2026-10-20-v13-async-ingestion-technical.md](superpowers/specs/2026-10-20-v13-async-ingestion-technical.md)。计划：[2026-10-20-v13-async-ingestion.md](superpowers/plans/2026-10-20-v13-async-ingestion.md)。本版 P0：上传立刻返回 + 本地落盘 + `DOC_PARSE` 异步 + 状态可查 + 失败重试。Flyway `V13__async_ingestion.sql`。无 MinIO、无前端、无新金标。
 
-未纳入本版：异步解析、对象存储、细权限/空间成员/PRIVATE、前端空间 UI、空间恢复、ReAct、`/agent/runs`、Prompt 灰度。
+未纳入本版：MinIO、hash 去重、`doc_version`、任务列表接口、重启补偿、前端轮询、其余任务类型。
 
-上一发布：`v1.1.0` Eval & Prompt Governance。
+上一发布：`v1.2.0` Enterprise Knowledge Plane。
 
-## 当前开发：v1.3.0 Async Ingestion
+## 当前开发：v1.4.0 Production Ready
 
-规格：[2026-10-20-v13-async-ingestion.md](superpowers/specs/2026-10-20-v13-async-ingestion.md)。技术设计：[2026-10-20-v13-async-ingestion-technical.md](superpowers/specs/2026-10-20-v13-async-ingestion-technical.md)。计划：[2026-10-20-v13-async-ingestion.md](superpowers/plans/2026-10-20-v13-async-ingestion.md)。P0：上传立刻返回 + 本地落盘 + `DOC_PARSE` 异步 + 状态可查 + 失败重试。Flyway `V13__async_ingestion.sql`。无 MinIO、无前端、无新金标。
-
-下一版：v1.4.0 Production Ready。
+未开工。规格以桌面企业迭代文档 v1.4 章节为准，开工前仍按决策表逐项冻结。
 
 ## 后续版本（摘要）
 

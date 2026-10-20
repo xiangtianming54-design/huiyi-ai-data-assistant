@@ -38,8 +38,9 @@
 | 无统一 Tool Registry / Agent Loop | v0.9.0（已交付内存 Registry + Router Runtime，标签 `v0.9.0`）；v1.0.0 补 Schema / `tool.*` SSE / Budget / Guard / `error_code`（标签 `v1.0.0`；ReAct / `/agent/runs` 仍非本版） |
 | 无系统化 Trace / Metrics / Cost | v0.8.0（已交付，标签 `v0.8.0`） |
 | 无评测集 / 回归报告；Prompt 散落在资源文件 | v1.1.0（已交付 `testdata/eval/` + `EvalGoldenRunner` + CI `eval-goldens`，标签 `v1.1.0`；Prompt 版本/灰度仍为 P1） |
-| Docker Compose 偏本地；无 staging / prod、备份、回滚 | v1.3.0 |
-| 无租户 / 配额；知识空间与权限过滤未完成 | v1.2.0（已交付工作区内知识空间 + RAG 按空间过滤，标签 `v1.2.0`；异步解析 / OSS / 细权限仍为后续版本） |
+| Docker Compose 偏本地；无 staging / prod、备份、回滚 | v1.4.0 |
+| 无租户 / 配额；知识空间与权限过滤未完成 | v1.2.0（已交付工作区内知识空间 + RAG 按空间过滤，标签 `v1.2.0`；细权限仍为后续版本） |
+| 知识上传同步阻塞；无异步解析 | v1.3.0（已交付上传立刻返回 + 本地落盘 + `DOC_PARSE` + 失败重试，标签 `v1.3.0`；MinIO / hash / 前端轮询仍为后续版本） |
 
 v0.6.1 **明确不做**：用户体系、租户、重构 `ChatService`、切换向量库、Kubernetes。
 

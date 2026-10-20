@@ -1,7 +1,7 @@
 # HuiYi v1.3 · Async Ingestion（仓库规格）
 
 > 版本：`v1.3.0`  
-> 状态：**实施中**（P0 D01–D13 已拍板）  
+> 状态：**已发布**（标签 `v1.3.0`；P0 D01–D13 已拍板）  
 > 技术设计：[2026-10-20-v13-async-ingestion-technical.md](2026-10-20-v13-async-ingestion-technical.md)  
 > 实施计划：[../plans/2026-10-20-v13-async-ingestion.md](../plans/2026-10-20-v13-async-ingestion.md)  
 > 基线：`huiyi-ai-data-assistant v1.2.0`（标签 `v1.2.0`）  

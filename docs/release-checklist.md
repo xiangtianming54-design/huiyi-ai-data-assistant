@@ -4,45 +4,53 @@
 
 ## 代码与测试
 
-- [x] 目标分支已合并（`main` 含 v1.2 实现 `1cb0b5d`）
-- [x] `backend`：`mvn -B test` 通过（本地，2026-10-19，172 tests）
-- [x] `python-service`：`pytest -q` 通过（本地，2026-10-19，119 passed）
-- [ ] `frontend`：本版未改前端；`git diff -- frontend` 为空
+- [x] 目标分支已合并（`main` 含 v1.3 实现；标签 SHA 见下方发布动作）
+- [x] `backend`：`mvn -B test` 通过（本地，2026-10-20，189 tests）
+- [x] `python-service`：`pytest -q` 通过（本地，2026-10-20，119 passed）
+- [x] `frontend`：本版未改前端；`git diff -- frontend` 为空
 - [ ] GitHub Actions 对应 commit 四条 job 均为成功（含 `eval-goldens`；push `main` 后在网页确认；本机无 `gh`）
-- [x] 本版评测金标：`EvalGoldenRunner` + `testdata/eval/` 16 条已绿（12 旧 + 4 空间隔离）
+- [x] 本版评测金标：不加新金标；现有 `EvalGoldenRunner` 16 条仍绿
 
 ## 安全与仓库卫生
 
 - [x] 未提交 `.env`、密钥、本地数据库文件
-- [x] `.gitignore` 仍包含 `.env` / `.env.local`
+- [x] `.gitignore` 仍包含 `.env` / `.env.local`；本版增加 `data/knowledge/`
 - [x] README / 文档中的示例只有 `.env.example` 占位符
 - [x] 今后提交作者名为 `xianglonghai`（本仓库 local `user.name`；不改写已推送历史）
 
 ## 文档
 
-- [x] [baseline.md](baseline.md) 已标注 v1.2 知识空间 / RAG 按空间过滤
-- [x] [roadmap.md](roadmap.md) 当前发布为 v1.2.0；下一版 v1.3 未开工
+- [x] [baseline.md](baseline.md) 已标注 v1.3 异步摄入
+- [x] [roadmap.md](roadmap.md) 当前发布为 v1.3.0；下一版 v1.4 Production Ready 未开工
 - [x] README 版本说明与本版一致
-- [x] [development.md](development.md) 已写 v1.2 变更与回滚
+- [x] [development.md](development.md) 已写 v1.3 变更与回滚
 
 ## 运行与演示
 
 - [ ] Compose 健康检查（本版收尾未重跑现网栈；v0.9 发版时已通过）
-- [ ] 五场景 `e2e-m5.js`（本版收尾未重跑；代码侧单测 172/172；金标走 stub 不连 Compose）
+- [ ] 五场景 `e2e-m5.js`（本版收尾未重跑；代码侧单测 189/189；金标走 stub 不连 Compose）
 
 ## 发布动作
 
-- [x] 语义化标签：`v1.2.0` → `1cb0b5d`
-- [x] `git push origin main` 与 `git push origin v1.2.0`（2026-10-20）
+- [ ] 语义化标签：`v1.3.0`（合并后填写 SHA）
+- [ ] `git push origin main` 与 `git push origin v1.3.0`
 - [ ] GitHub Release 写清：新增 / 修复 / 不包含（本机无 `gh`，需在 GitHub 网页创建）
 - [ ] 若本版是公开里程碑：确认仓库可见性仍符合预期
 
+## v1.3.0 特别项（仅本版）
+
+- [x] Flyway V13：`async_tasks` + `knowledge_docs.storage_key` / `error_message`（无 FK、无 `file_hash` / `parse_status` / `doc_version`）
+- [x] 不做 MinIO、hash 去重、任务列表接口、重启补偿、前端轮询、ReAct、`/agent/runs`
+- [x] `git diff -- frontend` 为空
+- [x] 回滚路径：`v1.2.0` + MySQL 备份（见 development.md）
+
 ## v1.2.0 特别项（仅本版）
 
-- [x] Flyway V12：`knowledge_spaces` + 回填 `knowledge_docs.knowledge_space_id` NOT NULL（无 FK、无 `async_tasks`）
+- [x] Flyway V12：`knowledge_spaces` + 回填 `knowledge_docs.knowledge_space_id` NOT NULL（无 FK）
 - [x] 不做异步解析、OSS、细权限码、前端空间 UI、空间恢复、ReAct、`/agent/runs`
 - [x] `git diff -- frontend` 为空
 - [x] 回滚路径：`v1.1.0` + MySQL 备份（见 development.md）
+- [x] 语义化标签：`v1.2.0` → `1cb0b5d`；已 `git push origin v1.2.0`
 
 ## v1.1.0 特别项（仅本版）
 

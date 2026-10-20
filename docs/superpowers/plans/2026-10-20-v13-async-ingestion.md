@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> Status: P0 only。MinIO / hash / 前端轮询 / 重启补偿 / 任务列表接口不在本计划。
+> Status: 已完成并发布。标签 `v1.3.0`。P0 only。MinIO / hash / 前端轮询 / 重启补偿 / 任务列表接口不在本计划。
 >
 > Execution workspace: isolated git worktree via superpowers:using-git-worktrees. Branch: `feature/v1.3-async-ingestion`.
 

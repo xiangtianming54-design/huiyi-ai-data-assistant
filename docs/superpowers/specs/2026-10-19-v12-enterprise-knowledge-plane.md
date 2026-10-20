@@ -1,7 +1,7 @@
 # HuiYi v1.2 · Enterprise Knowledge Plane（仓库规格）
 
 > 版本：`v1.2.0`  
-> 状态：**规格已冻结，技术设计与实施计划已写**（P0 D01–D13 已拍板；实现进行中）  
+> 状态：**已发布**（标签 `v1.2.0`；P0 D01–D13 已拍板）  
 > 技术设计：[2026-10-19-v12-enterprise-knowledge-plane-technical.md](2026-10-19-v12-enterprise-knowledge-plane-technical.md)  
 > 实施计划：[../plans/2026-10-19-v12-enterprise-knowledge-plane.md](../plans/2026-10-19-v12-enterprise-knowledge-plane.md)  
 > 基线：`huiyi-ai-data-assistant v1.1.0`（标签 `v1.1.0`）  

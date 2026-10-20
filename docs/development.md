@@ -58,7 +58,7 @@ node scripts/e2e-m5.js
 ```text
 main            —— 稳定发布，里程碑打 tag
 dev             —— 当前 GitHub 日常集成（CI 监听 main / dev）
-feature/*       —— 功能分支；下一版：feature/v1.2-*
+feature/*       —— 功能分支；下一版：feature/v1.3-*
 提交规范        —— feat:/fix:/test:/docs:/chore: + 中文摘要
 ```
 
@@ -175,9 +175,11 @@ Eval 评测集与回归 P0：`testdata/eval/` 金标 + Java `EvalGoldenRunner` +
 
 **回滚：** 切回标签 `v1.0.0`。本版 P0 不改 Flyway；若后续误加迁移，不能只换镜像不还原库。
 
-## v1.2 变更（Enterprise Knowledge Plane，进行中）
+## v1.2 变更（2026-10-20，标签 v1.2.0，已发布）
 
 工作区内知识空间：Flyway `V12__knowledge_spaces.sql` 建表并回填 `knowledge_docs.knowledge_space_id`。空间 HTTP `/api/v1/workspaces/{id}/knowledge-spaces`；文档上传/列表可选 `spaceId`；旧 `/knowledge/upload` 写入默认空间。RAG 把 ACTIVE 空间 id 列表传给 Python，`huiyi_knowledge` 检索用 `workspace_id` + `knowledge_space_id $in`。评测仍走 `EvalGoldenRunner`（含空间隔离金标）。启动时 `huiyi.knowledge.backfill-vector-space-ids`（默认 true）回填向量 metadata，Python 不可用不阻断启动。无前端空间 UI。规格：[v1.2 开发文档](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane.md)。技术设计：[v1.2 技术设计](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane-technical.md)。计划：[v1.2 实施计划](superpowers/plans/2026-10-19-v12-enterprise-knowledge-plane.md)。
+
+**回滚：** 切回标签 `v1.1.0`，恢复发版前 MySQL 备份后再起服务。V12 已改 schema，不能只换镜像不还原库。
 
 ## 常见坑（本仓库已踩过）
 

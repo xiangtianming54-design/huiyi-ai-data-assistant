@@ -1,7 +1,7 @@
 # HuiYi v1.2 · Enterprise Knowledge Plane 技术设计
 
 > 版本：`v1.2.0`  
-> 状态：**技术设计已写**（实施计划已写；实现进行中）  
+> 状态：**已发布**（标签 `v1.2.0`）  
 > 产品规格：[2026-10-19-v12-enterprise-knowledge-plane.md](2026-10-19-v12-enterprise-knowledge-plane.md)  
 > 基线代码：`v1.1.0`（标签 `v1.1.0`）  
 > 口径：D01–D13。本文只写 **怎么改代码**，不重新开范围。

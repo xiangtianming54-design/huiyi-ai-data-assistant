@@ -4,12 +4,12 @@
 
 ## 代码与测试
 
-- [x] 目标分支已合并（`main` 含 v1.1 实现 `2013015`）
-- [x] `backend`：`mvn -B test` 通过（本地，2026-10-18，156 tests）
-- [ ] `python-service`：本版未改 Python；沿用 v0.9 的 pytest 记录
-- [ ] `frontend`：本版未改前端；沿用 v0.9 的 `npm run build` 记录
+- [x] 目标分支已合并（`main` 含 v1.2 实现，见下方标签 SHA）
+- [x] `backend`：`mvn -B test` 通过（本地，2026-10-19，172 tests）
+- [x] `python-service`：`pytest -q` 通过（本地，2026-10-19，119 passed）
+- [ ] `frontend`：本版未改前端；`git diff -- frontend` 为空
 - [ ] GitHub Actions 对应 commit 四条 job 均为成功（含 `eval-goldens`；push `main` 后在网页确认；本机无 `gh`）
-- [x] 本版评测金标：`EvalGoldenRunner` + `testdata/eval/` 12 条已绿
+- [x] 本版评测金标：`EvalGoldenRunner` + `testdata/eval/` 16 条已绿（12 旧 + 4 空间隔离）
 
 ## 安全与仓库卫生
 
@@ -20,22 +20,29 @@
 
 ## 文档
 
-- [x] [baseline.md](baseline.md) 已标注 v1.1 评测金标 / CI `eval-goldens`
-- [x] [roadmap.md](roadmap.md) 当前发布为 v1.1.0；下一版 v1.2 未开工
+- [x] [baseline.md](baseline.md) 已标注 v1.2 知识空间 / RAG 按空间过滤
+- [x] [roadmap.md](roadmap.md) 当前发布为 v1.2.0；下一版 v1.3 未开工
 - [x] README 版本说明与本版一致
-- [x] [development.md](development.md) 已写 v1.1 变更与回滚
+- [x] [development.md](development.md) 已写 v1.2 变更与回滚
 
 ## 运行与演示
 
 - [ ] Compose 健康检查（本版收尾未重跑现网栈；v0.9 发版时已通过）
-- [ ] 五场景 `e2e-m5.js`（本版收尾未重跑；代码侧单测 156/156；金标走 stub 不连 Compose）
+- [ ] 五场景 `e2e-m5.js`（本版收尾未重跑；代码侧单测 172/172；金标走 stub 不连 Compose）
 
 ## 发布动作
 
-- [x] 语义化标签：`v1.1.0` → `8dca47a`
-- [x] `git push origin main` 与 `git push origin v1.1.0`（2026-10-18）
+- [ ] 语义化标签：`v1.2.0`（push 后回填 SHA）
+- [ ] `git push origin main` 与 `git push origin v1.2.0`
 - [ ] GitHub Release 写清：新增 / 修复 / 不包含（本机无 `gh`，需在 GitHub 网页创建）
 - [ ] 若本版是公开里程碑：确认仓库可见性仍符合预期
+
+## v1.2.0 特别项（仅本版）
+
+- [x] Flyway V12：`knowledge_spaces` + 回填 `knowledge_docs.knowledge_space_id` NOT NULL（无 FK、无 `async_tasks`）
+- [x] 不做异步解析、OSS、细权限码、前端空间 UI、空间恢复、ReAct、`/agent/runs`
+- [x] `git diff -- frontend` 为空
+- [x] 回滚路径：`v1.1.0` + MySQL 备份（见 development.md）
 
 ## v1.1.0 特别项（仅本版）
 

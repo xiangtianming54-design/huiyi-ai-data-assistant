@@ -29,17 +29,17 @@
 | **v1.3.0** | Production Ready | 3–4 周 | staging/prod、备份、限流、压测、告警 |
 | **v1.4.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
 
-## 已发布：v1.1.0 Eval & Prompt Governance
+## 已发布：v1.2.0 Enterprise Knowledge Plane
 
-标签 `v1.1.0`。规格：[2026-10-18-v11-eval-and-regression.md](superpowers/specs/2026-10-18-v11-eval-and-regression.md)。技术设计：[2026-10-18-v11-eval-and-regression-technical.md](superpowers/specs/2026-10-18-v11-eval-and-regression-technical.md)。计划：[2026-10-18-v11-eval-and-regression.md](superpowers/plans/2026-10-18-v11-eval-and-regression.md)。本版 P0：`testdata/eval/` 12 条金标 + Java `EvalGoldenRunner` + CI 独立 job `eval-goldens` 上传 `eval-report.json/.md`。无评测页、无新 API、无新表。Prompt 版本/灰度仍为 P1。
+标签 `v1.2.0`。规格：[2026-10-19-v12-enterprise-knowledge-plane.md](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane.md)。技术设计：[2026-10-19-v12-enterprise-knowledge-plane-technical.md](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane-technical.md)。计划：[2026-10-19-v12-enterprise-knowledge-plane.md](superpowers/plans/2026-10-19-v12-enterprise-knowledge-plane.md)。本版 P0：工作区内知识空间 + 文档归属 + RAG 按 ACTIVE 空间过滤 + 空间隔离金标。Flyway `V12__knowledge_spaces.sql`。无前端空间 UI。异步解析、对象存储、细权限码不在本版。
 
-未纳入本版：Prompt 灰度、评测页、ReAct、Compose e2e 进 Actions。
+未纳入本版：异步解析、对象存储、细权限/空间成员/PRIVATE、前端空间 UI、空间恢复、ReAct、`/agent/runs`、Prompt 灰度。
 
-上一发布：`v1.0.0` Stable Agent Assistant。
+上一发布：`v1.1.0` Eval & Prompt Governance。
 
-## 当前开发：v1.2.0 Enterprise Knowledge Plane
+## 当前开发：v1.3.0 Production Ready
 
-规格已冻结：[2026-10-19-v12-enterprise-knowledge-plane.md](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane.md)。技术设计：[2026-10-19-v12-enterprise-knowledge-plane-technical.md](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane-technical.md)。实施计划：[2026-10-19-v12-enterprise-knowledge-plane.md](superpowers/plans/2026-10-19-v12-enterprise-knowledge-plane.md)。P0：工作区内知识空间 + 文档归属 + RAG 按空间过滤。实现进行中。异步解析、对象存储、细权限、前端空间 UI 不进本版。
+未开工。规格以桌面企业迭代文档 v1.3 章节为准，开工前仍按决策表逐项冻结。
 
 ## 后续版本（摘要）
 

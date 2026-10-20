@@ -2,7 +2,7 @@
 
 > 会意 · 企业经营数据智能分析助手
 
-当前发布：**v1.1.0 Eval & Prompt Governance**（标签 `v1.1.0`）。规格 [v1.1 开发文档](docs/superpowers/specs/2026-10-18-v11-eval-and-regression.md)。基线对照 [docs/baseline.md](docs/baseline.md) · 踩坑 [docs/pitfalls.md](docs/pitfalls.md) · 路线图 [docs/roadmap.md](docs/roadmap.md)
+当前发布：**v1.2.0 Enterprise Knowledge Plane**（标签 `v1.2.0`）。规格 [v1.2 开发文档](docs/superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane.md)。基线对照 [docs/baseline.md](docs/baseline.md) · 踩坑 [docs/pitfalls.md](docs/pitfalls.md) · 路线图 [docs/roadmap.md](docs/roadmap.md)
 
 基于 **Java + Python 协同架构** 的企业经营数据智能分析助手，支持 **RAG 知识库问答** 与 **Text-to-SQL 数据分析** 两类核心能力。
 
@@ -161,8 +161,9 @@ huiyi-ai-data-assistant/
 - [x] **v0.9.0 Tool Harness & Agent Runtime**：内存 ToolRegistry、Router AgentRunner、五个只读工具、Flyway V10 `tool_name`（[规格](docs/superpowers/specs/2026-10-17-v09-tool-harness-and-agent-runtime.md)）
 - [x] **v1.0.0 Stable Agent Assistant**：`tool.*` SSE、五工具 JSON Schema、Context Budget、OutputGuard、90s run 帽、Flyway V11 `error_code`（[规格](docs/superpowers/specs/2026-10-18-v10-stable-agent-assistant.md)；P1 ReAct 不在本版）
 - [x] **v1.1.0 Eval & Prompt Governance**：`testdata/eval/` 金标、`EvalGoldenRunner`、CI `eval-goldens` 报告 Artifact（[规格](docs/superpowers/specs/2026-10-18-v11-eval-and-regression.md)；P1 Prompt 灰度不在本版）
+- [x] **v1.2.0 Enterprise Knowledge Plane**：工作区内知识空间、文档归属、RAG 按空间过滤、Flyway V12（[规格](docs/superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane.md)；异步解析 / OSS / 细权限 / 前端空间 UI 不在本版）
 
-按企业迭代文档演进：下一迭代 **v1.2.0** Enterprise Knowledge Plane。不把未做能力写成当前功能。
+按企业迭代文档演进：下一迭代 **v1.3.0** Production Ready。不把未做能力写成当前功能。
 
 ## License
 

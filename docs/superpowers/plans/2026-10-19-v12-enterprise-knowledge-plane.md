@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> Status: 规格与技术设计已冻结。P0 only。异步解析 / OSS / 前端空间 UI / 细权限不在本计划。
+> Status: 已完成并发布。标签 `v1.2.0`。P0 only。异步解析 / OSS / 前端空间 UI / 细权限不在本计划。
 >
 > Execution workspace: isolated git worktree via superpowers:using-git-worktrees. Branch: `feature/v1.2-knowledge-plane`.
 

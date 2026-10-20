@@ -1,13 +1,23 @@
 package com.huiyi.assistant.knowledge;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+@Component
 public class LocalFileStorageClient {
 
     private final Path root;
+
+    @Autowired
+    public LocalFileStorageClient(@Value("${huiyi.knowledge.storage-dir:./data/knowledge}") String rootDir) {
+        this(Path.of(rootDir));
+    }
 
     public LocalFileStorageClient(Path rootDir) {
         this.root = rootDir.toAbsolutePath().normalize();

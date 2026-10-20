@@ -4,20 +4,26 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.huiyi.assistant.audit.AuditAction;
 import com.huiyi.assistant.audit.AuditService;
 import com.huiyi.assistant.common.exception.BizException;
+import com.huiyi.assistant.knowledge.AsyncTaskService;
 import com.huiyi.assistant.knowledge.KnowledgeSpaceService;
+import com.huiyi.assistant.knowledge.LocalFileStorageClient;
 import com.huiyi.assistant.common.result.ResultCode;
 import com.huiyi.assistant.mapper.KnowledgeDocMapper;
-import com.huiyi.assistant.model.dto.ParseResultDTO;
+import com.huiyi.assistant.model.entity.AsyncTask;
 import com.huiyi.assistant.model.entity.KnowledgeDoc;
 import com.huiyi.assistant.model.enums.DocStatusEnum;
 import com.huiyi.assistant.model.vo.KnowledgeDocVO;
 import com.huiyi.assistant.model.vo.PageResult;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 
 @Slf4j
 @Service
@@ -27,13 +33,21 @@ public class KnowledgeDocService {
     private final KnowledgeDocMapper knowledgeDocMapper;
     private final AuditService auditService;
     private final KnowledgeSpaceService knowledgeSpaceService;
+    private final LocalFileStorageClient storage;
+    private final AsyncTaskService asyncTasks;
+    private final TaskExecutor knowledgeParseExecutor;
 
     public KnowledgeDocService(PythonServiceClient pythonServiceClient, KnowledgeDocMapper knowledgeDocMapper,
-                               AuditService auditService, KnowledgeSpaceService knowledgeSpaceService) {
+                               AuditService auditService, KnowledgeSpaceService knowledgeSpaceService,
+                               LocalFileStorageClient storage, AsyncTaskService asyncTasks,
+                               @Qualifier("knowledgeParseExecutor") TaskExecutor knowledgeParseExecutor) {
         this.pythonServiceClient = pythonServiceClient;
         this.knowledgeDocMapper = knowledgeDocMapper;
         this.auditService = auditService;
         this.knowledgeSpaceService = knowledgeSpaceService;
+        this.storage = storage;
+        this.asyncTasks = asyncTasks;
+        this.knowledgeParseExecutor = knowledgeParseExecutor;
     }
 
     public KnowledgeDocVO upload(MultipartFile file) {
@@ -68,24 +82,32 @@ public class KnowledgeDocService {
         knowledgeDocMapper.insert(doc);
 
         try {
-            ParseResultDTO parseResult = pythonServiceClient.parseDocument(file);
-            if (parseResult == null) {
-                throw new BizException(ResultCode.PYTHON_SERVICE_UNAVAILABLE);
-            }
-            pythonServiceClient.upsertVectors(parseResult, workspaceId, doc.getId(), resolvedSpaceId);
-            doc.setDocName(parseResult.getFilename());
-            doc.setChunkCount(parseResult.getChunkCount());
-            doc.setStatus(DocStatusEnum.READY.name());
+            byte[] content = file.getBytes();
+            String key = storage.save(workspaceId, doc.getId(), content, filename);
+            doc.setStorageKey(key);
             knowledgeDocMapper.updateById(doc);
-            auditService.record(AuditAction.KNOWLEDGE_UPLOADED, "SUCCESS", userId, null, workspaceId,
-                    "knowledge_doc", String.valueOf(doc.getId()), Map.of("filename", filename == null ? "" : filename));
-            log.info("文档已就绪: docId={}, chunkCount={}", doc.getId(), doc.getChunkCount());
-            return toVO(doc);
-        } catch (RuntimeException e) {
+        } catch (IOException | RuntimeException e) {
             doc.setStatus(DocStatusEnum.FAILED.name());
+            doc.setErrorMessage("保存上传文件失败");
             knowledgeDocMapper.updateById(doc);
-            throw e;
+            throw new BizException(500, "保存上传文件失败");
         }
+
+        AsyncTask task = asyncTasks.enqueueDocParse(workspaceId, userId, doc.getId());
+        try {
+            knowledgeParseExecutor.execute(() -> {
+            });
+        } catch (RejectedExecutionException e) {
+            doc.setStatus(DocStatusEnum.FAILED.name());
+            doc.setErrorMessage("解析任务繁忙");
+            knowledgeDocMapper.updateById(doc);
+            asyncTasks.fail(task, "解析任务繁忙");
+            return toVO(doc);
+        }
+        auditService.record(AuditAction.KNOWLEDGE_UPLOADED, "SUCCESS", userId, null, workspaceId,
+                "knowledge_doc", String.valueOf(doc.getId()), Map.of("filename", filename == null ? "" : filename));
+        log.info("文档已入队: docId={}", doc.getId());
+        return toVO(doc);
     }
 
     public List<KnowledgeDocVO> listDocs() {
@@ -165,6 +187,7 @@ public class KnowledgeDocService {
                 .chunkCount(doc.getChunkCount())
                 .status(doc.getStatus())
                 .knowledgeSpaceId(doc.getKnowledgeSpaceId())
+                .errorMessage(doc.getErrorMessage())
                 .createdAt(doc.getCreatedAt())
                 .build();
     }

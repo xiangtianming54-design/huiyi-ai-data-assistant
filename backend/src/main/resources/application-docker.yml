@@ -26,6 +26,8 @@ mybatis-plus:
 huiyi:
   knowledge:
     backfill-vector-space-ids: ${HUIYI_KNOWLEDGE_BACKFILL_VECTOR_SPACE_IDS:true}
+    storage-dir: ${HUIYI_KNOWLEDGE_STORAGE_DIR:./data/knowledge}
+    parse-pool-size: ${HUIYI_KNOWLEDGE_PARSE_POOL_SIZE:2}
   agent:
     run-timeout-ms: ${HUIYI_AGENT_RUN_TIMEOUT_MS:90000}
     prompt-max-chars: ${HUIYI_AGENT_PROMPT_MAX_CHARS:24000}

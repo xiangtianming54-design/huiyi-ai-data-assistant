@@ -4,6 +4,8 @@ import com.huiyi.assistant.mapper.AsyncTaskMapper;
 import com.huiyi.assistant.model.entity.AsyncTask;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 public class AsyncTaskService {
 
@@ -32,5 +34,15 @@ public class AsyncTaskService {
         task.setMaxAttempts(1);
         asyncTaskMapper.insert(task);
         return task;
+    }
+
+    public void fail(AsyncTask task, String errorMessage) {
+        if (task == null) {
+            return;
+        }
+        task.setStatus(STATUS_FAILED);
+        task.setErrorMessage(errorMessage);
+        task.setFinishedAt(LocalDateTime.now());
+        asyncTaskMapper.updateById(task);
     }
 }

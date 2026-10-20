@@ -35,6 +35,9 @@ public class KnowledgeDocVO {
     /** 所属知识空间 */
     private Long knowledgeSpaceId;
 
+    /** 失败原因（仅 FAILED 有值） */
+    private String errorMessage;
+
     /** 创建时间 */
     private LocalDateTime createdAt;
 }

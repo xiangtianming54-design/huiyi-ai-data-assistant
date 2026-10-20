@@ -5,9 +5,11 @@ import com.huiyi.assistant.audit.AuditAction;
 import com.huiyi.assistant.audit.AuditService;
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.knowledge.AsyncTaskService;
+import com.huiyi.assistant.knowledge.DocParseJob;
 import com.huiyi.assistant.knowledge.KnowledgeSpaceService;
 import com.huiyi.assistant.knowledge.LocalFileStorageClient;
 import com.huiyi.assistant.common.result.ResultCode;
+import com.huiyi.assistant.mapper.AsyncTaskMapper;
 import com.huiyi.assistant.mapper.KnowledgeDocMapper;
 import com.huiyi.assistant.model.entity.AsyncTask;
 import com.huiyi.assistant.model.entity.KnowledgeDoc;
@@ -35,11 +37,13 @@ public class KnowledgeDocService {
     private final KnowledgeSpaceService knowledgeSpaceService;
     private final LocalFileStorageClient storage;
     private final AsyncTaskService asyncTasks;
+    private final AsyncTaskMapper asyncTaskMapper;
     private final TaskExecutor knowledgeParseExecutor;
 
     public KnowledgeDocService(PythonServiceClient pythonServiceClient, KnowledgeDocMapper knowledgeDocMapper,
                                AuditService auditService, KnowledgeSpaceService knowledgeSpaceService,
                                LocalFileStorageClient storage, AsyncTaskService asyncTasks,
+                               AsyncTaskMapper asyncTaskMapper,
                                @Qualifier("knowledgeParseExecutor") TaskExecutor knowledgeParseExecutor) {
         this.pythonServiceClient = pythonServiceClient;
         this.knowledgeDocMapper = knowledgeDocMapper;
@@ -47,6 +51,7 @@ public class KnowledgeDocService {
         this.knowledgeSpaceService = knowledgeSpaceService;
         this.storage = storage;
         this.asyncTasks = asyncTasks;
+        this.asyncTaskMapper = asyncTaskMapper;
         this.knowledgeParseExecutor = knowledgeParseExecutor;
     }
 
@@ -95,8 +100,8 @@ public class KnowledgeDocService {
 
         AsyncTask task = asyncTasks.enqueueDocParse(workspaceId, userId, doc.getId());
         try {
-            knowledgeParseExecutor.execute(() -> {
-            });
+            knowledgeParseExecutor.execute(
+                    new DocParseJob(task, knowledgeDocMapper, asyncTaskMapper, storage, pythonServiceClient));
         } catch (RejectedExecutionException e) {
             doc.setStatus(DocStatusEnum.FAILED.name());
             doc.setErrorMessage("解析任务繁忙");

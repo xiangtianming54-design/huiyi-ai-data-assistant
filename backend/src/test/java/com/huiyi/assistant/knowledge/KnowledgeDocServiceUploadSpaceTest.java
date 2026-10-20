@@ -2,6 +2,7 @@ package com.huiyi.assistant.knowledge;
 
 import com.huiyi.assistant.audit.AuditService;
 import com.huiyi.assistant.common.exception.BizException;
+import com.huiyi.assistant.mapper.AsyncTaskMapper;
 import com.huiyi.assistant.mapper.KnowledgeDocMapper;
 import com.huiyi.assistant.model.entity.KnowledgeDoc;
 import com.huiyi.assistant.model.entity.KnowledgeSpace;
@@ -40,6 +41,7 @@ class KnowledgeDocServiceUploadSpaceTest {
     @Mock KnowledgeSpaceService knowledgeSpaceService;
     @Mock LocalFileStorageClient storage;
     @Mock AsyncTaskService asyncTasks;
+    @Mock AsyncTaskMapper asyncTaskMapper;
     @Mock TaskExecutor knowledgeParseExecutor;
 
     KnowledgeDocService service;
@@ -47,7 +49,7 @@ class KnowledgeDocServiceUploadSpaceTest {
     @BeforeEach
     void setUp() {
         service = new KnowledgeDocService(pythonServiceClient, knowledgeDocMapper, auditService,
-                knowledgeSpaceService, storage, asyncTasks, knowledgeParseExecutor);
+                knowledgeSpaceService, storage, asyncTasks, asyncTaskMapper, knowledgeParseExecutor);
     }
 
     @Test

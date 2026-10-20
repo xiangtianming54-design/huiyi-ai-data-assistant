@@ -26,6 +26,8 @@ import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +76,27 @@ public class PythonServiceClient {
             throw new BizException(ResultCode.SYSTEM_ERROR.getCode(), "读取上传文件失败");
         }
 
+        return post("/api/documents/parse",
+                spec -> spec.contentType(MediaType.MULTIPART_FORM_DATA).body(BodyInserters.fromMultipartData(parts)),
+                ParseResultDTO.class);
+    }
+
+    public ParseResultDTO parseDocument(Path file, String filename) {
+        MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
+        try {
+            byte[] bytes = Files.readAllBytes(file);
+            String name = filename;
+            ByteArrayResource resource = new ByteArrayResource(bytes) {
+                @Override
+                public String getFilename() {
+                    return name;
+                }
+            };
+            parts.add("file", resource);
+        } catch (IOException e) {
+            log.error("读取落盘文件失败: {}", filename, e);
+            throw new BizException(ResultCode.SYSTEM_ERROR.getCode(), "读取上传文件失败");
+        }
         return post("/api/documents/parse",
                 spec -> spec.contentType(MediaType.MULTIPART_FORM_DATA).body(BodyInserters.fromMultipartData(parts)),
                 ParseResultDTO.class);

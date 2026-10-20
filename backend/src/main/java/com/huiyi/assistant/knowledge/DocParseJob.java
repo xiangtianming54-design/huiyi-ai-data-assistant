@@ -40,6 +40,10 @@ public final class DocParseJob implements Runnable {
                 failTask("文档不存在: " + docId);
                 return;
             }
+            if (archived(doc)) {
+                failTask("文档已归档");
+                return;
+            }
             doc.setStatus(DocStatusEnum.PARSING.name());
             doc.setErrorMessage(null);
             docs.updateById(doc);
@@ -47,7 +51,18 @@ public final class DocParseJob implements Runnable {
             if (result == null) {
                 throw new IllegalStateException("解析结果为空");
             }
+            KnowledgeDoc latest = docs.selectById(docId);
+            if (archived(latest)) {
+                failTask("文档已归档");
+                return;
+            }
             python.upsertVectors(result, doc.getWorkspaceId(), doc.getId(), doc.getKnowledgeSpaceId());
+            latest = docs.selectById(docId);
+            if (archived(latest)) {
+                python.deleteVectorsByDoc(doc.getWorkspaceId(), doc.getId());
+                failTask("文档已归档");
+                return;
+            }
             if (result.getFilename() != null) {
                 doc.setDocName(result.getFilename());
             }
@@ -62,13 +77,30 @@ public final class DocParseJob implements Runnable {
         } catch (Exception e) {
             log.warn("DOC_PARSE failed: taskId={}, err={}", task.getId(), e.getMessage());
             String message = trim(e.getMessage(), 1000);
-            if (doc != null) {
-                doc.setStatus(DocStatusEnum.FAILED.name());
-                doc.setErrorMessage(message);
-                docs.updateById(doc);
+            KnowledgeDoc latest = reload(doc);
+            if (archived(latest)) {
+                failTask("文档已归档");
+                return;
+            }
+            if (latest != null) {
+                latest.setStatus(DocStatusEnum.FAILED.name());
+                latest.setErrorMessage(message);
+                docs.updateById(latest);
             }
             failTask(message);
         }
+    }
+
+    private KnowledgeDoc reload(KnowledgeDoc snapshot) {
+        if (snapshot == null || snapshot.getId() == null) {
+            return snapshot;
+        }
+        KnowledgeDoc latest = docs.selectById(snapshot.getId());
+        return latest == null ? snapshot : latest;
+    }
+
+    private static boolean archived(KnowledgeDoc doc) {
+        return doc != null && DocStatusEnum.ARCHIVED.name().equals(doc.getStatus());
     }
 
     private void markRunning() {

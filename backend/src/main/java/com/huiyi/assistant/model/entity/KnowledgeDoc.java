@@ -1,6 +1,7 @@
 package com.huiyi.assistant.model.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -45,6 +46,7 @@ public class KnowledgeDoc {
 
     private String storageKey;
 
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String errorMessage;
 
     /** 创建时间（插入时自动填充） */

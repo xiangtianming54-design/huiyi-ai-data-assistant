@@ -94,4 +94,57 @@ class DocParseJobTest {
         verify(tasks, atLeastOnce()).updateById(taskCaptor.capture());
         assertEquals("FAILED", taskCaptor.getAllValues().get(taskCaptor.getAllValues().size() - 1).getStatus());
     }
+
+    @Test
+    void skipWhenDocAlreadyArchived() {
+        doc.setStatus("ARCHIVED");
+        new DocParseJob(task, docs, tasks, storage, python).run();
+        verify(python, never()).parseDocument(any(), any());
+        verify(python, never()).upsertVectors(any(), any(), any(), any());
+        verify(docs, never()).updateById(any(KnowledgeDoc.class));
+        ArgumentCaptor<AsyncTask> taskCaptor = ArgumentCaptor.forClass(AsyncTask.class);
+        verify(tasks, atLeastOnce()).updateById(taskCaptor.capture());
+        assertEquals("FAILED", taskCaptor.getAllValues().get(taskCaptor.getAllValues().size() - 1).getStatus());
+    }
+
+    @Test
+    void skipUpsertIfArchivedDuringParse() {
+        KnowledgeDoc archived = new KnowledgeDoc();
+        archived.setId(55L);
+        archived.setWorkspaceId(9L);
+        archived.setStatus("ARCHIVED");
+        archived.setStorageKey("9/55/a.md");
+        when(docs.selectById(55L)).thenReturn(doc).thenReturn(archived);
+        ParseResultDTO parsed = new ParseResultDTO();
+        parsed.setChunkCount(2);
+        Path path = Path.of("9", "55", "a.md");
+        when(storage.resolve("9/55/a.md")).thenReturn(path);
+        when(python.parseDocument(path, "a.md")).thenReturn(parsed);
+
+        new DocParseJob(task, docs, tasks, storage, python).run();
+
+        verify(python, never()).upsertVectors(any(), any(), any(), any());
+        ArgumentCaptor<KnowledgeDoc> docCaptor = ArgumentCaptor.forClass(KnowledgeDoc.class);
+        verify(docs, atLeastOnce()).updateById(docCaptor.capture());
+        assertTrue(docCaptor.getAllValues().stream().noneMatch(d -> "READY".equals(d.getStatus())));
+        assertTrue(docCaptor.getAllValues().stream().noneMatch(d -> "FAILED".equals(d.getStatus())));
+    }
+
+    @Test
+    void parseFailureDoesNotOverwriteArchived() {
+        KnowledgeDoc archived = new KnowledgeDoc();
+        archived.setId(55L);
+        archived.setStatus("ARCHIVED");
+        when(docs.selectById(55L)).thenReturn(doc).thenReturn(archived);
+        Path path = Path.of("9", "55", "a.md");
+        when(storage.resolve("9/55/a.md")).thenReturn(path);
+        when(python.parseDocument(path, "a.md")).thenThrow(new RuntimeException("no file"));
+
+        new DocParseJob(task, docs, tasks, storage, python).run();
+
+        ArgumentCaptor<KnowledgeDoc> docCaptor = ArgumentCaptor.forClass(KnowledgeDoc.class);
+        verify(docs, atLeastOnce()).updateById(docCaptor.capture());
+        assertTrue(docCaptor.getAllValues().stream().noneMatch(d -> "FAILED".equals(d.getStatus())));
+        assertTrue(docCaptor.getAllValues().stream().noneMatch(d -> "READY".equals(d.getStatus())));
+    }
 }

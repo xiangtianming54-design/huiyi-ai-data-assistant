@@ -33,7 +33,11 @@ class FlywayMigrationFilesTest {
         assertTrue(sql.contains("tool_name"), "V10 must add assistant_run_steps.tool_name");
         assertTrue(sql.contains("error_code"), "V11 must add assistant_runs.error_code");
         assertTrue(sql.contains("knowledge_spaces"), "V12 must create knowledge_spaces");
-        assertFalse(sql.contains("async_tasks"), "no async_tasks table");
+        assertTrue(sql.contains("async_tasks"), "V13 must create async_tasks");
+        assertTrue(sql.contains("storage_key"), "V13 must add storage_key");
+        assertFalse(sql.contains("file_hash"), "no file_hash column");
+        assertFalse(sql.contains("parse_status"), "no parse_status column");
+        assertFalse(sql.contains("doc_version"), "no doc_version column");
         assertFalse(sql.contains("FOREIGN KEY"), "no MySQL FK");
         assertFalse(sql.contains("arguments_json"), "no steps JSON columns");
         assertFalse(sql.contains("CREATE TABLE IF NOT EXISTS agent_runs")

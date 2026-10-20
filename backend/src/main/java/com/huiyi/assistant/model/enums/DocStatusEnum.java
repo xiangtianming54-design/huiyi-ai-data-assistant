@@ -13,6 +13,9 @@ public enum DocStatusEnum {
     /** 已上传，待解析 */
     UPLOADED,
 
+    /** 后台正在解析 */
+    PARSING,
+
     /** 已解析分块，待写入向量库 */
     PARSED,
 

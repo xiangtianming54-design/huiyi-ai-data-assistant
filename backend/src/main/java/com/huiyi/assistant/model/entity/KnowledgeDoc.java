@@ -43,6 +43,10 @@ public class KnowledgeDoc {
 
     private Long createdBy;
 
+    private String storageKey;
+
+    private String errorMessage;
+
     /** 创建时间（插入时自动填充） */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

@@ -13,6 +13,7 @@ public final class AuditAction {
     public static final String MEMBER_ROLE_CHANGED = "MEMBER_ROLE_CHANGED";
     public static final String MEMBER_STATUS_CHANGED = "MEMBER_STATUS_CHANGED";
     public static final String KNOWLEDGE_UPLOADED = "KNOWLEDGE_UPLOADED";
+    public static final String KNOWLEDGE_RETRY = "KNOWLEDGE_RETRY";
     public static final String KNOWLEDGE_ARCHIVED = "KNOWLEDGE_ARCHIVED";
     public static final String KNOWLEDGE_SPACE_CREATED = "KNOWLEDGE_SPACE_CREATED";
     public static final String KNOWLEDGE_SPACE_UPDATED = "KNOWLEDGE_SPACE_UPDATED";

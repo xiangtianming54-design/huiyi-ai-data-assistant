@@ -57,6 +57,13 @@ public class KnowledgeV1Controller {
         return Result.ok(knowledgeDocService.getDoc(docId, workspaceId));
     }
 
+    @PostMapping("/docs/{docId}/retry")
+    public Result<KnowledgeDocVO> retry(@AuthenticationPrincipal AuthUser user, @PathVariable Long workspaceId,
+                                        @PathVariable Long docId) {
+        WorkspaceContext context = workspaceService.requireKnowledgeWrite(user, workspaceId);
+        return Result.ok(knowledgeDocService.retry(docId, context.workspaceId(), context.userId()));
+    }
+
     @PatchMapping("/docs/{docId}/status")
     public Result<Void> archive(@AuthenticationPrincipal AuthUser user, @PathVariable Long workspaceId,
                                 @PathVariable Long docId, @RequestBody ChangeStatusRequest request) {

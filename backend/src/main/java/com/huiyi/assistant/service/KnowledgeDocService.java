@@ -98,20 +98,30 @@ public class KnowledgeDocService {
             throw new BizException(500, "保存上传文件失败");
         }
 
-        AsyncTask task = asyncTasks.enqueueDocParse(workspaceId, userId, doc.getId());
-        try {
-            knowledgeParseExecutor.execute(
-                    new DocParseJob(task, knowledgeDocMapper, asyncTaskMapper, storage, pythonServiceClient));
-        } catch (RejectedExecutionException e) {
-            doc.setStatus(DocStatusEnum.FAILED.name());
-            doc.setErrorMessage("解析任务繁忙");
-            knowledgeDocMapper.updateById(doc);
-            asyncTasks.fail(task, "解析任务繁忙");
+        enqueueParse(doc, workspaceId, userId);
+        if (DocStatusEnum.FAILED.name().equals(doc.getStatus())) {
             return toVO(doc);
         }
         auditService.record(AuditAction.KNOWLEDGE_UPLOADED, "SUCCESS", userId, null, workspaceId,
                 "knowledge_doc", String.valueOf(doc.getId()), Map.of("filename", filename == null ? "" : filename));
         log.info("文档已入队: docId={}", doc.getId());
+        return toVO(doc);
+    }
+
+    public KnowledgeDocVO retry(long docId, long workspaceId, long userId) {
+        KnowledgeDoc doc = requireDoc(docId, workspaceId);
+        if (!DocStatusEnum.FAILED.name().equals(doc.getStatus())) {
+            throw new BizException(400, "仅失败的文档可重试");
+        }
+        if (doc.getStorageKey() == null || doc.getStorageKey().isBlank() || !storage.exists(doc.getStorageKey())) {
+            throw new BizException(400, "原文件不存在，无法重试");
+        }
+        doc.setStatus(DocStatusEnum.UPLOADED.name());
+        doc.setErrorMessage(null);
+        knowledgeDocMapper.updateById(doc);
+        enqueueParse(doc, workspaceId, userId);
+        auditService.record(AuditAction.KNOWLEDGE_RETRY, "SUCCESS", userId, null, workspaceId,
+                "knowledge_doc", String.valueOf(doc.getId()), Map.of());
         return toVO(doc);
     }
 
@@ -167,9 +177,27 @@ public class KnowledgeDocService {
         }
         doc.setStatus(DocStatusEnum.ARCHIVED.name());
         knowledgeDocMapper.updateById(doc);
+        try {
+            storage.delete(doc.getStorageKey());
+        } catch (RuntimeException e) {
+            log.warn("删除本地原文件失败: docId={}, key={}", docId, doc.getStorageKey(), e);
+        }
         auditService.record(AuditAction.KNOWLEDGE_ARCHIVED, "SUCCESS", userId, null, workspaceId,
                 "knowledge_doc", String.valueOf(docId), Map.of());
         log.info("文档已归档: docId={}, docName={}, by={}", docId, doc.getDocName(), userId);
+    }
+
+    private void enqueueParse(KnowledgeDoc doc, Long workspaceId, Long userId) {
+        AsyncTask task = asyncTasks.enqueueDocParse(workspaceId, userId, doc.getId());
+        try {
+            knowledgeParseExecutor.execute(
+                    new DocParseJob(task, knowledgeDocMapper, asyncTaskMapper, storage, pythonServiceClient));
+        } catch (RejectedExecutionException e) {
+            doc.setStatus(DocStatusEnum.FAILED.name());
+            doc.setErrorMessage("解析任务繁忙");
+            knowledgeDocMapper.updateById(doc);
+            asyncTasks.fail(task, "解析任务繁忙");
+        }
     }
 
     private KnowledgeDoc requireDoc(Long docId, Long workspaceId) {

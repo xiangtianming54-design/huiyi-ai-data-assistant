@@ -179,6 +179,8 @@ Eval 评测集与回归 P0：`testdata/eval/` 金标 + Java `EvalGoldenRunner` +
 
 工作区内知识空间：Flyway `V12__knowledge_spaces.sql` 建表并回填 `knowledge_docs.knowledge_space_id`。空间 HTTP `/api/v1/workspaces/{id}/knowledge-spaces`；文档上传/列表可选 `spaceId`；旧 `/knowledge/upload` 写入默认空间。RAG 把 ACTIVE 空间 id 列表传给 Python，`huiyi_knowledge` 检索用 `workspace_id` + `knowledge_space_id $in`。评测仍走 `EvalGoldenRunner`（含空间隔离金标）。启动时 `huiyi.knowledge.backfill-vector-space-ids`（默认 true）回填向量 metadata，Python 不可用不阻断启动。无前端空间 UI。规格：[v1.2 开发文档](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane.md)。技术设计：[v1.2 技术设计](superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane-technical.md)。计划：[v1.2 实施计划](superpowers/plans/2026-10-19-v12-enterprise-knowledge-plane.md)。
 
+v1.3 异步摄入：`POST .../knowledge/upload` 落盘后立刻返回 `UPLOADED`；有界线程池跑 `DOC_PARSE`（`PARSING` → `READY`/`FAILED`）。状态看现有详情/列表；失败 `POST .../knowledge/docs/{id}/retry`。Flyway `V13__async_ingestion.sql`（`async_tasks` + `storage_key`/`error_message`）。原文件目录 `huiyi.knowledge.storage-dir`（默认 `./data/knowledge`），归档时删除。无 MinIO、无前端改动。评测仍走 `EvalGoldenRunner`（不加新金标）。规格：[v1.3 开发文档](superpowers/specs/2026-10-20-v13-async-ingestion.md)。技术设计：[v1.3 技术设计](superpowers/specs/2026-10-20-v13-async-ingestion-technical.md)。计划：[v1.3 实施计划](superpowers/plans/2026-10-20-v13-async-ingestion.md)。
+
 **回滚：** 切回标签 `v1.1.0`，恢复发版前 MySQL 备份后再起服务。V12 已改 schema，不能只换镜像不还原库。
 
 ## 常见坑（本仓库已踩过）

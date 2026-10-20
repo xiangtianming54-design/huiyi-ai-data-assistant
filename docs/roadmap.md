@@ -25,9 +25,10 @@
 | **v0.9.0** | Tool Harness & Agent Runtime v1 | 3–4 周 | Tool Registry、Agent Loop、Run Trace、SSE |
 | **v1.0.0** | Stable Agent Assistant | 2–3 周 | 上下文、记忆、Guardrails、反馈、稳定发布 |
 | **v1.1.0** | Eval & Prompt Governance | 2–3 周 | 评测集、回归、Prompt/模型治理 |
-| **v1.2.0** | Enterprise Knowledge Plane | 3–4 周 | 知识空间、异步解析、对象存储、权限过滤 |
-| **v1.3.0** | Production Ready | 3–4 周 | staging/prod、备份、限流、压测、告警 |
-| **v1.4.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
+| **v1.2.0** | Enterprise Knowledge Plane | 3–4 周 | 知识空间、检索权限过滤（异步/OSS 延后） |
+| **v1.3.0** | Async Ingestion | 3–4 周 | 上传立刻返回、本地落盘、`DOC_PARSE`、失败重试 |
+| **v1.4.0** | Production Ready | 3–4 周 | staging/prod、备份、限流、压测、告警 |
+| **v1.5.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
 
 ## 已发布：v1.2.0 Enterprise Knowledge Plane
 
@@ -37,9 +38,11 @@
 
 上一发布：`v1.1.0` Eval & Prompt Governance。
 
-## 当前开发：v1.3.0 Production Ready
+## 当前开发：v1.3.0 Async Ingestion
 
-未开工。规格以桌面企业迭代文档 v1.3 章节为准，开工前仍按决策表逐项冻结。
+规格：[2026-10-20-v13-async-ingestion.md](superpowers/specs/2026-10-20-v13-async-ingestion.md)。技术设计：[2026-10-20-v13-async-ingestion-technical.md](superpowers/specs/2026-10-20-v13-async-ingestion-technical.md)。计划：[2026-10-20-v13-async-ingestion.md](superpowers/plans/2026-10-20-v13-async-ingestion.md)。P0：上传立刻返回 + 本地落盘 + `DOC_PARSE` 异步 + 状态可查 + 失败重试。Flyway `V13__async_ingestion.sql`。无 MinIO、无前端、无新金标。
+
+下一版：v1.4.0 Production Ready。
 
 ## 后续版本（摘要）
 
@@ -52,9 +55,10 @@
 | **v0.9.0** | 把 RAG / SQL / 画像收成 Tool，Router Runtime + 工具步骤 Trace | ReAct、`/agent/runs`、步骤 SSE、多 Agent、MCP |
 | **v1.0.0** | ContextBuilder、TokenBudget、记忆与压缩、输入/工具/输出 Guard、反馈 | 生产多环境、语义层 |
 | **v1.1.0** | 评测集、回归报告、Prompt/模型版本与灰度 | 知识空间改造 |
-| **v1.2.0** | 知识空间、异步解析、对象存储、检索权限过滤 | 生产压测与告警大盘 |
-| **v1.3.0** | local/dev/staging/prod、备份、限流、压测、告警 | 平台级插件市场 |
-| **v1.4.0+** | 语义层、MCP、多模型路由、插件化 | — |
+| **v1.2.0** | 知识空间、检索权限过滤 | 异步解析、对象存储、前端空间 UI |
+| **v1.3.0** | 上传立刻返回、本地落盘、`DOC_PARSE`、失败重试 | MinIO、hash、任务列表、前端轮询 |
+| **v1.4.0** | local/dev/staging/prod、备份、限流、压测、告警 | 平台级插件市场 |
+| **v1.5.0+** | 语义层、MCP、多模型路由、插件化 | — |
 
 ## 分支与发布（文档 §5）
 

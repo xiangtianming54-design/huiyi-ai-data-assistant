@@ -33,7 +33,7 @@
 ## 发布动作
 
 - [x] 语义化标签：`v1.3.0` → `0aa78f2`
-- [ ] `git push origin main` 与 `git push origin v1.3.0`（本步执行）
+- [x] `git push origin main` 与 `git push origin v1.3.0`（`main` `aad104a..c0558c7`；标签 `v1.3.0` → `0aa78f2`）
 - [ ] GitHub Release 写清：新增 / 修复 / 不包含（本机无 `gh`，需在 GitHub 网页创建）
 - [ ] 若本版是公开里程碑：确认仓库可见性仍符合预期
 

@@ -4,7 +4,7 @@
 
 ## 代码与测试
 
-- [x] 目标分支已合并（`main` 含 v1.2 实现，见下方标签 SHA）
+- [x] 目标分支已合并（`main` 含 v1.2 实现 `1cb0b5d`）
 - [x] `backend`：`mvn -B test` 通过（本地，2026-10-19，172 tests）
 - [x] `python-service`：`pytest -q` 通过（本地，2026-10-19，119 passed）
 - [ ] `frontend`：本版未改前端；`git diff -- frontend` 为空
@@ -32,8 +32,8 @@
 
 ## 发布动作
 
-- [ ] 语义化标签：`v1.2.0`（push 后回填 SHA）
-- [ ] `git push origin main` 与 `git push origin v1.2.0`
+- [x] 语义化标签：`v1.2.0` → `1cb0b5d`
+- [x] `git push origin main` 与 `git push origin v1.2.0`（2026-10-20）
 - [ ] GitHub Release 写清：新增 / 修复 / 不包含（本机无 `gh`，需在 GitHub 网页创建）
 - [ ] 若本版是公开里程碑：确认仓库可见性仍符合预期
 

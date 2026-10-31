@@ -38,7 +38,7 @@
 
 ```bash
 cp .env.example .env   # 填入 LLM_* 与 JWT_SECRET（至少 32 字节）
-docker compose up -d
+docker compose -f docker-compose.yml -f compose.dev.yml up -d
 ```
 
 启动后访问 **http://localhost:5173**。首次使用请注册账号（默认加入 `default` 工作区，角色由 `DEFAULT_MEMBER_ROLE` 决定，默认 VIEWER；任何登录用户可创建自己的工作区成为 OWNER）。
@@ -51,7 +51,7 @@ docker compose up -d
 
 ```bash
 # 1. 启动基础设施（MySQL + Redis）
-docker compose up -d mysql redis
+docker compose -f docker-compose.yml -f compose.dev.yml up -d mysql redis
 
 # 2. 启动 Python Sidecar（端口 8001）
 cd python-service

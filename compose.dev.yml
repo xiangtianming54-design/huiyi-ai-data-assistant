@@ -1,0 +1,18 @@
+# 本地开发宿主机端口。只补端口，不覆盖公共服务定义，不设置 Compose 项目名。
+services:
+  mysql:
+    ports:
+      # 宿主机端口可通过 .env 的 MYSQL_HOST_PORT 覆盖（默认 3307，规避本机 MySQL 的 3306）
+      - "${MYSQL_HOST_PORT:-3307}:3306"
+  redis:
+    ports:
+      - "6379:6379"
+  python-service:
+    ports:
+      - "127.0.0.1:8001:8001"
+  backend:
+    ports:
+      - "8080:8080"
+  frontend:
+    ports:
+      - "5173:80"

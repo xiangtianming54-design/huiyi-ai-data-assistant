@@ -61,6 +61,18 @@ class FlywayMigrationFilesTest {
     }
 
     @Test
+    void noMigrationFilenameStartsWithV14() throws IOException {
+        assertTrue(Files.isDirectory(MODULE), "db/migration directory missing");
+        try (Stream<Path> paths = Files.list(MODULE)) {
+            List<String> v14 = paths
+                    .map(path -> path.getFileName().toString())
+                    .filter(name -> name.startsWith("V14"))
+                    .collect(Collectors.toList());
+            assertTrue(v14.isEmpty(), "no migration filename may start with V14, found " + v14);
+        }
+    }
+
+    @Test
     void initMysqlNoLongerCreatesApplicationTables() throws IOException {
         String init = Files.readString(Path.of("../scripts/init_mysql.sql"), StandardCharsets.UTF_8);
         assertFalse(init.contains("CREATE TABLE IF NOT EXISTS knowledge_docs"),

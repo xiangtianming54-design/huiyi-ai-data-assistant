@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "==> 启动基础设施（MySQL 3307 / Redis 6379）"
-docker compose up -d mysql redis
+docker compose -f docker-compose.yml -f compose.dev.yml up -d mysql redis
 
 echo "==> 启动 Python Sidecar（8001）"
 (

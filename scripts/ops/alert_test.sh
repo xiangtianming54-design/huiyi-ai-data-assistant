@@ -126,4 +126,75 @@ if grep -q 'curl' "$health"; then
   fail "healthcheck.sh calls curl; webhook posting belongs in post_dingtalk"
 fi
 
+# shellcheck disable=SC1090
+source "$health"
+
+decode_posted() {
+  local line="$1"
+  local body decoded
+  body="${line#*content\":\"}"
+  body="${body%\"*}"
+  decoded="${body//\\n/$'\n'}"
+  mapfile -t posted <<< "$decoded"
+}
+
+assert_posted_body() {
+  local line="$1"
+  decode_posted "$line"
+  [[ "${posted[0]}" == "HuiYi告警" ]] || fail "posted first line is [${posted[0]:-}]"
+  [[ "${posted[1]}" == "staging" ]] || fail "posted env is [${posted[1]:-}]"
+  [[ "${posted[2]}" == "backend-down" ]] || fail "posted name is [${posted[2]:-}]"
+  [[ "${posted[3]}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] || fail "posted time is [${posted[3]:-}]"
+  [[ "${posted[4]}" == "down" ]] || fail "posted reason is [${posted[4]:-}]"
+  [[ "${#posted[@]}" -eq 5 ]] || fail "posted line count is ${#posted[@]}, expected 5"
+}
+
+log_file="$tmp/notify.log"
+state_file="$tmp/notify-state"
+dedup=30
+env_name=staging
+failed=0
+DINGTALK_WEBHOOK_URL=""
+curl() { echo CURL_CALLED >> "$tmp/empty-curl"; }
+notify backend-down "down"
+grep -q 'webhook skipped' "$log_file" || fail "empty webhook did not log webhook skipped"
+[[ ! -e "$tmp/empty-curl" ]] || fail "empty webhook called curl"
+if [[ -f "$state_file" ]] && grep -q '^backend-down=' "$state_file"; then
+  fail "empty webhook consumed the dedup window"
+fi
+
+log_file="$tmp/retry.log"
+state_file="$tmp/retry-state"
+dedup=30
+env_name=staging
+failed=0
+DINGTALK_WEBHOOK_URL="https://example.invalid/robot"
+posts=0
+CURL_LOG="$tmp/retry-curl.txt"
+: > "$CURL_LOG"
+curl() {
+  posts="$((posts + 1))"
+  printf '%s\n' "$@" >> "$CURL_LOG"
+  if [[ "$posts" -eq 1 ]]; then
+    return 1
+  fi
+  return 0
+}
+notify backend-down "down"
+if [[ -f "$state_file" ]] && grep -q '^backend-down=' "$state_file"; then
+  fail "failed post stamped the dedup window"
+fi
+notify backend-down "down"
+[[ "$posts" -eq 2 ]] || fail "failed post suppressed the next send, posts=$posts"
+found_posts=0
+while IFS= read -r line; do
+  [[ "$line" == '{"msgtype":'* ]] || continue
+  found_posts="$((found_posts + 1))"
+  assert_posted_body "$line"
+done < "$CURL_LOG"
+[[ "$found_posts" -eq 2 ]] || fail "expected 2 posted bodies, found $found_posts"
+notify backend-down "down"
+[[ "$posts" -eq 2 ]] || fail "successful post did not start dedup, posts=$posts"
+grep -q '^backend-down=' "$state_file" || fail "successful post did not stamp dedup"
+
 echo "PASS"

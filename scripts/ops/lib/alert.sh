@@ -48,9 +48,9 @@ state_set() {
   mv -f "$tmp" "$file"
 }
 
-# Exit 0 and store now when name has no timestamp, or the age is at least
-# dedup-minutes. Exit 1 without changing the file while the window is open.
-should_send() {
+# Exit 0 when name has no timestamp, or the age is at least dedup-minutes.
+# Does not write the state file.
+alert_due() {
   local name="$1"
   local now="$2"
   local file="$3"
@@ -70,6 +70,16 @@ should_send() {
       return 1
     fi
   fi
+  return 0
+}
+
+# Exit 0 and store now when a send is due. Exit 1 without changing the file
+# while the window is open.
+should_send() {
+  local name="$1"
+  local now="$2"
+  local file="$3"
+  alert_due "$@" || return 1
   state_set "$name" "$now" "$file"
   return 0
 }
@@ -107,6 +117,15 @@ format_alert() {
   local name="$2"
   local reason="$3"
   printf 'HuiYi告警\n%s\n%s\n%s\n' "$env_name" "$name" "$reason"
+}
+
+# Posted DingTalk text: keyword, environment, alert name, time, reason.
+dingtalk_body() {
+  local env_name="$1"
+  local name="$2"
+  local when="$3"
+  local reason="$4"
+  printf 'HuiYi告警\n%s\n%s\n%s\n%s\n' "$env_name" "$name" "$when" "$reason"
 }
 
 json_escape() {

@@ -45,22 +45,27 @@ http_body() {
 }
 
 # Log every failure. DingTalk only for a non-empty webhook outside the dedup window.
+# The dedup clock starts after the webhook post succeeds.
 notify() {
   local name="$1"
   local reason="$2"
-  local now body
+  local now when body
   now="$(date +%s)"
-  append_log "$(date -u +%Y-%m-%dT%H:%M:%SZ) ${env_name} ${name} ${reason}"
+  when="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  append_log "${when} ${env_name} ${name} ${reason}"
   if [[ -z "${DINGTALK_WEBHOOK_URL:-}" ]]; then
     append_log "webhook skipped"
     return 0
   fi
-  if should_send "$name" "$now" "$state_file" "$dedup"; then
-    body="$(format_alert "$env_name" "$name" "$reason")"
-    if ! post_dingtalk "$body" "$DINGTALK_WEBHOOK_URL"; then
-      append_log "webhook post failed"
-      failed=1
-    fi
+  if ! alert_due "$name" "$now" "$state_file" "$dedup"; then
+    return 0
+  fi
+  body="$(dingtalk_body "$env_name" "$name" "$when" "$reason")"
+  if post_dingtalk "$body" "$DINGTALK_WEBHOOK_URL"; then
+    state_set "$name" "$now" "$state_file"
+  else
+    append_log "webhook post failed"
+    failed=1
   fi
 }
 

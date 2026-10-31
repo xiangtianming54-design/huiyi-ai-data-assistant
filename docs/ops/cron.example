@@ -1,0 +1,2 @@
+15 3 * * *  <repo>/scripts/ops/backup.sh prod
+*/5 * * * * <repo>/scripts/ops/healthcheck.sh prod

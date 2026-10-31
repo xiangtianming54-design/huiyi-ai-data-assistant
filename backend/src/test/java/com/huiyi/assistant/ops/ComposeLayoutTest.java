@@ -47,6 +47,106 @@ class ComposeLayoutTest {
                 "run_local.sh must start mysql and redis with the dev override");
     }
 
+    @Test
+    void sharedComposeMountsReadOnlyPasswordInitScript() throws IOException {
+        String compose = read(Path.of("../docker-compose.yml"));
+        assertTrue(compose.contains("./scripts/init_ro_password.sh:/docker-entrypoint-initdb.d/03_ro_password.sh:ro"),
+                "mysql must mount the read-only password init script");
+        assertNoComposeProjectName("docker-compose.yml", compose);
+    }
+
+    @Test
+    void stagingOverrideRequiresSecretsAndSlowQueryLog() throws IOException {
+        String staging = read(Path.of("../compose.staging.yml"));
+        assertComposeProjectName("compose.staging.yml", staging, "huiyi-staging");
+        assertStagingOrProdSecrets("compose.staging.yml", staging);
+        assertTrue(staging.contains("SPRING_PROFILES_ACTIVE: docker,staging"), "staging spring profile");
+        assertTrue(staging.contains("slow_query_log=1"), "staging mysql must enable slow_query_log=1");
+        assertTrue(staging.contains("--long_query_time=1"), "staging long_query_time");
+        assertTrue(staging.contains("--slow_query_log_file=/var/lib/mysql/slow.log"), "staging slow log file");
+    }
+
+    @Test
+    void prodOverrideRequiresSecretsWithoutSlowQueryLog() throws IOException {
+        String prod = read(Path.of("../compose.prod.yml"));
+        assertComposeProjectName("compose.prod.yml", prod, "huiyi-prod");
+        assertStagingOrProdSecrets("compose.prod.yml", prod);
+        assertTrue(prod.contains("SPRING_PROFILES_ACTIVE: docker,prod"), "prod spring profile");
+        assertFalse(prod.contains("docker,staging"), "prod must not use the staging profile");
+        assertFalse(prod.contains("slow_query_log"), "prod must not set slow_query_log");
+    }
+
+    @Test
+    void gitignoreCoversStagingEnvAndBackups() throws IOException {
+        String ignore = read(Path.of("../.gitignore"));
+        assertTrue(ignore.contains(".env.dev"), ".gitignore must ignore .env.dev");
+        assertTrue(ignore.contains(".env.staging"), ".gitignore must ignore .env.staging");
+        assertTrue(ignore.contains(".env.prod"), ".gitignore must ignore .env.prod");
+        assertTrue(ignore.contains("data/backups/"), ".gitignore must ignore data/backups/");
+    }
+
+    @Test
+    void envExampleKeepsDemoPasswordAndAddsEmptyPlaceholders() throws IOException {
+        String example = read(Path.of("../.env.example"));
+        assertTrue(example.contains("MYSQL_ROOT_PASSWORD=huiyi123"), "demo root password stays in .env.example");
+        assertEmptyAssignment(example, "RO_DB_PASSWORD");
+        assertEmptyAssignment(example, "REDIS_PASSWORD");
+        assertEmptyAssignment(example, "DINGTALK_WEBHOOK_URL");
+        assertEmptyAssignment(example, "BACKUP_DIR");
+        assertEmptyAssignment(example, "BACKUP_RETAIN_DAYS");
+        assertEmptyAssignment(example, "GIT_COMMIT");
+        assertEmptyAssignment(example, "APP_VERSION");
+        assertEmptyAssignment(example, "ALERT_DEDUP_MINUTES");
+        assertEmptyAssignment(example, "SPRING_PROFILES_ACTIVE");
+    }
+
+    private static void assertEmptyAssignment(String text, String key) {
+        boolean found = false;
+        for (String line : text.split("\\R", -1)) {
+            if (line.strip().equals(key + "=")) {
+                found = true;
+            }
+        }
+        assertTrue(found, "expected empty placeholder " + key + "=");
+    }
+
+    private static void assertStagingOrProdSecrets(String label, String text) {
+        assertTrue(text.contains("80:80"), label + " must publish frontend 80:80");
+        assertTrue(text.contains("${RO_DB_PASSWORD:?必须配置}"), label + " must require RO_DB_PASSWORD");
+        assertTrue(text.contains("${MYSQL_ROOT_PASSWORD:?必须配置}"), label + " must require MYSQL_ROOT_PASSWORD");
+        assertTrue(text.contains("${JWT_SECRET:?必须配置}"), label + " must require JWT_SECRET");
+        assertTrue(text.contains("${REDIS_PASSWORD:?必须配置}"), label + " must require REDIS_PASSWORD");
+        assertTrue(text.contains("--requirepass"), label + " redis must set --requirepass");
+        assertTrue(text.contains("redis-cli"), label + " redis healthcheck must use redis-cli");
+        assertTrue(text.contains("backend-logs:/var/log/huiyi"), label + " must mount backend logs");
+        assertFalse(text.contains("8080:8080"), label + " must not publish backend 8080");
+    }
+
+    /**
+     * Same rule as {@link #assertNoComposeProjectName}: a project name is a line
+     * whose first token is {@code name:}. {@code container_name:} does not count.
+     */
+    private static void assertComposeProjectName(String label, String text, String expectedName) {
+        boolean found = false;
+        int lineNo = 0;
+        for (String line : text.split("\\R", -1)) {
+            lineNo++;
+            String trimmed = line.strip();
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                continue;
+            }
+            String[] parts = trimmed.split("\\s+", 2);
+            if (!"name:".equals(parts[0])) {
+                continue;
+            }
+            String value = parts.length > 1 ? parts[1].strip() : "";
+            assertTrue(expectedName.equals(value),
+                    label + " line " + lineNo + " project name is " + value);
+            found = true;
+        }
+        assertTrue(found, label + " must set compose project name " + expectedName);
+    }
+
     private static String read(Path path) throws IOException {
         assertTrue(Files.isRegularFile(path), "missing " + path);
         return Files.readString(path, StandardCharsets.UTF_8);

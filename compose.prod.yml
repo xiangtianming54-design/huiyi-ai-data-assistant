@@ -1,0 +1,30 @@
+# prod：项目名 huiyi-prod，只发布前端 80。缺入口令时插值失败。
+name: huiyi-prod
+
+services:
+  mysql:
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?必须配置}"
+      RO_DB_PASSWORD: "${RO_DB_PASSWORD:?必须配置}"
+
+  redis:
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?必须配置}"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:?必须配置}", "ping"]
+
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: docker,prod
+      RO_DB_PASSWORD: "${RO_DB_PASSWORD:?必须配置}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?必须配置}"
+      JWT_SECRET: "${JWT_SECRET:?必须配置}"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:?必须配置}"
+    volumes:
+      - backend-logs:/var/log/huiyi
+
+  frontend:
+    ports:
+      - "80:80"
+
+volumes:
+  backend-logs:

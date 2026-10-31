@@ -2,6 +2,7 @@
 chroma_store/
 .worktrees/
 data/knowledge/
+data/backups/
 backend/data/knowledge/
 *.sqlite3
 *.bin
@@ -29,6 +30,9 @@ dist/
 # ===== 环境变量与本地配置（敏感信息不入库） =====
 .env
 .env.local
+.env.dev
+.env.staging
+.env.prod
 !.env.example
 
 # ===== IDE =====

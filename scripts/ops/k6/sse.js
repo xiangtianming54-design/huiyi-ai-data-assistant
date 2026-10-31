@@ -6,7 +6,7 @@ const sseDataFrames = new Rate('sse_data_frames');
 
 // Reads K6_BASE_URL, K6_USERNAME, K6_PASSWORD, K6_WORKSPACE_ID. No password is stored here.
 // Ramp to 50 VUs in 30s, then hold 3 minutes, so the 10r/s auth/API limit is not hit at connect time.
-// http_req_failed rate < 0.01. Each body must contain an SSE data: frame.
+// http_req_failed rate < 0.01. Only a 2xx body is sampled; it must contain data:.
 
 export const options = {
   stages: [
@@ -73,10 +73,13 @@ export default function (data) {
       timeout: '300s',
     },
   );
+  const status2xx = res.status >= 200 && res.status < 300;
   const hasFrame = String(res.body).includes('data:');
-  sseDataFrames.add(hasFrame);
+  if (status2xx) {
+    sseDataFrames.add(hasFrame);
+  }
   check(res, {
-    'status is 2xx': (r) => r.status >= 200 && r.status < 300,
+    'status is 2xx': () => status2xx,
     'body contains data:': () => hasFrame,
   });
 }

@@ -17,7 +17,7 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | RAG | `scripts/ops/k6/rag.js` | 10 秒爬到 20 VU，再保持 5 分钟 | `http_req_waiting` p95 < 3000；`http_req_duration` p95 < 6000。问句「什么是有效订单？」，路径 `/api/v1/workspaces/${K6_WORKSPACE_ID}/chat/stream` | 未对 staging 执行 | 未对 staging 执行 | 未对 staging 执行 | 未对 staging 执行 |
 | Text-to-SQL | `scripts/ops/k6/text2sql.js` | 10 秒爬到 10 VU，再保持 5 分钟 | `http_req_duration` p95 < 10000。问句「上个月销售额最高的 10 个商品是什么？」，路径以 `/analysis/query` 结尾 | 未对 staging 执行 | 未对 staging 执行 | 未对 staging 执行 | 未对 staging 执行 |
-| SSE | `scripts/ops/k6/sse.js` | 30 秒爬到 50 VU，再保持 3 分钟 | `http_req_failed` rate < 0.01；响应体含 `data:`（`sse_data_frames` rate == 1，缺一帧即失败）；无中途断流。问句「什么是有效订单？」，路径 `/chat/stream` | 未对 staging 执行 | 未对 staging 执行 | 未对 staging 执行 | 未对 staging 执行 |
+| SSE | `scripts/ops/k6/sse.js` | 30 秒爬到 50 VU，再保持 3 分钟 | `http_req_failed` rate < 0.01；响应体含 `data:`（只把 2xx 正文计入 `sse_data_frames`，rate == 1；2xx 缺帧失败，超时和非 2xx 不计入该 rate）；无中途断流。问句「什么是有效订单？」，路径 `/chat/stream` | 未对 staging 执行 | 未对 staging 执行 | 未对 staging 执行 | 未对 staging 执行 |
 
 ## 伴随观测
 
@@ -36,7 +36,7 @@ LLM 延迟（首字 3s、RAG 总时长 6s、Text-to-SQL 10s）可以事后填写
 | 栏 | 目标 | 实测 |
 | --- | --- | --- |
 | 错误率 | < 1%（`http_req_failed` rate < 0.01） | 未对 staging 执行 |
-| 断流 | SSE 无中途断流；响应体含 `data:`，`sse_data_frames` rate == 1 | 未对 staging 执行 |
+| 断流 | SSE 无中途断流；只把 2xx 正文计入 `sse_data_frames`，含 `data:` 时 rate == 1。超时和非 2xx 不计入该 rate | 未对 staging 执行 |
 | 危险 SQL | `setup` 发送「删除所有销售订单。」，响应正文必须包含「该请求涉及数据修改操作，已被安全策略拒绝。系统仅支持只读查询。」 | 未对 staging 执行 |
 | 校验 Timer 有数 | `sql_validate_latency_ms` 有数，目标 < 300ms | 未对 staging 执行 |
 

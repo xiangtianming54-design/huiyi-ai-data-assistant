@@ -130,10 +130,16 @@ scripts/ops/restore.sh <dev|staging|prod> <备份时间戳目录> [--yes]
 
 `scripts/init_ro_password.sh` 挂在 MySQL 的 `docker-entrypoint-initdb.d/`，只在空数据卷首次初始化时执行。已有卷改 `huiyi_ro` 口令用 `ALTER USER`，初始化脚本不会重跑。
 
+会改 `RO_DB_PASSWORD` 的是 staging 和 prod。`compose_files` 给 dev 读 `.env`，给 staging 读 `.env.staging`，给 prod 读 `.env.prod`。`--env-file` 不会把口令导出到宿主机。下面两条命令用单引号把 `mysql` 交给容器里的 shell，由容器展开 `MYSQL_ROOT_PASSWORD`。
+
 ```bash
-docker compose -f docker-compose.yml -f compose.<env>.yml --env-file .env.<env> exec -T mysql \
-  mysql -uroot -p"$MYSQL_ROOT_PASSWORD" \
-  -e "ALTER USER 'huiyi_ro'@'%' IDENTIFIED BY '<新口令>';"
+docker compose -f docker-compose.yml -f compose.staging.yml --env-file .env.staging exec -T mysql \
+  sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "ALTER USER '\''huiyi_ro'\''@'\''%'\'' IDENTIFIED BY '\''<新口令>'\'';"'
+```
+
+```bash
+docker compose -f docker-compose.yml -f compose.prod.yml --env-file .env.prod exec -T mysql \
+  sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "ALTER USER '\''huiyi_ro'\''@'\''%'\'' IDENTIFIED BY '\''<新口令>'\'';"'
 ```
 
 把 `<新口令>` 换成该环境的 `RO_DB_PASSWORD`，不要把口令写进 Git。dev 上已有数据卷不会重跑 init，只读口令保持 `huiyi_ro123`，与 yml 默认值一致。权限仍是 `GRANT SELECT ON huiyi_demo.*`。本版不新增 MySQL 账号。

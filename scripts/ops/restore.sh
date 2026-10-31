@@ -16,21 +16,32 @@ docker_compose() {
   docker compose "${compose_args[@]}" "$@"
 }
 
+# docker compose ps columns. Backend has no healthcheck, so Health is empty.
+compose_ps_format() {
+  printf '%s\n' '{{.Service}} {{.State}} {{.Health}}'
+}
+
+# Up when State is running and Health is empty or healthy.
+# A service that is not running is down, including State exited.
+ps_line_is_up() {
+  local line="$1"
+  local service state health
+  read -r service state health <<< "$line"
+  [[ "$state" == "running" ]] || return 1
+  [[ -z "$health" || "$health" == "healthy" ]]
+}
+
 all_healthy() {
   local output="$1"
   shift
-  local want line service health found
+  local want line service found
   for want in "$@"; do
     found=0
     while IFS= read -r line; do
       line="${line%$'\r'}"
       [[ -z "$line" ]] && continue
       service="${line%% *}"
-      health=""
-      if [[ "$line" == *" "* ]]; then
-        health="${line#* }"
-      fi
-      if [[ "$service" == "$want" && "$health" == "healthy" ]]; then
+      if [[ "$service" == "$want" ]] && ps_line_is_up "$line"; then
         found=1
         break
       fi
@@ -46,7 +57,7 @@ wait_until_healthy() {
   local wanted=("$@")
   local i ps_output
   for ((i = 1; i <= tries; i++)); do
-    if ps_output="$(docker_compose ps --format '{{.Service}} {{.Health}}' 2>/dev/null)" \
+    if ps_output="$(docker_compose ps --format "$(compose_ps_format)" 2>/dev/null)" \
       && all_healthy "$ps_output" "${wanted[@]}"; then
       return 0
     fi
@@ -120,7 +131,7 @@ run_restore() {
   export MSYS_NO_PATHCONV=1
   export MSYS2_ARG_CONV_EXCL='*'
 
-  if ! ps_output="$(docker_compose ps --format '{{.Service}} {{.Health}}')"; then
+  if ! ps_output="$(docker_compose ps --format "$(compose_ps_format)")"; then
     echo "cannot inspect stack health; restore aborted" >&2
     exit 1
   fi

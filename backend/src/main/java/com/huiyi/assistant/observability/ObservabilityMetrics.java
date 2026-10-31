@@ -73,12 +73,18 @@ public class ObservabilityMetrics {
         }
     }
 
-    public void sqlValidate(boolean passed) {
+    public void sqlValidate(boolean passed, Duration latency) {
+        if (!properties.isMetricsEnabled()) {
+            return;
+        }
         increment("sql_validate");
         if (passed) {
             increment("sql_validate_success");
         } else {
             increment("sql_validate_rejected");
+        }
+        if (latency != null) {
+            timer("sql_validate_latency_ms", latency);
         }
     }
 

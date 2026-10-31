@@ -188,9 +188,11 @@ public class AgentRunner {
 
     private AgentResult runDataQuery(String question, IntentService.IntentDecision decision,
                                      ToolEventListener listener, AgentDeadline deadline) {
+        long modificationCheckStart = System.nanoTime();
         if (containsModificationIntent(question)) {
             log.warn("数据修改意图被拦截: question={}", question);
-            observabilityMetrics.sqlValidate(false);
+            observabilityMetrics.sqlValidate(false,
+                    java.time.Duration.ofNanos(System.nanoTime() - modificationCheckStart));
             requestTraceService.step("sql_validate", "REJECTED", System.nanoTime(), "modification_intent");
             return analysisResult(decision, question, null, List.of(), null, SAFE_REFUSAL);
         }
@@ -217,6 +219,7 @@ public class AgentRunner {
                     return analysisResult(decision, question, null, List.of(), null, CANNOT_UNDERSTAND);
                 }
             } else if (ToolNames.SQL_VALIDATE.equals(name)) {
+                long validateStart = System.nanoTime();
                 ToolResult validated = invoke(name, Map.of("sql", sql), question, listener, deadline);
                 if (isRunTimeout(validated)) {
                     return limitResult(decision);
@@ -226,7 +229,8 @@ public class AgentRunner {
                             ResultCode.PYTHON_SERVICE_UNAVAILABLE.getMessage());
                 }
                 boolean passed = validated.ok() && Boolean.TRUE.equals(validated.data().get("valid"));
-                observabilityMetrics.sqlValidate(passed);
+                observabilityMetrics.sqlValidate(passed,
+                        java.time.Duration.ofNanos(System.nanoTime() - validateStart));
                 if (!passed) {
                     if (!validated.ok()) {
                         String copy = isUnknownToolFailure(validated)

@@ -8,7 +8,14 @@ ro_alter_sql() {
   if [[ -z "$password" ]]; then
     return 0
   fi
-  local escaped=${password//"'"/"''"}
+  if [[ "$password" == *$'\n'* || "$password" == *$'\r'* ]]; then
+    echo "RO_DB_PASSWORD contains a line break; refusing to build ALTER USER" >&2
+    return 1
+  fi
+  # MySQL treats \ as an escape inside a quoted literal. Double it first,
+  # then turn a single quote into '', so both survive the server parser.
+  local escaped="${password//\\/\\\\}"
+  escaped="${escaped//"'"/"''"}"
   printf "ALTER USER 'huiyi_ro'@'%%' IDENTIFIED BY '%s';\n" "$escaped"
 }
 

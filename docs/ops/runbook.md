@@ -167,6 +167,8 @@ cron 示例（每 5 分钟，不由脚本写入 crontab）：
 
 本脚本不检查 Redis、磁盘、LLM 错误率或 P95。Gauge 升高不是 `deploy.sh` 的失败条件。
 
+生产环境勿关 `huiyi.observability.metrics-enabled`（环境变量 `METRICS_ENABLED`）。关掉后 `huiyi.async.failed` 不注册，`FAILED` 增长不会发 `async-failed-increased`，健康检查只记 `huiyi.async.failed unreadable`。
+
 每次失败都追加 `logs/ops-alert.log`。去重状态在 `logs/ops-alert-state`（gitignore）。同一告警名在 `ALERT_DEDUP_MINUTES`（默认 30）分钟内不发第二条钉钉；本地日志仍然写。钉钉正文第一行是 `HuiYi告警`，随后是环境、告警名、时间、一行原因。不实现加签。
 
 `DINGTALK_WEBHOOK_URL` 为空时不发 HTTP，不要求钉钉可达。检查失败时日志只记 `webhook skipped`，且 `healthcheck.sh` 退出码非 0。

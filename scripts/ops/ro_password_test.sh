@@ -110,8 +110,20 @@ EOF
 }
 
 assert_unset_is_silent
+assert_rejected() {
+  local password="$1"
+  capture set "$password"
+  [[ "$CAPTURE_STATUS" -ne 0 ]] || fail "password [$password] should be refused, got [$CAPTURE_OUT]"
+  local body
+  body="$(body_after_source)"
+  [[ "$body" != *"ALTER USER"* ]] || fail "refused password still emitted SQL [$body]"
+}
+
 assert_sql "abc" "ALTER USER 'huiyi_ro'@'%' IDENTIFIED BY 'abc';"
 assert_sql "a'b" "ALTER USER 'huiyi_ro'@'%' IDENTIFIED BY 'a''b';"
+assert_sql $'a\\b' "ALTER USER 'huiyi_ro'@'%' IDENTIFIED BY 'a\\\\b';"
+assert_sql $'foo\\' "ALTER USER 'huiyi_ro'@'%' IDENTIFIED BY 'foo\\\\';"
+assert_rejected $'a\nb'
 assert_direct_exec
 
 echo "PASS"

@@ -40,7 +40,7 @@
 
 ## 当前开发：v1.4.0 Production Ready
 
-未开工。规格以桌面企业迭代文档 v1.4 章节为准，开工前仍按决策表逐项冻结。
+尚未发布。规格：[2026-10-31-v14-production-ready.md](superpowers/specs/2026-10-31-v14-production-ready.md)。计划：[2026-10-31-v14-production-ready.md](superpowers/plans/2026-10-31-v14-production-ready.md)。本分支按该计划做单机 Compose 多环境、配置治理、备份恢复、Nginx 限流、k6 压测骨架、最小告警、`deploy.sh` 与 runbook。无新 Flyway。演练记录与压测实测留空。GitHub Release 未做。
 
 ## 后续版本（摘要）
 

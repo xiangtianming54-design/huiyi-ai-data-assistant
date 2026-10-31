@@ -6,7 +6,8 @@
 
 ```bash
 cp .env.example .env   # 配置 LLM 四项
-docker compose up -d
+# 公共 compose 不再发布宿主机端口，演示必须带上 dev override。
+docker compose -f docker-compose.yml -f compose.dev.yml up -d
 # 浏览器访问 http://localhost:5173
 ```
 

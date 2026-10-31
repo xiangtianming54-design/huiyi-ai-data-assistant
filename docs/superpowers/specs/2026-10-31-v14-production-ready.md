@@ -1,7 +1,7 @@
 # HuiYi v1.4 · Production Ready（仓库规格）
 
 > 版本：`v1.4.0`  
-> 状态：**规格已冻结，实施计划已写，尚未开工**（P0 D01–D13 已拍板，2026-10-31；无待确认项）  
+> 状态：**规格已冻结；实施以本计划为准，尚未发布**（P0 D01–D13 已拍板，2026-10-31；无待确认项）  
 > 实施计划：[2026-10-31-v14-production-ready.md](../plans/2026-10-31-v14-production-ready.md)  
 > 来源：[HuiYi-v1.4-Production-Ready-Requirement-Freeze.md](file:///C:/Users/33568/Documents/Codex/2026-10-12/new-chat-2/outputs/HuiYi-v1.4-Production-Ready-Requirement-Freeze.md)  
 > 基线：`huiyi-ai-data-assistant v1.3.0`（标签 `v1.3.0`）  

@@ -14,7 +14,8 @@
 
 ```bash
 # 基础设施（MySQL 3307 / Redis 6379）
-docker compose up -d mysql redis
+# 公共 docker-compose.yml 不再发布宿主机端口，必须带上 dev override。
+docker compose -f docker-compose.yml -f compose.dev.yml up -d mysql redis
 
 # Python Sidecar（8001）
 cd python-service
@@ -186,6 +187,30 @@ Eval 评测集与回归 P0：`testdata/eval/` 金标 + Java `EvalGoldenRunner` +
 异步摄入：`POST .../knowledge/upload` 落盘后立刻返回 `UPLOADED`；有界线程池跑 `DOC_PARSE`（`PARSING` → `READY`/`FAILED`）。状态看现有详情/列表；失败 `POST .../knowledge/docs/{id}/retry`。Flyway `V13__async_ingestion.sql`（`async_tasks` + `storage_key`/`error_message`）。原文件目录 `huiyi.knowledge.storage-dir`（默认 `./data/knowledge`），归档时删除。无 MinIO、无前端改动。评测仍走 `EvalGoldenRunner`（不加新金标）。规格：[v1.3 开发文档](superpowers/specs/2026-10-20-v13-async-ingestion.md)。技术设计：[v1.3 技术设计](superpowers/specs/2026-10-20-v13-async-ingestion-technical.md)。计划：[v1.3 实施计划](superpowers/plans/2026-10-20-v13-async-ingestion.md)。
 
 **回滚：** 切回标签 `v1.2.0`，恢复发版前 MySQL 备份后再起服务。V13 已改 schema，不能只换镜像不还原库。
+
+## v1.4 变更（草稿，尚未发布）
+
+单机 Compose 多环境、备份恢复、Nginx 限流、最小告警和可回滚发布。规格：[v1.4 规格](superpowers/specs/2026-10-31-v14-production-ready.md)。计划：[v1.4 计划](superpowers/plans/2026-10-31-v14-production-ready.md)。步骤见 [ops/runbook.md](ops/runbook.md)。本草稿不标记 GitHub Release 已完成。
+
+**做了什么：**
+
+- 公共 `docker-compose.yml` 不再发布宿主机端口。dev 命令是 `docker compose -f docker-compose.yml -f compose.dev.yml`。另有 `compose.staging.yml`、`compose.prod.yml`。
+- 只提交 `.env.example` 占位。`.env.dev`、`.env.staging`、`.env.prod` 不入库。
+- staging 激活 `docker,staging`，prod 激活 `docker,prod`。新增 yml 只覆盖日志文件、Actuator 暴露面和 `/actuator/info` 的 `git.commit`、`app.version`。
+- Gauge `huiyi.async.failed`。Timer `sql_validate_latency_ms`。
+- `scripts/ops/backup.sh` 与 `scripts/ops/restore.sh`。cron 示例 `docs/ops/cron.example`。`docs/ops/backup-drill.md` 仍是空表，没有演练通过记录。
+- Nginx：`/api/` 为 `10r/s`、`burst=20`；`/api/v1/auth/` 为 `1r/s`、`burst=5`；超限 429；gzip 打开。443 只保留注释。
+- k6 三场景在 `scripts/ops/k6/`。`docs/ops/load-test-report.md` 的实测仍是「未对 staging 执行」。
+- `scripts/ops/healthcheck.sh`。钉钉正文第一行是 `HuiYi告警`。webhook 为空时日志写 `webhook skipped`，退出码非 0。
+- `scripts/ops/deploy.sh` 与 `docs/ops/runbook.md`。
+
+**没做什么：**
+
+- 没有新迁移。迁移目录仍是 V1–V13，无 V14。无新业务 API，无前端 Vue 改动。
+- 不做 Kubernetes、Swarm、Vault、Grafana、Prometheus 告警规则、MinIO、HTTPS、certbot、分布式限流、消息队列、异地容灾。
+- 不把备份演练或压测填成已通过。
+
+**回滚：** 重新执行 `deploy.sh <env> <上一 tag>`。因为没有新迁移，回滚不必还原 schema。
 
 ## 常见坑（本仓库已踩过）
 

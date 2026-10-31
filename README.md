@@ -164,7 +164,7 @@ huiyi-ai-data-assistant/
 - [x] **v1.2.0 Enterprise Knowledge Plane**：工作区内知识空间、文档归属、RAG 按空间过滤、Flyway V12（[规格](docs/superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane.md)；异步解析 / OSS / 细权限 / 前端空间 UI 不在本版）
 - [x] **v1.3.0 Async Ingestion**：上传立刻返回、本地落盘、`DOC_PARSE` 异步、失败重试、Flyway V13（[规格](docs/superpowers/specs/2026-10-20-v13-async-ingestion.md)；MinIO / hash / 前端轮询不在本版）
 
-按企业迭代文档演进：下一迭代 **v1.4.0** Production Ready。不把未做能力写成当前功能。
+按企业迭代文档演进：当前迭代 **v1.4.0** Production Ready（尚未发布；规格 [v1.4](docs/superpowers/specs/2026-10-31-v14-production-ready.md)，计划 [v1.4 计划](docs/superpowers/plans/2026-10-31-v14-production-ready.md)）。不把未做能力写成当前功能。
 
 ## License
 

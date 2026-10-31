@@ -27,5 +27,9 @@ class SecurityConfigTest {
                 "Prometheus scrape endpoint must be permitAll");
         assertTrue(source.contains("/actuator/health"),
                 "Actuator health must be permitAll");
+        assertTrue(source.contains("\"/actuator/metrics\""),
+                "Actuator metrics must be permitAll");
+        assertTrue(source.contains("\"/actuator/metrics/**\""),
+                "Actuator metrics subpaths must be permitAll");
     }
 }

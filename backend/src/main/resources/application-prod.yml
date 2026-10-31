@@ -1,0 +1,6 @@
+# Prod overlay. Datasource stays in application-docker.yml.
+logging.file.name: /var/log/huiyi/app.log
+management.endpoints.web.exposure.include: health,info,metrics,prometheus
+management.info.env.enabled: true
+info.git.commit: ${GIT_COMMIT:unknown}
+info.app.version: ${APP_VERSION:unknown}

@@ -144,9 +144,12 @@ probe_http_body() {
 }
 
 # Backend actuator, python /health, and mysqladmin ping. Async failure is not a probe failure.
-probe_backend() {
+# One compose exec on Docker Desktop can take about 9s, and Spring listens a few
+# seconds after the container process starts. A single 10s attempt returns before
+# either of those finishes.
+probe_backend_once() {
   local raw code body state
-  raw="$(timeout 10 docker compose "$@" exec -T backend \
+  raw="$(timeout 30 docker compose "$@" exec -T backend \
     bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 || exit 1; printf "GET %s HTTP/1.0\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n" "$1" >&3; cat <&3' \
     _ /actuator/health)" || return 1
   code="$(probe_http_code "$raw")"
@@ -159,8 +162,21 @@ probe_backend() {
   [[ "$code" == "200" && "$state" == "UP" ]]
 }
 
+probe_backend() {
+  local start="$SECONDS"
+  while true; do
+    if probe_backend_once "$@"; then
+      return 0
+    fi
+    if (( SECONDS - start >= 60 )); then
+      return 1
+    fi
+    sleep 2
+  done
+}
+
 probe_python() {
-  timeout 10 docker compose "$@" exec -T python-service \
+  timeout 30 docker compose "$@" exec -T python-service \
     python -c 'import sys, urllib.request
 try:
     resp = urllib.request.urlopen("http://127.0.0.1:8001/health", timeout=5)
@@ -174,7 +190,7 @@ probe_mysql() {
   local password="$1"
   shift
   [[ -n "$password" ]] || return 1
-  timeout 10 docker compose "$@" exec -T mysql \
+  timeout 30 docker compose "$@" exec -T mysql \
     mysqladmin ping --host=127.0.0.1 --user=root --password="${password}" --silent
 }
 

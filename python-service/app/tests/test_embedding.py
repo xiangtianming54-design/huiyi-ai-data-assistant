@@ -91,8 +91,26 @@ def configured_service(monkeypatch):
     """配置完整的 EmbeddingService。"""
     monkeypatch.setattr(embedding_module.settings, "llm_base_url", "https://llm.example.com/v1")
     monkeypatch.setattr(embedding_module.settings, "llm_api_key", "sk-test")
+    monkeypatch.setattr(embedding_module.settings, "embedding_base_url", "")
+    monkeypatch.setattr(embedding_module.settings, "embedding_api_key", "")
     monkeypatch.setattr(embedding_module.settings, "llm_embedding_model", "test-embedding")
     return EmbeddingService()
+
+
+def test_embedding_endpoint_overrides_chat(monkeypatch):
+    """向量地址和密钥优先于对话配置。"""
+    monkeypatch.setattr(embedding_module.settings, "llm_base_url", "https://chat.example/v1")
+    monkeypatch.setattr(embedding_module.settings, "llm_api_key", "chat-key")
+    monkeypatch.setattr(embedding_module.settings, "embedding_base_url", "https://embed.example/v1")
+    monkeypatch.setattr(embedding_module.settings, "embedding_api_key", "embed-key")
+    monkeypatch.setattr(embedding_module.settings, "llm_embedding_model", "BAAI/bge-m3")
+    service = EmbeddingService()
+    client = _FakeClient([_FakeResponse(200, _ok_body(1))])
+    monkeypatch.setattr(embedding_module.httpx, "Client", lambda **kw: client)
+    service.embed(["文本"])
+    assert client.calls[0]["url"] == "https://embed.example/v1/embeddings"
+    assert client.calls[0]["headers"]["Authorization"] == "Bearer embed-key"
+    assert client.calls[0]["json"]["model"] == "BAAI/bge-m3"
 
 
 class TestEmbedCalls:

@@ -21,11 +21,13 @@ class Settings(BaseSettings):
     chunk_size: int = 500
     chunk_overlap: int = 50
 
-    # LLM OpenAI 兼容 API（embedding 由本服务发起，P3 启用）
+    # LLM OpenAI 兼容 API。向量可单独指定服务商，留空则沿用对话的地址和密钥。
     llm_base_url: str = ""
     llm_api_key: str = ""
     llm_model: str = ""
     llm_embedding_model: str = ""
+    embedding_base_url: str = ""
+    embedding_api_key: str = ""
 
     # SQL 安全校验：表白名单（逗号分隔）与自动追加的 LIMIT
     sql_allowed_tables: str = "sales_orders,products,regions,channels"

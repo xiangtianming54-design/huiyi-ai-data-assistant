@@ -28,8 +28,9 @@ class EmbeddingService:
     """OpenAI 兼容 embedding API 客户端。"""
 
     def __init__(self) -> None:
-        self._base_url = settings.llm_base_url.rstrip("/")
-        self._api_key = settings.llm_api_key
+        base_url = settings.embedding_base_url or settings.llm_base_url
+        self._base_url = base_url.rstrip("/") if base_url else ""
+        self._api_key = settings.embedding_api_key or settings.llm_api_key
         self._model = settings.llm_embedding_model
 
     def embed(self, texts: list[str]) -> list[list[float]]:
@@ -49,7 +50,10 @@ class EmbeddingService:
 
     def _check_config(self) -> None:
         if not self._base_url or not self._api_key or not self._model:
-            raise EmbeddingError("Embedding 未配置：请设置 LLM_BASE_URL / LLM_API_KEY / LLM_EMBEDDING_MODEL")
+            raise EmbeddingError(
+                "Embedding 未配置：请设置 LLM_EMBEDDING_MODEL，以及 "
+                "EMBEDDING_BASE_URL / EMBEDDING_API_KEY（或沿用 LLM_BASE_URL / LLM_API_KEY）"
+            )
 
     def _embed_batch(self, texts: list[str]) -> list[list[float]]:
         payload = {"model": self._model, "input": texts}

@@ -22,7 +22,7 @@ append_log() {
 # Read one HTTP response from inside backend. The JRE image has no HTTP client.
 backend_get() {
   local path="$1"
-  timeout 10 docker compose "${compose_args[@]}" exec -T backend \
+  timeout 30 docker compose "${compose_args[@]}" exec -T backend \
     bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 || exit 1; printf "GET %s HTTP/1.0\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n" "$1" >&3; cat <&3' \
     _ "$path"
 }
@@ -91,7 +91,7 @@ check_backend() {
 
 check_python() {
   # Compose service name is python-service.
-  if ! timeout 10 docker compose "${compose_args[@]}" exec -T python-service \
+  if ! timeout 30 docker compose "${compose_args[@]}" exec -T python-service \
     python -c 'import sys, urllib.request
 try:
     resp = urllib.request.urlopen("http://127.0.0.1:8001/health", timeout=5)
@@ -110,7 +110,7 @@ check_mysql() {
     notify mysql-down "mysqladmin ping failed"
     return 1
   fi
-  if ! timeout 10 docker compose "${compose_args[@]}" exec -T mysql \
+  if ! timeout 30 docker compose "${compose_args[@]}" exec -T mysql \
     mysqladmin ping --host=127.0.0.1 --user=root --password="${MYSQL_ROOT_PASSWORD}" --silent; then
     notify mysql-down "mysqladmin ping failed"
     return 1

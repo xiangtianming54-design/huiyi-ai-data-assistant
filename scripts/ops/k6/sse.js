@@ -1,5 +1,5 @@
 import http from 'k6/http';
-import { check, fail } from 'k6';
+import { check, fail, sleep } from 'k6';
 import { Rate } from 'k6/metrics';
 
 const sseDataFrames = new Rate('sse_data_frames');
@@ -82,4 +82,6 @@ export default function (data) {
     'status is 2xx': () => status2xx,
     'body contains data:': () => hasFrame,
   });
+  // 一条 SSE 占住这个虚拟用户，避免收完就立刻再发，把 10 r/s 打成 429。
+  sleep(300);
 }

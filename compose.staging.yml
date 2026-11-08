@@ -23,6 +23,8 @@ services:
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?必须配置}"
       JWT_SECRET: "${JWT_SECRET:?必须配置}"
       REDIS_PASSWORD: "${REDIS_PASSWORD:?必须配置}"
+      GIT_COMMIT: ${GIT_COMMIT:-unknown}
+      APP_VERSION: ${APP_VERSION:-unknown}
     volumes:
       - backend-logs:/var/log/huiyi
 

@@ -6,6 +6,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: huiyi-mysql
+    entrypoint: ["bash", "/huiyi-mysql-entrypoint.sh"]
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 .env 中配置 MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: huiyi_demo
@@ -15,6 +16,7 @@ services:
       - ./scripts/init_mysql.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
       - ./scripts/init_sample_data.sql:/docker-entrypoint-initdb.d/02_sample_data.sql:ro
       - ./scripts/init_ro_password.sh:/docker-entrypoint-initdb.d/03_ro_password.sh:ro
+      - ./scripts/mysql_entrypoint.sh:/huiyi-mysql-entrypoint.sh:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p$${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
@@ -48,6 +50,8 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-}
       LLM_EMBEDDING_MODEL: ${LLM_EMBEDDING_MODEL:-}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
       TZ: Asia/Shanghai
     volumes:
       - chroma-data:/app/chroma_store

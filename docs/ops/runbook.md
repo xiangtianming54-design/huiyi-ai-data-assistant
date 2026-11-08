@@ -55,7 +55,7 @@ docker compose -f docker-compose.yml -f compose.<env>.yml --env-file .env.<env> 
 |---|---|---|
 | `SPRING_PROFILES_ACTIVE` | Compose 覆盖。staging 写死 `docker,staging`，prod 写死 `docker,prod` | dev 不靠这个键选 staging/prod。example 里留空 |
 | `MYSQL_ROOT_PASSWORD` | MySQL root，也是应用连接口令 `DB_PASSWORD`。备份、恢复用它做 `mysqldump` / `mysql` | `.env.example` 保留演示值 `huiyi123`。staging/prod 写成 `${MYSQL_ROOT_PASSWORD:?必须配置}`，缺键时 `docker compose up` 直接失败 |
-| `RO_DB_PASSWORD` | 空数据卷首次启动时，`scripts/init_ro_password.sh` 用它 `ALTER USER` 改 `huiyi_ro` | 空则保持 `huiyi_ro123`。dev 不要求此键。staging/prod 缺键则 compose 失败。已有卷见「恢复」 |
+| `RO_DB_PASSWORD` | 空卷首次初始化，以及之后每次 MySQL 启动，`scripts/init_ro_password.sh` 用它 `ALTER USER` 改 `huiyi_ro` | 空则保持 `huiyi_ro123`。dev 不要求此键。staging/prod 缺键则 compose 失败。已有卷见「恢复」 |
 | `REDIS_PASSWORD` | staging/prod 的 `redis-server --requirepass` 与 Java | dev 空口令，healthcheck 仍是 `redis-cli ping`。staging/prod 缺键则 compose 失败 |
 | `JWT_SECRET` | 签发 JWT | 本地 example 保留演示占位。staging/prod 缺键则 compose 失败 |
 | `LLM_API_KEY` | 聊天与 embedding | 空则无法调用模型。仓库不写真实 Key |
@@ -128,7 +128,7 @@ scripts/ops/restore.sh <dev|staging|prod> <备份时间戳目录> [--yes]
 
 ### 已有卷上的只读口令
 
-`scripts/init_ro_password.sh` 挂在 MySQL 的 `docker-entrypoint-initdb.d/`，只在空数据卷首次初始化时执行。已有卷改 `huiyi_ro` 口令用 `ALTER USER`，初始化脚本不会重跑。
+`scripts/init_ro_password.sh` 挂在 MySQL 的 `docker-entrypoint-initdb.d/`，初始化脚本不会重跑。容器入口在最终 `mysqld` 就绪后会再执行这个脚本，把已有卷上的 `huiyi_ro` 对齐到当前 `RO_DB_PASSWORD`。口令为空则保持 `huiyi_ro123`。下面的 `ALTER USER` 只在不重启 MySQL、又要立刻改口令时使用。
 
 会改 `RO_DB_PASSWORD` 的是 staging 和 prod。`compose_files` 给 dev 读 `.env`，给 staging 读 `.env.staging`，给 prod 读 `.env.prod`。`--env-file` 不会把口令导出到宿主机。下面两条命令用单引号把 `mysql` 交给容器里的 shell，由容器展开 `MYSQL_ROOT_PASSWORD`。
 

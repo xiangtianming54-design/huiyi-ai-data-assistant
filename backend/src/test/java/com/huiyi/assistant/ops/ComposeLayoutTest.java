@@ -52,6 +52,10 @@ class ComposeLayoutTest {
         String compose = read(Path.of("../docker-compose.yml"));
         assertTrue(compose.contains("./scripts/init_ro_password.sh:/docker-entrypoint-initdb.d/03_ro_password.sh:ro"),
                 "mysql must mount the read-only password init script");
+        assertTrue(compose.contains("./scripts/mysql_entrypoint.sh:/huiyi-mysql-entrypoint.sh:ro"),
+                "mysql must mount the startup entrypoint that re-applies the read-only password");
+        assertTrue(compose.contains("bash\", \"/huiyi-mysql-entrypoint.sh"),
+                "mysql entrypoint must run the startup script");
         assertNoComposeProjectName("docker-compose.yml", compose);
     }
 
@@ -64,6 +68,8 @@ class ComposeLayoutTest {
         assertTrue(staging.contains("slow_query_log=1"), "staging mysql must enable slow_query_log=1");
         assertTrue(staging.contains("--long_query_time=1"), "staging long_query_time");
         assertTrue(staging.contains("--slow_query_log_file=/var/lib/mysql/slow.log"), "staging slow log file");
+        assertTrue(staging.contains("GIT_COMMIT: ${GIT_COMMIT:-unknown}"), "staging must pass GIT_COMMIT into backend");
+        assertTrue(staging.contains("APP_VERSION: ${APP_VERSION:-unknown}"), "staging must pass APP_VERSION into backend");
     }
 
     @Test
@@ -74,6 +80,8 @@ class ComposeLayoutTest {
         assertTrue(prod.contains("SPRING_PROFILES_ACTIVE: docker,prod"), "prod spring profile");
         assertFalse(prod.contains("docker,staging"), "prod must not use the staging profile");
         assertFalse(prod.contains("slow_query_log"), "prod must not set slow_query_log");
+        assertTrue(prod.contains("GIT_COMMIT: ${GIT_COMMIT:-unknown}"), "prod must pass GIT_COMMIT into backend");
+        assertTrue(prod.contains("APP_VERSION: ${APP_VERSION:-unknown}"), "prod must pass APP_VERSION into backend");
     }
 
     @Test

@@ -11,6 +11,20 @@
 
 ---
 
+## 2026-11-08 v1.4 发布里会再犯的问题
+
+完整条目在 [v14-release-issues.md](v14-release-issues.md)。这里只留下次动手前要先看的几条：
+
+- 进容器的 `*.sh` 和 `.env.staging` 必须是 LF。容器里出现 `bash\r` 或恢复时报 Access denied，先查 CR。
+- 聊天用智谱 `glm-5.2`，向量用硅基流动 `BAAI/bge-m3`。不要为了修向量去改 `LLM_*`。
+- `sse.js` 必须 `sleep(300)`。收完就重发会把 10 r/s 打成大量 429。
+- `docker compose exec` 大约要 9 秒，一次 `timeout 10` 会在服务起来之前失败。
+- `--env-file` 不会把未写入 compose 的键送进容器。`GIT_COMMIT` / `APP_VERSION` 要显式传入。
+- 已有 MySQL 卷不会重跑 `initdb.d`。只读口令靠入口脚本每次启动再对齐。
+- Git Bash 访问 `/actuator/...` 前设置 `MSYS_NO_PATHCONV=1`。
+- `sql_validate_latency_ms` 只报 COUNT、TOTAL_TIME 和平均，不报 p95。
+- 打标签用干净检出。`RunbookTest` 若仍要求「尚未发布」，归档文档时要一起改。
+
 ## 2026-10-16 Docker Chroma 卷缺 workspace_id
 
 - **现象**：命名卷 `huiyi-ai-data-assistant_chroma-data` 里 `embedding_metadata` 没有 `workspace_id`（旧 v0.6 向量）。工作区隔离会拒掉或漏检。

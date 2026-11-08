@@ -59,7 +59,7 @@ node scripts/e2e-m5.js
 ```text
 main            —— 稳定发布，里程碑打 tag
 dev             —— 当前 GitHub 日常集成（CI 监听 main / dev）
-feature/*       —— 功能分支；下一版：feature/v1.4-*
+feature/*       —— 功能分支；下一版：feature/v1.5-* 或 feature/v1.4.1-*
 提交规范        —— feat:/fix:/test:/docs:/chore: + 中文摘要
 ```
 
@@ -188,33 +188,42 @@ Eval 评测集与回归 P0：`testdata/eval/` 金标 + Java `EvalGoldenRunner` +
 
 **回滚：** 切回标签 `v1.2.0`，恢复发版前 MySQL 备份后再起服务。V13 已改 schema，不能只换镜像不还原库。
 
-## v1.4 变更（草稿，尚未发布）
+## v1.4 变更（2026-11-08，本地标签 v1.4.0，指向 e6bb834）
 
-单机 Compose 多环境、备份恢复、Nginx 限流、最小告警和可回滚发布。规格：[v1.4 规格](superpowers/specs/2026-10-31-v14-production-ready.md)。计划：[v1.4 计划](superpowers/plans/2026-10-31-v14-production-ready.md)。步骤见 [ops/runbook.md](ops/runbook.md)。本草稿不标记 GitHub Release 已完成。
+单机 Compose 多环境、备份恢复、Nginx 限流、最小告警和可回滚发布。规格：[v1.4 规格](superpowers/specs/2026-10-31-v14-production-ready.md)。计划：[v1.4 计划](superpowers/plans/2026-10-31-v14-production-ready.md)。步骤见 [ops/runbook.md](ops/runbook.md)。发布中的问题见 [v1.4 发布问题](v14-release-issues.md)。GitHub Release 未做，标签尚未推送。
 
 **做了什么：**
 
 - 公共 `docker-compose.yml` 不再发布宿主机端口。dev 命令是 `docker compose -f docker-compose.yml -f compose.dev.yml`。另有 `compose.staging.yml`、`compose.prod.yml`。
 - 只提交 `.env.example` 占位。`.env.dev`、`.env.staging`、`.env.prod` 不入库。
-- staging 激活 `docker,staging`，prod 激活 `docker,prod`。新增 yml 只覆盖日志文件、Actuator 暴露面和 `/actuator/info` 的 `git.commit`、`app.version`。
+- staging 激活 `docker,staging`，prod 激活 `docker,prod`。新增 yml 只覆盖日志文件、Actuator 暴露面和 `/actuator/info` 的 `git.commit`、`app.version`。这两个变量由 compose 显式传入。
+- 聊天用智谱 `glm-5.2`。向量用硅基流动 `BAAI/bge-m3`，走 `EMBEDDING_BASE_URL` / `EMBEDDING_API_KEY`。
 - Gauge `huiyi.async.failed`。Timer `sql_validate_latency_ms`。
-- `scripts/ops/backup.sh` 与 `scripts/ops/restore.sh`。cron 示例 `docs/ops/cron.example`。`docs/ops/backup-drill.md` 仍是空表，没有演练通过记录。
+- `scripts/ops/backup.sh` 与 `scripts/ops/restore.sh`。`docs/ops/backup-drill.md` 有 2026-11-08 的登录、RAG、Text-to-SQL 记录。
 - Nginx：`/api/` 为 `10r/s`、`burst=20`；`/api/v1/auth/` 为 `1r/s`、`burst=5`；超限 429；gzip 打开。443 只保留注释。
-- k6 三场景在 `scripts/ops/k6/`。`docs/ops/load-test-report.md` 的实测仍是「未对 staging 执行」。
+- k6 三场景在 `scripts/ops/k6/`。`docs/ops/load-test-report.md` 有 2026-11-08 实测。LLM 延迟是降级声明。SSE 每个虚拟用户 `sleep(300)`。
 - `scripts/ops/healthcheck.sh`。钉钉正文第一行是 `HuiYi告警`。webhook 为空时日志写 `webhook skipped`，退出码非 0。
-- `scripts/ops/deploy.sh` 与 `docs/ops/runbook.md`。
+- `scripts/ops/deploy.sh` 与 `docs/ops/runbook.md`。MySQL 入口在最终 `mysqld` 就绪后重新对齐 `huiyi_ro`。
+- 2026-11-08 在干净检出上 `mvn -B test` 212、`pytest -q` 120、`EvalGoldenRunner` 1，均通过。
 
 **没做什么：**
 
 - 没有新迁移。迁移目录仍是 V1–V13，无 V14。无新业务 API，无前端 Vue 改动。
 - 不做 Kubernetes、Swarm、Vault、Grafana、Prometheus 告警规则、MinIO、HTTPS、certbot、分布式限流、消息队列、异地容灾。
-- 不把备份演练或压测填成已通过。
+- 不把 `glm-5.2` 的延迟写成达标。`run_local.sh` 这次没有和 staging 同时重跑。
 
 **回滚：** 重新执行 `deploy.sh <env> <上一 tag>`。因为没有新迁移，回滚不必还原 schema。
 
+## 待完善：用户等级
+
+用户等级放进计量小版本 v1.4.1，不放进已打本地标签的 v1.4.0。需求：[v1.4.1 计量与用户等级](superpowers/specs/2026-11-04-v141-token-metering-design.md)。工作区角色 `OWNER` / `ADMIN` / `EDITOR` / `VIEWER` 继续管权限，不当作一级、二级、三级。
+
+- 已拍板：自己注册固定第一级，每天 50 万 Token，不能申请升级，也不能把已有第一级改成更高一级。第二级每天 150 万，第三级每天 500 万。第二级、第三级只能由第三级新建账号再交给员工。第二级审评第一级的提额；第二级自己的提额交给第三级；第三级不能提额，负责开账号。额度按人计。第一个第三级是 `blank`（用户编号 16）。`limit`（用户编号 17）准备当作第二级。两人目前都是工作区 1 的 `VIEWER`。
+- 未做：`users` 还没有等级列。等级列加上时，把 `blank` 标成第三级、`limit` 标成第二级，这是给已指定账号补记，不是事后改级。注册默认第一级、第三级创建账号、按等级扣每日 Token，都还没写。
+
 ## 常见坑（本仓库已踩过）
 
-完整记录（现象 / 原因 / 处理 / 以后）见 [pitfalls.md](pitfalls.md)。修好非显而易见的问题后往该文档**顶部**追加，不要只留在对话里。
+完整记录（现象 / 原因 / 处理 / 以后）见 [pitfalls.md](pitfalls.md)。v1.4 发布过程见 [v14-release-issues.md](v14-release-issues.md)。修好非显而易见的问题后往 pitfalls **顶部**追加，不要只留在对话里。
 
 速查：
 

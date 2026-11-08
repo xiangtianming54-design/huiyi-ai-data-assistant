@@ -1,10 +1,10 @@
 # 运维手册
 
-v1.4.0 单机 Compose 的操作说明。本版尚未发布。规格见 [v1.4 规格](../superpowers/specs/2026-10-31-v14-production-ready.md)，计划见 [v1.4 计划](../superpowers/plans/2026-10-31-v14-production-ready.md)。
+v1.4.0 单机 Compose 的操作说明。本地标签 `v1.4.0` 指向 `e6bb834`。GitHub Release 未做。规格见 [v1.4 规格](../superpowers/specs/2026-10-31-v14-production-ready.md)，计划见 [v1.4 计划](../superpowers/plans/2026-10-31-v14-production-ready.md)。发布中的问题见 [v1.4 发布问题](../v14-release-issues.md)。
 
 公共 `docker-compose.yml` 不再发布宿主机端口。dev 必须带上 `compose.dev.yml`。staging / prod 只把 frontend 映到宿主机 `80:80`。mysql、redis、python、backend 的健康检查和备份都走 `docker compose exec`，不经过公网，也不经过 frontend Nginx。
 
-`docs/ops/backup-drill.md` 保持空表。`docs/ops/load-test-report.md` 的实测保持「未对 staging 执行」。本手册不把演练或压测写成已通过，也不标记 GitHub Release 已完成。
+`docs/ops/backup-drill.md` 和 `docs/ops/load-test-report.md` 记录 2026-11-08 的本机演练。LLM 延迟是降级声明，不写成达标。GitHub Release 未做。
 
 命令在已经 clone 好的仓库根目录执行。`<env>` 在备份、恢复、告警里是 `dev`、`staging` 或 `prod`。`deploy.sh` 只接受 `staging` 或 `prod`。
 
@@ -187,7 +187,7 @@ cron 示例（每 5 分钟，不由脚本写入 crontab）：
 - **改了 `RO_DB_PASSWORD`，Text-to-SQL 仍被只读账号拒绝。** 已有卷不会重跑 init。按「恢复」里的 `ALTER USER` 改 `huiyi_ro`。
 - **worktree 里起了整套 Compose，容器名和现网栈冲突。** dev 不要设置 `name:`。不要在 worktree 里对现网项目再起一套同名栈。
 - **在宿主机上 curl `127.0.0.1:8080` 连不上 staging。** staging/prod 不映射 8080、8001、3306、6379。用 `docker compose exec`。
-- **接口返回 429。** Nginx：`/api/` 为 `10r/s`、`burst=20`；`/api/v1/auth/` 为 `1r/s`、`burst=5`。k6 必须爬坡，否则建连阶段会被限流打成 429。压测数字仍以 `load-test-report.md` 的「未对 staging 执行」为准。
+- **接口返回 429。** Nginx：`/api/` 为 `10r/s`、`burst=20`；`/api/v1/auth/` 为 `1r/s`、`burst=5`。k6 必须爬坡，否则建连阶段会被限流打成 429。压测数字以 `load-test-report.md` 的 2026-11-08 实测为准。LLM 延迟未达标，只记降级声明。
 - **`backup.sh` 没有留下目录。** 三件套有一个为空时，未完成目录会被删掉，脚本退出非 0。先看 mysql、python-service、backend 是否在跑，以及 `MYSQL_ROOT_PASSWORD` 是否为空。
 - **`restore.sh` 退出 2。** 目标栈健康。确认要覆盖时才加 `--yes`。
 - **`deploy.sh` 中途失败。** 它会回滚到上一健康 HEAD 并再试一次。第二次失败就停，退出非 0。同一 tag 再跑是幂等的；实机结果不在本文填写。

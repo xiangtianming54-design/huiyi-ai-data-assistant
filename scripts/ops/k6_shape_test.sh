@@ -102,7 +102,8 @@ require_grep "$sse" "/chat/stream"
 require_grep "$sse" "什么是有效订单？"
 assert_order "$sse" "duration: '30s'" "duration: '3m'"
 
-require_grep "$report" "未对 staging 执行"
+require_grep "$sse" "sleep(300)"
+require_grep "$report" "glm-5.2"
 require_grep "$report" "rag.js"
 require_grep "$report" "text2sql.js"
 require_grep "$report" "sse.js"
@@ -112,17 +113,15 @@ require_grep "$report" "模型名"
 require_grep "$report" "huiyi.async.failed"
 require_grep "$report" "慢查询"
 require_grep "$report" "内存峰值"
-require_grep "$report" "降级声明"
 require_grep "$report" "断流"
 require_grep "$report" "危险 SQL"
 require_grep "$report" "校验 Timer"
 require_grep "$report" "sql_validate_latency_ms"
-require_grep "$report" "没有这条退路"
-require_grep "$report" "该请求涉及数据修改操作，已被安全策略拒绝。系统仅支持只读查询。"
+require_grep "$report" "降级声明"
 
-placeholder_count="$(grep -F -c "未对 staging 执行" "$report" || true)"
-[[ "$placeholder_count" -ge 10 ]] || fail "load-test-report.md has ${placeholder_count} copies of 未对 staging 执行, expected at least 10"
-
+if grep -F -q "未对 staging 执行" "$report"; then
+  fail "load-test-report.md still says the run was not executed"
+fi
 if grep -F -q "已通过" "$report"; then
   fail "load-test-report.md contains 已通过"
 fi

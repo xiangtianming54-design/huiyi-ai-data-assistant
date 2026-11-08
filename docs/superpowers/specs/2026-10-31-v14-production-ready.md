@@ -1,7 +1,7 @@
 # HuiYi v1.4 · Production Ready（仓库规格）
 
 > 版本：`v1.4.0`  
-> 状态：**规格已冻结；实施以本计划为准，尚未发布**（P0 D01–D13 已拍板，2026-10-31；无待确认项）  
+> 状态：**已打本地标签 `v1.4.0`（`e6bb834`）**。GitHub Release 未做。P0 D01–D13 已拍板，2026-10-31。发布问题见 [v14-release-issues.md](../../v14-release-issues.md)。  
 > 实施计划：[2026-10-31-v14-production-ready.md](../plans/2026-10-31-v14-production-ready.md)  
 > 来源：[HuiYi-v1.4-Production-Ready-Requirement-Freeze.md](file:///C:/Users/33568/Documents/Codex/2026-10-12/new-chat-2/outputs/HuiYi-v1.4-Production-Ready-Requirement-Freeze.md)  
 > 基线：`huiyi-ai-data-assistant v1.3.0`（标签 `v1.3.0`）  
@@ -287,17 +287,19 @@ deploy.sh <staging|prod> <git-tag>
 
 ## 14. 验收
 
+2026-11-08 在本机 staging 核对。`run_local.sh` 没有重跑：当时 staging 栈还在，dev 不能同时起。
+
 - [ ] `run_local.sh` 仍能拉起 dev 的 MySQL（宿主机 3307）和 Redis（6379）。
-- [ ] `docker compose -f docker-compose.yml -f compose.staging.yml --env-file .env.staging up -d` 之后，宿主机只监听 frontend 的 80；3306/6379/8001/8080 不在宿主机监听。
-- [ ] 已提交内容里仍可以有演示占位符 `huiyi123`、`huiyi_ro123`、`local-dev-only-change-me-32chars-min`、`please-change-me-to-a-32-byte-minimum-secret`。不得提交填好的 `.env`、`.env.staging`、`.env.prod`，也不得出现真实 LLM Key 或钉钉 webhook。
-- [ ] 未设置 `RO_DB_PASSWORD`、`MYSQL_ROOT_PASSWORD`、`JWT_SECRET`、`REDIS_PASSWORD` 时，staging/prod 的 `docker compose up` 失败。dev 在不设置 `RO_DB_PASSWORD` 时仍能用 `huiyi_ro123` 做 Text-to-SQL。
-- [ ] `backup.sh` 产出 `mysql.sql.gz`、`chroma.tar.gz`、`knowledge.tar.gz`。`docs/ops/backup-drill.md` 有一次登录 + RAG + Text-to-SQL 的演练记录。
-- [ ] 超过 Nginx 限额的请求返回 429。`/api/v1/auth/` 的限额严于 `/api/`。
-- [ ] `docs/ops/load-test-report.md` 有三场景结果。未达标的 LLM 延迟带降级声明。错误率、断流、危险 SQL、校验耗时四项有实测。
-- [ ] 停掉 backend 容器后，下一次 healthcheck（或手动跑脚本）写出告警日志；webhook 配了则钉钉正文含 `HuiYi告警`。
-- [ ] 制造一条 `async_tasks.status=FAILED` 后，`/actuator/metrics/huiyi.async.failed` 变大，再次 healthcheck 发出 `async-failed-increased`。30 分钟内第二次不发钉钉。
-- [ ] `deploy.sh` 中途失败后重跑同一 tag 能成功。回滚到上一个 tag 后 `/actuator/info` 的 `git.commit` 与该 tag 一致。
-- [ ] `docs/ops/runbook.md` 覆盖部署、回滚、备份、恢复、告警响应。
-- [ ] `flyway_schema_history` 与迁移目录仍是 V1–V13，无 V14 文件。
-- [ ] `git diff -- frontend` 只有 `frontend/nginx.conf`。
-- [ ] `mvn -B test`、`pytest -q`、现有 `eval-goldens` 仍绿。不加新金标。
+- [x] `docker compose -f docker-compose.yml -f compose.staging.yml --env-file .env.staging up -d` 之后，宿主机只监听 frontend 的 80；3306/6379/8001/8080 不在宿主机监听。
+- [x] 已提交内容里仍可以有演示占位符 `huiyi123`、`huiyi_ro123`、`local-dev-only-change-me-32chars-min`、`please-change-me-to-a-32-byte-minimum-secret`。不得提交填好的 `.env`、`.env.staging`、`.env.prod`，也不得出现真实 LLM Key 或钉钉 webhook。
+- [x] 未设置 `RO_DB_PASSWORD`、`MYSQL_ROOT_PASSWORD`、`JWT_SECRET`、`REDIS_PASSWORD` 时，staging/prod 的 `docker compose up` 失败。dev 不要求 `RO_DB_PASSWORD`，空口令保持 `huiyi_ro123`。这次没有再用 `run_local.sh` 跑一条 Text-to-SQL。
+- [x] `backup.sh` 产出 `mysql.sql.gz`、`chroma.tar.gz`、`knowledge.tar.gz`。`docs/ops/backup-drill.md` 有一次登录 + RAG + Text-to-SQL 的演练记录。
+- [x] 超过 Nginx 限额的请求返回 429。`/api/v1/auth/` 的限额严于 `/api/`。
+- [x] `docs/ops/load-test-report.md` 有三场景结果。未达标的 LLM 延迟带降级声明。错误率、断流、危险 SQL、校验耗时四项有实测。
+- [x] 停掉 backend 容器后，下一次 healthcheck（或手动跑脚本）写出告警日志；webhook 配了则钉钉正文含 `HuiYi告警`。这次接收端是本机，不是钉钉。
+- [x] 制造一条 `async_tasks.status=FAILED` 后，`/actuator/metrics/huiyi.async.failed` 变大，再次 healthcheck 发出 `async-failed-increased`。30 分钟内第二次不发钉钉。
+- [x] `deploy.sh` 中途失败后重跑同一 tag 能成功。回滚到上一个 tag 后 `/actuator/info` 的 `git.commit` 与该 tag 一致。这次 `git fetch --tags` 因连不上 GitHub 而跳过，第一次构建失败是故意注入的。
+- [x] `docs/ops/runbook.md` 覆盖部署、回滚、备份、恢复、告警响应。
+- [x] `flyway_schema_history` 与迁移目录仍是 V1–V13，无 V14 文件。
+- [x] `git diff -- frontend` 只有 `frontend/nginx.conf`。对照范围是 `v1.3.0` 到 `e6bb834`。
+- [x] `mvn -B test`、`pytest -q`、现有 `eval-goldens` 仍绿。不加新金标。2026-11-08 在干净检出 `e6bb834` 上为 212、120、1。

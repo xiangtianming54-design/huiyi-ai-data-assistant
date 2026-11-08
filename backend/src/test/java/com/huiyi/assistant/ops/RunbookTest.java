@@ -12,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * v1.4 运维说明必须写明部署、回滚、备份、恢复、告警和 certbot 附录，
- * 且路线图把当前开发指到本计划，而不是写成已发布。
+ * v1.4 运维说明必须写明部署、回滚、备份、恢复、告警和 certbot 附录。
+ * 路线图把 v1.4.0 记为本地标签，并写明 GitHub Release 还没做。
  */
 class RunbookTest {
 
@@ -66,16 +66,23 @@ class RunbookTest {
     @Test
     void roadmapPointsCurrentWorkAtV14PlanAndSpec() throws IOException {
         String roadmap = read(Path.of("../docs/roadmap.md"));
+        String released = section(roadmap, "已发布");
         String current = section(roadmap, "当前开发");
         assertAll(
                 () -> assertTrue(roadmap.contains("v1.4.0"), "roadmap must name v1.4.0"),
                 () -> assertTrue(roadmap.contains(PLAN), "roadmap must link this plan"),
                 () -> assertTrue(roadmap.contains(SPEC), "roadmap must link this spec"),
-                () -> assertTrue(current.contains("v1.4.0"), "当前开发 must name v1.4.0"),
-                () -> assertTrue(current.contains(PLAN), "当前开发 must link this plan"),
-                () -> assertTrue(current.contains("尚未发布"), "v1.4 must stay unreleased"),
-                () -> assertFalse(current.replace("尚未发布", "").contains("已发布"),
-                        "当前开发 must not mark v1.4 released")
+                () -> assertTrue(released.contains("v1.4.0"), "已发布 must name v1.4.0"),
+                () -> assertTrue(released.contains("e6bb834"), "已发布 must name the tagged commit"),
+                () -> assertTrue(released.contains(PLAN), "已发布 must link this plan"),
+                () -> assertTrue(released.contains("GitHub Release 未做"),
+                        "local tag is not a GitHub Release"),
+                () -> assertFalse(released.contains("演练记录与压测实测留空"),
+                        "acceptance records are no longer empty"),
+                () -> assertTrue(current.contains("无进行中的版本"),
+                        "当前开发 must not keep v1.4.0 as the open version"),
+                () -> assertTrue(current.contains("尚未实施"),
+                        "当前开发 must say the next notes are not implemented")
         );
     }
 
@@ -98,21 +105,31 @@ class RunbookTest {
                             "v1.4 notes must say there is no new migration");
                     assertTrue(notes.contains("不必还原 schema"),
                             "v1.4 notes must say rollback does not restore schema");
-                    assertTrue(notes.contains("尚未发布"),
-                            "v1.4 notes must stay a draft");
+                    assertTrue(notes.contains("e6bb834"),
+                            "v1.4 notes must name the tagged commit");
+                    assertTrue(notes.contains("GitHub Release 未做"),
+                            "v1.4 notes must not claim a GitHub Release");
+                    assertFalse(notes.contains("尚未发布"),
+                            "v1.4 notes must leave the draft status");
+                    assertFalse(notes.contains("未对 staging 执行"),
+                            "v1.4 notes must not keep the empty load-test placeholder");
                 },
-                () -> assertTrue(readme.contains("当前迭代"),
-                        "README roadmap sentence must name the current iteration"),
+                () -> assertTrue(readme.contains("当前发布"),
+                        "README must name the current release"),
                 () -> assertTrue(readme.contains("docs/" + PLAN),
                         "README must link this plan"),
-                () -> assertTrue(readme.contains("尚未发布"),
-                        "README must not present v1.4 as released"),
+                () -> assertTrue(readme.contains("GitHub Release 未做"),
+                        "README must not claim a GitHub Release"),
+                () -> assertFalse(readme.contains("尚未发布"),
+                        "README must not keep v1.4 unreleased"),
                 () -> assertTrue(spec.contains("../plans/2026-10-31-v14-production-ready.md"),
                         "spec header must keep the plan link"),
+                () -> assertTrue(spec.contains("e6bb834"),
+                        "spec must name the tagged commit"),
                 () -> assertFalse(spec.contains("尚未开工"),
                         "spec header must point at the plan instead of 尚未开工"),
-                () -> assertTrue(spec.contains("尚未发布"),
-                        "spec must not mark v1.4 released")
+                () -> assertFalse(spec.contains("尚未发布"),
+                        "spec must not keep the unreleased status")
         );
     }
 

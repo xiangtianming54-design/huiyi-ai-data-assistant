@@ -30,17 +30,17 @@
 | **v1.4.0** | Production Ready | 3–4 周 | staging/prod、备份、限流、压测、告警 |
 | **v1.5.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
 
-## 已发布：v1.3.0 Async Ingestion
+## 已发布：v1.4.0 Production Ready
 
-标签 `v1.3.0`。规格：[2026-10-20-v13-async-ingestion.md](superpowers/specs/2026-10-20-v13-async-ingestion.md)。技术设计：[2026-10-20-v13-async-ingestion-technical.md](superpowers/specs/2026-10-20-v13-async-ingestion-technical.md)。计划：[2026-10-20-v13-async-ingestion.md](superpowers/plans/2026-10-20-v13-async-ingestion.md)。本版 P0：上传立刻返回 + 本地落盘 + `DOC_PARSE` 异步 + 状态可查 + 失败重试。Flyway `V13__async_ingestion.sql`。无 MinIO、无前端、无新金标。
+本地标签 `v1.4.0` 指向 `e6bb834`。规格：[2026-10-31-v14-production-ready.md](superpowers/specs/2026-10-31-v14-production-ready.md)。计划：[2026-10-31-v14-production-ready.md](superpowers/plans/2026-10-31-v14-production-ready.md)。本版是单机 Compose 的 staging/prod、备份恢复、Nginx 限流、k6、最小告警、`deploy.sh` 与 runbook。无新 Flyway。演练和压测记录在 `docs/ops/`。LLM 延迟按降级声明记录。发布中的问题见 [v14-release-issues.md](v14-release-issues.md)。标签尚未推送。GitHub Release 未做。
 
-未纳入本版：MinIO、hash 去重、`doc_version`、任务列表接口、重启补偿、前端轮询、其余任务类型。
+未纳入本版：Kubernetes、Swarm、Vault、Grafana、HTTPS、MinIO、异地容灾、用户等级和按人 Token 计量。
 
-上一发布：`v1.2.0` Enterprise Knowledge Plane。
+上一发布：`v1.3.0` Async Ingestion。
 
-## 当前开发：v1.4.0 Production Ready
+## 当前开发：无进行中的版本
 
-尚未发布。规格：[2026-10-31-v14-production-ready.md](superpowers/specs/2026-10-31-v14-production-ready.md)。计划：[2026-10-31-v14-production-ready.md](superpowers/plans/2026-10-31-v14-production-ready.md)。本分支按该计划做单机 Compose 多环境、配置治理、备份恢复、Nginx 限流、k6 压测骨架、最小告警、`deploy.sh` 与 runbook。无新 Flyway。演练记录与压测实测留空。GitHub Release 未做。
+v1.4.1 按人计量和用户等级只有需求整理，尚未实施，不在标签 `v1.4.0` 里。见 [2026-11-04-v141-token-metering-design.md](superpowers/specs/2026-11-04-v141-token-metering-design.md)。v1.5.0 及以后仍按上面的版本表，没有开工。
 
 ## 后续版本（摘要）
 

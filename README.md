@@ -2,7 +2,7 @@
 
 > 会意 · 企业经营数据智能分析助手
 
-当前发布：**v1.3.0 Async Ingestion**（标签 `v1.3.0`）。规格 [v1.3 开发文档](docs/superpowers/specs/2026-10-20-v13-async-ingestion.md)。基线对照 [docs/baseline.md](docs/baseline.md) · 踩坑 [docs/pitfalls.md](docs/pitfalls.md) · 路线图 [docs/roadmap.md](docs/roadmap.md)
+当前发布：**v1.4.0 Production Ready**（本地标签 `v1.4.0` → `e6bb834`）。规格 [v1.4](docs/superpowers/specs/2026-10-31-v14-production-ready.md)。GitHub Release 未做。基线对照 [docs/baseline.md](docs/baseline.md) · 踩坑 [docs/pitfalls.md](docs/pitfalls.md) · 发布问题 [docs/v14-release-issues.md](docs/v14-release-issues.md) · 路线图 [docs/roadmap.md](docs/roadmap.md)
 
 基于 **Java + Python 协同架构** 的企业经营数据智能分析助手，支持 **RAG 知识库问答** 与 **Text-to-SQL 数据分析** 两类核心能力。
 
@@ -163,8 +163,9 @@ huiyi-ai-data-assistant/
 - [x] **v1.1.0 Eval & Prompt Governance**：`testdata/eval/` 金标、`EvalGoldenRunner`、CI `eval-goldens` 报告 Artifact（[规格](docs/superpowers/specs/2026-10-18-v11-eval-and-regression.md)；P1 Prompt 灰度不在本版）
 - [x] **v1.2.0 Enterprise Knowledge Plane**：工作区内知识空间、文档归属、RAG 按空间过滤、Flyway V12（[规格](docs/superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane.md)；异步解析 / OSS / 细权限 / 前端空间 UI 不在本版）
 - [x] **v1.3.0 Async Ingestion**：上传立刻返回、本地落盘、`DOC_PARSE` 异步、失败重试、Flyway V13（[规格](docs/superpowers/specs/2026-10-20-v13-async-ingestion.md)；MinIO / hash / 前端轮询不在本版）
+- [x] **v1.4.0 Production Ready**：单机 staging/prod、备份恢复、Nginx 限流、k6、最小告警、可回滚发布（[规格](docs/superpowers/specs/2026-10-31-v14-production-ready.md)，[计划](docs/superpowers/plans/2026-10-31-v14-production-ready.md)；K8s / Vault / Grafana / HTTPS / MinIO 不在本版）。GitHub Release 未做。
 
-按企业迭代文档演进：当前迭代 **v1.4.0** Production Ready（尚未发布；规格 [v1.4](docs/superpowers/specs/2026-10-31-v14-production-ready.md)，计划 [v1.4 计划](docs/superpowers/plans/2026-10-31-v14-production-ready.md)）。不把未做能力写成当前功能。
+按企业迭代文档演进：下一档是 **v1.5.0+**。v1.4.1 计量与用户等级尚未实施。不把未做能力写成当前功能。
 
 ## License
 

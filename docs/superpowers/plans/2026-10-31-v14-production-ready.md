@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> Status: 未开工。P0 only。K8s / Vault / Grafana / HTTPS / MinIO / 异地容灾不在本计划。
+> Status: 已实施。本地标签 `v1.4.0` 指向 `e6bb834`。GitHub Release 未做。P0 only。K8s / Vault / Grafana / HTTPS / MinIO / 异地容灾不在本计划。发布问题见 [v14-release-issues.md](../../v14-release-issues.md)。
 >
 > Execution workspace: isolated git worktree via superpowers:using-git-worktrees. Branch: `feature/v1.4-production-ready`.
 
@@ -489,11 +489,11 @@ Message: `feat: deploy a git tag and roll back to the last healthy commit`
   - `rag.js`：10 秒爬到 20 VU，再保持 5 分钟。阈值 `http_req_waiting` p95 < 3000，`http_req_duration` p95 < 6000。
   - `text2sql.js`：10 秒爬到 10 VU，再保持 5 分钟。阈值 `http_req_duration` p95 < 10000。`setup` 另发一次危险句，响应正文必须包含上面的拒绝文案。
   - `sse.js`：30 秒爬到 50 VU，再保持 3 分钟。阈值 `http_req_failed` rate < 0.01。检查响应体含 `data:`。
-  - `docs/ops/load-test-report.md` 列出三场景的目标、实测 P95、错误率、模型名、`huiyi.async.failed` 前后值、慢查询条数、容器内存峰值，以及降级声明栏。实测先写「未对 staging 执行」。不要编造达标数字。LLM 延迟可以事后填降级声明；错误率、断流、危险 SQL、校验 Timer 有数这四栏没有这条退路。
+  - `docs/ops/load-test-report.md` 列出三场景的目标、实测 P95、错误率、模型名、`huiyi.async.failed` 前后值、慢查询条数、容器内存峰值，以及降级声明栏。没有实测之前写「未对 staging 执行」，不要编造达标数字。2026-11-08 已填入实测，占位句已删除。LLM 延迟可以事后填降级声明；错误率、断流、危险 SQL、校验 Timer 有数这四栏没有这条退路。
 
 - [ ] **Step 1: Write the failing test**
 
-`k6_shape_test.sh` 用 `grep` 断言三个文件含各自的 `target:`、`duration`、阈值数字，以及危险句拒绝文案。报告文件含「未对 staging 执行」。
+`k6_shape_test.sh` 用 `grep` 断言三个文件含各自的 `target:`、`duration`、阈值数字，以及危险句拒绝文案。报告填入实测之后，测试改为锁定 `sleep(300)` 和 `glm-5.2`，并拒绝报告再出现「未对 staging 执行」。
 
 - [ ] **Step 2: Run test to verify it fails**
 

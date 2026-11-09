@@ -7,6 +7,7 @@ import com.huiyi.assistant.mapper.TokenBoostRequestMapper;
 import com.huiyi.assistant.mapper.UserMapper;
 import com.huiyi.assistant.model.entity.TokenBoostRequest;
 import com.huiyi.assistant.model.entity.User;
+import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -19,6 +20,7 @@ import java.util.List;
  *
  * @author huiyi
  */
+@Service
 public class TokenQuotaService {
 
     private static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");

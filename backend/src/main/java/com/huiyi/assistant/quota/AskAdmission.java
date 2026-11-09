@@ -1,6 +1,7 @@
 package com.huiyi.assistant.quota;
 
 import com.huiyi.assistant.common.exception.BizException;
+import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.util.ArrayDeque;
@@ -14,6 +15,7 @@ import java.util.UUID;
  *
  * @author huiyi
  */
+@Component
 public class AskAdmission {
 
     private static final int RATE_LIMIT_CODE = 4291;

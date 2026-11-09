@@ -6,6 +6,7 @@ import com.huiyi.assistant.common.result.Result;
 import com.huiyi.assistant.context.WorkspaceContextHolder;
 import com.huiyi.assistant.model.dto.AnalysisRequestDTO;
 import com.huiyi.assistant.model.vo.AnalysisResultVO;
+import com.huiyi.assistant.quota.AskGate;
 import com.huiyi.assistant.security.AuthUser;
 import com.huiyi.assistant.service.AnalysisService;
 import com.huiyi.assistant.workspace.WorkspaceService;
@@ -24,18 +25,22 @@ public class AnalysisV1Controller {
     private final WorkspaceService workspaceService;
     private final AnalysisService analysisService;
     private final AuditService auditService;
+    private final AskGate askGate;
 
     public AnalysisV1Controller(WorkspaceService workspaceService, AnalysisService analysisService,
-                                AuditService auditService) {
+                                AuditService auditService, AskGate askGate) {
         this.workspaceService = workspaceService;
         this.analysisService = analysisService;
         this.auditService = auditService;
+        this.askGate = askGate;
     }
 
     @PostMapping("/query")
     public Result<AnalysisResultVO> query(@AuthenticationPrincipal AuthUser user, @PathVariable Long workspaceId,
                                           @Valid @RequestBody AnalysisRequestDTO request) {
         var context = workspaceService.requireMember(user, workspaceId);
+        askGate.enter(user.userId(), request.getQuestion(), request.getSessionId(),
+                request.getAdmissionTicket(), false);
         auditService.record(AuditAction.ANALYSIS_QUERIED, "SUCCESS", user.userId(), user.username(), workspaceId,
                 "analysis", request.getSessionId(),
                 java.util.Map.of("question", request.getQuestion() == null ? "" : request.getQuestion()));

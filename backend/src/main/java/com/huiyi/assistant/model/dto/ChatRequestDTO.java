@@ -22,4 +22,7 @@ public class ChatRequestDTO {
 
     /** 可选：收窄知识检索的空间 id */
     private List<Long> spaceIds;
+
+    /** 准入票，可空 */
+    private String admissionTicket;
 }

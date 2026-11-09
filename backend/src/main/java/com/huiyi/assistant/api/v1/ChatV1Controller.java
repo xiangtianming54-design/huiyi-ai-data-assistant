@@ -13,6 +13,7 @@ import com.huiyi.assistant.model.vo.ChatAskResponseVO;
 import com.huiyi.assistant.model.vo.ChatResponseVO;
 import com.huiyi.assistant.model.vo.IntentResponseVO;
 import com.huiyi.assistant.model.vo.PageResult;
+import com.huiyi.assistant.quota.AskGate;
 import com.huiyi.assistant.security.AuthUser;
 import com.huiyi.assistant.service.ChatService;
 import com.huiyi.assistant.service.ChatSessionService;
@@ -40,13 +41,15 @@ public class ChatV1Controller {
     private final ChatService chatService;
     private final ChatSessionService chatSessionService;
     private final AuditService auditService;
+    private final AskGate askGate;
 
     public ChatV1Controller(WorkspaceService workspaceService, ChatService chatService,
-                            ChatSessionService chatSessionService, AuditService auditService) {
+                            ChatSessionService chatSessionService, AuditService auditService, AskGate askGate) {
         this.workspaceService = workspaceService;
         this.chatService = chatService;
         this.chatSessionService = chatSessionService;
         this.auditService = auditService;
+        this.askGate = askGate;
     }
 
     @PostMapping("/chat/sessions")
@@ -93,40 +96,46 @@ public class ChatV1Controller {
     @PostMapping("/chat")
     public Result<ChatResponseVO> chat(@AuthenticationPrincipal AuthUser user, @PathVariable Long workspaceId,
                                        @Valid @RequestBody ChatRequestDTO request) {
+        WorkspaceContext context = workspaceService.requireMember(user, workspaceId);
+        enter(user, request, false);
         auditAsked(user, workspaceId, request);
-        return withContext(user, workspaceId, () -> Result.ok(chatService.chat(request)));
+        return inWorkspace(context, () -> Result.ok(chatService.chat(request)));
     }
 
     @PostMapping("/chat/intent")
     public Result<IntentResponseVO> intent(@AuthenticationPrincipal AuthUser user, @PathVariable Long workspaceId,
                                            @Valid @RequestBody ChatRequestDTO request) {
         workspaceService.requireMember(user, workspaceId);
-        return Result.ok(chatService.precheck(request.getQuestion()));
+        String ticket = enter(user, request, true);
+        return Result.ok(chatService.precheck(request.getQuestion(), ticket));
     }
 
     @PostMapping("/chat/ask")
     public Result<ChatAskResponseVO> ask(@AuthenticationPrincipal AuthUser user, @PathVariable Long workspaceId,
                                          @Valid @RequestBody ChatRequestDTO request) {
+        WorkspaceContext context = workspaceService.requireMember(user, workspaceId);
+        enter(user, request, false);
         auditAsked(user, workspaceId, request);
-        return withContext(user, workspaceId, () -> Result.ok(chatService.ask(request)));
+        return inWorkspace(context, () -> Result.ok(chatService.ask(request)));
     }
 
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter stream(@AuthenticationPrincipal AuthUser user, @PathVariable Long workspaceId,
                              @Valid @RequestBody ChatRequestDTO request) {
         WorkspaceContext context = workspaceService.requireMember(user, workspaceId);
+        // 在 chatStream 创建 SseEmitter 之前拒绝，异常响应仍是 JSON Result。
+        enter(user, request, false);
         auditAsked(user, workspaceId, request);
-        WorkspaceContextHolder.set(context);
-        try {
-            return chatService.chatStream(request);
-        } finally {
-            // SSE subscribe is async; keep context until stream method has bound the session.
-            WorkspaceContextHolder.clear();
-        }
+        // SSE subscribe is async; keep context until stream method has bound the session.
+        return inWorkspace(context, () -> chatService.chatStream(request));
     }
 
-    private <T> T withContext(AuthUser user, Long workspaceId, java.util.function.Supplier<T> action) {
-        WorkspaceContext context = workspaceService.requireMember(user, workspaceId);
+    private String enter(AuthUser user, ChatRequestDTO request, boolean issuing) {
+        return askGate.enter(user.userId(), request.getQuestion(), request.getSessionId(),
+                request.getAdmissionTicket(), issuing);
+    }
+
+    private <T> T inWorkspace(WorkspaceContext context, java.util.function.Supplier<T> action) {
         WorkspaceContextHolder.set(context);
         try {
             return action.get();

@@ -17,4 +17,7 @@ public class AnalysisRequestDTO {
     /** 数据分析问题 */
     @NotBlank(message = "问题不能为空")
     private String question;
+
+    /** 准入票，可空 */
+    private String admissionTicket;
 }

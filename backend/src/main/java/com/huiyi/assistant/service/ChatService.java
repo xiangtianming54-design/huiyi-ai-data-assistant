@@ -71,14 +71,14 @@ public class ChatService {
         return intentService.detect(question);
     }
 
-    public IntentResponseVO precheck(String question) {
+    public IntentResponseVO precheck(String question, String admissionTicket) {
         if (isSuspectedCompound(question)) {
             List<String> subQuestions = questionDecomposeService.decompose(question);
             if (subQuestions.size() > 1) {
-                return new IntentResponseVO("compound", subQuestions);
+                return new IntentResponseVO("compound", subQuestions, admissionTicket);
             }
         }
-        return new IntentResponseVO(intentService.detect(question).getCode(), null);
+        return new IntentResponseVO(intentService.detect(question).getCode(), null, admissionTicket);
     }
 
     private boolean isSuspectedCompound(String question) {

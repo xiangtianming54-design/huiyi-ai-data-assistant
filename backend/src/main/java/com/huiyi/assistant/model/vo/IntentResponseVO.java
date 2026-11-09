@@ -21,4 +21,7 @@ public class IntentResponseVO {
 
     /** 复合问题的子问题列表（仅 intent=compound 时返回） */
     private List<String> questions;
+
+    /** 准入票，可空 */
+    private String admissionTicket;
 }

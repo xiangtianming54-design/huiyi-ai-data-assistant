@@ -26,7 +26,7 @@ public class QueryRewriteService {
     private static final String CONDENSE_PROMPT = "prompts/condense-question.md";
 
     /** 近 10 轮原文（约 20 条） */
-    private static final int HISTORY_LIMIT = 20;
+    public static final int HISTORY_LIMIT = 20;
 
     private static final String SUMMARIZE_PROMPT = "prompts/history-summarize.md";
 

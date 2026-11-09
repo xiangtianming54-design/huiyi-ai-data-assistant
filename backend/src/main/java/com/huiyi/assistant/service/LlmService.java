@@ -2,6 +2,8 @@ package com.huiyi.assistant.service;
 
 import com.huiyi.assistant.common.exception.BizException;
 import com.huiyi.assistant.common.result.ResultCode;
+import com.huiyi.assistant.context.WorkspaceContext;
+import com.huiyi.assistant.context.WorkspaceContextHolder;
 import com.huiyi.assistant.observability.LlmCallRecorder;
 import com.huiyi.assistant.observability.ObservabilityContextHolder;
 import com.huiyi.assistant.observability.ObservabilityMetrics;
@@ -84,6 +86,8 @@ public class LlmService {
         long start = System.nanoTime();
         String purpose = ObservabilityContextHolder.stepType() == null ? "llm_stream" : ObservabilityContextHolder.stepType();
         String runId = ObservabilityContextHolder.runId();
+        String requestId = ObservabilityContextHolder.requestId();
+        WorkspaceContext workspace = WorkspaceContextHolder.get();
         AtomicInteger promptTokens = new AtomicInteger();
         AtomicInteger completionTokens = new AtomicInteger();
         AtomicBoolean sawUsage = new AtomicBoolean();
@@ -101,7 +105,7 @@ public class LlmService {
                 })
                 .map(LlmService::chunkText)
                 .filter(StringUtils::hasLength)
-                .doOnComplete(() -> withRunId(runId, () -> {
+                .doOnComplete(() -> withRequestContext(runId, requestId, workspace, () -> {
                     int latency = (int) Duration.ofNanos(System.nanoTime() - start).toMillis();
                     int recordedPrompt = 0;
                     int recordedCompletion = 0;
@@ -114,7 +118,7 @@ public class LlmService {
                     llmCallRecorder.record(purpose, "SUCCESS", recordedPrompt, recordedCompletion, latency, null);
                     observabilityMetrics.llm(true, recordedPrompt, recordedCompletion, Duration.ofMillis(latency));
                 }))
-                .doOnError(e -> withRunId(runId, () -> {
+                .doOnError(e -> withRequestContext(runId, requestId, workspace, () -> {
                     int latency = (int) Duration.ofNanos(System.nanoTime() - start).toMillis();
                     llmCallRecorder.record(purpose, "FAILED", 0, 0, latency, e.getMessage());
                     observabilityMetrics.llm(false, 0, 0, Duration.ofMillis(latency));
@@ -123,14 +127,29 @@ public class LlmService {
                 .onErrorMap(e -> new BizException(ResultCode.LLM_SERVICE_ERROR));
     }
 
-    /** 流式信号在池线程上，记账前把请求线程捕获的 runId 放回 holder，用完即还原。 */
-    private static void withRunId(String runId, Runnable action) {
-        String previous = ObservabilityContextHolder.runId();
+    /** 流式信号在池线程上，记账前把请求线程捕获的 runId、requestId、用户上下文放回 holder，用完即还原池线程原值。 */
+    private static void withRequestContext(String runId, String requestId, WorkspaceContext workspace,
+                                           Runnable action) {
+        String previousRunId = ObservabilityContextHolder.runId();
+        String previousRequestId = ObservabilityContextHolder.requestId();
+        WorkspaceContext previousWorkspace = WorkspaceContextHolder.get();
         ObservabilityContextHolder.setRunId(runId);
+        ObservabilityContextHolder.setRequestId(requestId);
+        setWorkspace(workspace);
         try {
             action.run();
         } finally {
-            ObservabilityContextHolder.setRunId(previous);
+            ObservabilityContextHolder.setRunId(previousRunId);
+            ObservabilityContextHolder.setRequestId(previousRequestId);
+            setWorkspace(previousWorkspace);
+        }
+    }
+
+    private static void setWorkspace(WorkspaceContext context) {
+        if (context == null) {
+            WorkspaceContextHolder.clear();
+        } else {
+            WorkspaceContextHolder.set(context);
         }
     }
 

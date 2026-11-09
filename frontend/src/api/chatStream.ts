@@ -1,6 +1,8 @@
+import { ElMessage } from 'element-plus'
 import type { Reference } from './index'
 import { saveObservabilityIds } from '../auth/requestId'
 import { getAccessToken, getWorkspaceId } from '../auth/token'
+import { quotaErrorKind } from '../quota/quotaView'
 
 export interface StreamCallbacks {
   onSession?: (sessionId: string) => void
@@ -8,6 +10,8 @@ export interface StreamCallbacks {
   onReferences?: (references: Reference[]) => void
   onError?: (message: string) => void
   onDone?: () => void
+  /** 入口被限流/额度/等级拦截（HTTP 200 的 JSON Result）：不吐字，只置阻断标记 */
+  onQuotaBlock?: (kind: 'rate' | 'quota' | 'tier3') => void
 }
 
 export function streamChat(
@@ -41,6 +45,26 @@ export function streamChat(
       saveObservabilityIds(response.headers)
       if (!response.ok || !response.body) {
         callbacks.onError?.(`请求失败（HTTP ${response.status}）`)
+        callbacks.onDone?.()
+        return
+      }
+
+      // 业务异常由后端全局异常处理器写成 HTTP 200 的 JSON Result，而不是 SSE 流
+      if ((response.headers.get('Content-Type') ?? '').includes('application/json')) {
+        const result = (await response.json().catch(() => null)) as {
+          code?: unknown
+          message?: unknown
+        } | null
+        const code = result && typeof result.code === 'number' ? result.code : null
+        const message = result && typeof result.message === 'string' ? result.message : '请求失败'
+        const kind = code === null ? null : quotaErrorKind(code)
+        if (kind) {
+          // 与预检一致：提示并置阻断标记，不让调用方追加空气泡
+          ElMessage.error(message)
+          callbacks.onQuotaBlock?.(kind)
+        } else {
+          callbacks.onError?.(message)
+        }
         callbacks.onDone?.()
         return
       }

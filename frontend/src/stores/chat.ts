@@ -1,7 +1,16 @@
 import { defineStore } from 'pinia'
 import { streamChat } from '../api/chatStream'
 import { analysisApi, chatApi, quotaApi, type AnalysisResult, type QuotaSnapshot, type Reference } from '../api'
+import { COMPOUND_WAIT_HINT } from '../components/assistantWaitHint'
 import { quotaErrorKind } from '../quota/quotaView'
+
+type QuotaBlockKind = 'rate' | 'quota' | 'tier3'
+
+/** 二次检查被限流/额度/等级拦截时，取阻断类型；其他错误为 null。 */
+function quotaBlockOf(error: unknown): QuotaBlockKind | null {
+  const code = (error as { code?: unknown }).code
+  return typeof code === 'number' ? quotaErrorKind(code) : null
+}
 
 /** 聊天消息：analysis 存在时表示数据查询富结果 */
 export interface ChatMessage {
@@ -36,13 +45,10 @@ export const useChatStore = defineStore('chat', {
           admissionTicket = ticket
         }
       } catch (error) {
-        const code = (error as { code?: unknown }).code
-        if (typeof code === 'number') {
-          const kind = quotaErrorKind(code)
-          if (kind === 'rate' || kind === 'quota' || kind === 'tier3') {
-            this.quotaBlock = kind
-            return
-          }
+        const kind = quotaBlockOf(error)
+        if (kind) {
+          this.quotaBlock = kind
+          return
         }
         // 其他预检失败仍按知识问答处理（错误提示已由拦截器统一处理）
       }
@@ -71,7 +77,7 @@ export const useChatStore = defineStore('chat', {
     /** 复合问题：统一问答接口，每个子问题一个气泡（知识→Markdown，数据→富结果卡片） */
     async askCompound(question: string, admissionTicket: string | undefined) {
       this.streaming = true
-      const markerIndex = this.messages.push({ role: 'assistant', content: '正在分解并并行回答多个问题…', streaming: true }) - 1
+      const markerIndex = this.messages.push({ role: 'assistant', content: COMPOUND_WAIT_HINT, streaming: true }) - 1
       try {
         const response = await chatApi.ask(question, this.sessionId, admissionTicket)
         const result = response.data.data
@@ -85,8 +91,15 @@ export const useChatStore = defineStore('chat', {
             this.messages.push({ role: 'assistant', content: part.answer, references: part.references })
           }
         }
-      } catch {
-        this.messages[markerIndex].content = '问答服务暂不可用，请稍后重试。'
+      } catch (error) {
+        const kind = quotaBlockOf(error)
+        if (kind) {
+          // 二次检查被拦截：与预检一致，移除占位气泡并置阻断标记（提示已由拦截器统一处理）
+          this.messages.splice(markerIndex, 1)
+          this.quotaBlock = kind
+        } else {
+          this.messages[markerIndex].content = '问答服务暂不可用，请稍后重试。'
+        }
       } finally {
         if (this.messages[markerIndex]) {
           this.messages[markerIndex].streaming = false
@@ -117,8 +130,16 @@ export const useChatStore = defineStore('chat', {
             this.messages[index].content = message
           }
         },
+        onQuotaBlock: (kind) => {
+          // 流式入口被拦截：不留下空气泡，与预检一样只置阻断标记
+          this.messages.splice(index, 1)
+          this.quotaBlock = kind
+        },
         onDone: () => {
-          this.messages[index].streaming = false
+          const message = this.messages[index]
+          if (message) {
+            message.streaming = false
+          }
           this.streaming = false
           stopFn = undefined
           void this.refreshQuota()
@@ -136,10 +157,20 @@ export const useChatStore = defineStore('chat', {
         const result = response.data.data
         this.sessionId = result.sessionId
         this.messages[index].analysis = result
-      } catch {
-        this.messages[index].content = '分析服务暂不可用，请稍后重试。'
+      } catch (error) {
+        const kind = quotaBlockOf(error)
+        if (kind) {
+          // 二次检查被拦截：与预检一致，移除占位气泡并置阻断标记（提示已由拦截器统一处理）
+          this.messages.splice(index, 1)
+          this.quotaBlock = kind
+        } else {
+          this.messages[index].content = '分析服务暂不可用，请稍后重试。'
+        }
       } finally {
-        this.messages[index].streaming = false
+        const message = this.messages[index]
+        if (message) {
+          message.streaming = false
+        }
         this.streaming = false
         void this.refreshQuota()
       }

@@ -83,6 +83,7 @@ public class LlmService {
     public Flux<String> chatStream(String prompt) {
         long start = System.nanoTime();
         String purpose = ObservabilityContextHolder.stepType() == null ? "llm_stream" : ObservabilityContextHolder.stepType();
+        String runId = ObservabilityContextHolder.runId();
         AtomicInteger promptTokens = new AtomicInteger();
         AtomicInteger completionTokens = new AtomicInteger();
         AtomicBoolean sawUsage = new AtomicBoolean();
@@ -100,7 +101,7 @@ public class LlmService {
                 })
                 .map(LlmService::chunkText)
                 .filter(StringUtils::hasLength)
-                .doOnComplete(() -> {
+                .doOnComplete(() -> withRunId(runId, () -> {
                     int latency = (int) Duration.ofNanos(System.nanoTime() - start).toMillis();
                     int recordedPrompt = 0;
                     int recordedCompletion = 0;
@@ -112,14 +113,25 @@ public class LlmService {
                     }
                     llmCallRecorder.record(purpose, "SUCCESS", recordedPrompt, recordedCompletion, latency, null);
                     observabilityMetrics.llm(true, recordedPrompt, recordedCompletion, Duration.ofMillis(latency));
-                })
-                .doOnError(e -> {
+                }))
+                .doOnError(e -> withRunId(runId, () -> {
                     int latency = (int) Duration.ofNanos(System.nanoTime() - start).toMillis();
                     llmCallRecorder.record(purpose, "FAILED", 0, 0, latency, e.getMessage());
                     observabilityMetrics.llm(false, 0, 0, Duration.ofMillis(latency));
                     log.error("LLM 流式调用失败: {}", e.getMessage());
-                })
+                }))
                 .onErrorMap(e -> new BizException(ResultCode.LLM_SERVICE_ERROR));
+    }
+
+    /** 流式信号在池线程上，记账前把请求线程捕获的 runId 放回 holder，用完即还原。 */
+    private static void withRunId(String runId, Runnable action) {
+        String previous = ObservabilityContextHolder.runId();
+        ObservabilityContextHolder.setRunId(runId);
+        try {
+            action.run();
+        } finally {
+            ObservabilityContextHolder.setRunId(previous);
+        }
     }
 
     private static Usage usageOf(ChatResponse response) {

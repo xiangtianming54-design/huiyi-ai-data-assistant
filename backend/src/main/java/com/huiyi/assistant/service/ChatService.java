@@ -142,7 +142,7 @@ public class ChatService {
     public SseEmitter chatStream(ChatRequestDTO request) {
         observabilityMetrics.chatRequest();
         long start = System.nanoTime();
-        requestTraceService.start("chat_stream", request.getQuestion(), request.getSessionId());
+        String runId = requestTraceService.start("chat_stream", request.getQuestion(), request.getSessionId());
         String sessionId = resolveScopedSession(request.getSessionId());
         chatSessionService.saveUserMessage(sessionId, request.getQuestion(), null);
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
@@ -201,7 +201,7 @@ public class ChatService {
                                     : partial,
                             intent, null, references,
                             decision.layer().name().toLowerCase(), decision.score());
-                    requestTraceService.finish("FAILED", intent.getCode(), error.getMessage(), start);
+                    requestTraceService.finish(runId, "FAILED", intent.getCode(), error.getMessage(), start);
                     observabilityMetrics.chatFailed(Duration.ofNanos(System.nanoTime() - start));
                 },
                 () -> {
@@ -210,7 +210,7 @@ public class ChatService {
                     chatSessionService.saveAssistantMessage(sessionId, OUTPUT_GUARD.sanitize(fullAnswer.toString()),
                             intent, sqlText, references,
                             decision.layer().name().toLowerCase(), decision.score());
-                    requestTraceService.finish("SUCCEEDED", intent.getCode(), null, start);
+                    requestTraceService.finish(runId, "SUCCEEDED", intent.getCode(), null, start);
                     Duration first = firstTokenAt.get() == 0 ? null : Duration.ofNanos(firstTokenAt.get() - start);
                     observabilityMetrics.chatSuccess(Duration.ofNanos(System.nanoTime() - start), first);
                 });

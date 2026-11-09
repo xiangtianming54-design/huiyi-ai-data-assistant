@@ -2,11 +2,13 @@ package com.huiyi.assistant.observability;
 
 import com.huiyi.assistant.mapper.LlmCallMapper;
 import com.huiyi.assistant.quota.RunTokenSum;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.function.Supplier;
 
+@Slf4j
 @Service
 public class RequestTraceService {
 
@@ -60,15 +62,34 @@ public class RequestTraceService {
     }
 
     public void finish(String status, String intent, String error, long startNanos) {
-        finish(status, intent, error, startNanos, null);
+        finish(ObservabilityContextHolder.runId(), status, intent, error, startNanos, null);
     }
 
     public void finish(String status, String intent, String error, long startNanos, String errorCode) {
-        String runId = ObservabilityContextHolder.runId();
-        RunTokenSum sum = runId == null ? null : llmCallMapper.sumByRun(runId);
-        int promptTokens = sum == null ? 0 : sum.promptTokens();
-        int completionTokens = sum == null ? 0 : sum.completionTokens();
-        runRecorder.finish(status, intent, error, promptTokens, completionTokens, millis(startNanos), errorCode);
+        finish(ObservabilityContextHolder.runId(), status, intent, error, startNanos, errorCode);
+    }
+
+    public void finish(String runId, String status, String intent, String error, long startNanos) {
+        finish(runId, status, intent, error, startNanos, null);
+    }
+
+    public void finish(String runId, String status, String intent, String error, long startNanos, String errorCode) {
+        RunTokenSum sum = sumOrZero(runId);
+        runRecorder.finish(status, intent, error, sum.promptTokens(), sum.completionTokens(),
+                millis(startNanos), errorCode);
+    }
+
+    private RunTokenSum sumOrZero(String runId) {
+        if (runId == null) {
+            return new RunTokenSum(0, 0);
+        }
+        try {
+            RunTokenSum sum = llmCallMapper.sumByRun(runId);
+            return sum == null ? new RunTokenSum(0, 0) : sum;
+        } catch (RuntimeException e) {
+            log.warn("llm_calls sum by run failed runId={}", runId, e);
+            return new RunTokenSum(0, 0);
+        }
     }
 
     public static int millis(long startNanos) {

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -47,5 +48,14 @@ class RequestTraceServiceTest {
         service.finish("SUCCEEDED", "data_query", null, System.nanoTime());
 
         verify(runRecorder).finish(eq("SUCCEEDED"), eq("data_query"), isNull(), eq(3), eq(4), any(), isNull());
+    }
+
+    @Test
+    void finishRecordsZeroWhenSumThrows() {
+        when(llmCallMapper.sumByRun("run_task7")).thenThrow(new RuntimeException("db"));
+
+        assertDoesNotThrow(() -> service.finish("SUCCEEDED", "data_query", null, System.nanoTime()));
+
+        verify(runRecorder).finish(eq("SUCCEEDED"), eq("data_query"), isNull(), eq(0), eq(0), any(), isNull());
     }
 }

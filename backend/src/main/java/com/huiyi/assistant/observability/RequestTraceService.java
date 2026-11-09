@@ -75,8 +75,18 @@ public class RequestTraceService {
 
     public void finish(String runId, String status, String intent, String error, long startNanos, String errorCode) {
         RunTokenSum sum = sumOrZero(runId);
-        runRecorder.finish(status, intent, error, sum.promptTokens(), sum.completionTokens(),
-                millis(startNanos), errorCode);
+        String previous = ObservabilityContextHolder.runId();
+        if (runId != null) {
+            ObservabilityContextHolder.setRunId(runId);
+        }
+        try {
+            runRecorder.finish(status, intent, error, sum.promptTokens(), sum.completionTokens(),
+                    millis(startNanos), errorCode);
+        } finally {
+            if (runId != null) {
+                ObservabilityContextHolder.setRunId(previous);
+            }
+        }
     }
 
     private RunTokenSum sumOrZero(String runId) {

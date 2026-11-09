@@ -1,10 +1,12 @@
 package com.huiyi.assistant.quota;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huiyi.assistant.agent.AgentRunner;
 import com.huiyi.assistant.api.v1.AnalysisV1Controller;
 import com.huiyi.assistant.api.v1.ChatV1Controller;
 import com.huiyi.assistant.audit.AuditService;
 import com.huiyi.assistant.common.exception.BizException;
+import com.huiyi.assistant.common.exception.GlobalExceptionHandler;
 import com.huiyi.assistant.common.result.Result;
 import com.huiyi.assistant.context.WorkspaceContext;
 import com.huiyi.assistant.model.dto.AnalysisRequestDTO;
@@ -28,8 +30,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.MethodParameter;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.support.WebDataBinderFactory;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.method.support.ModelAndViewContainer;
 
 import java.util.List;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -192,6 +208,41 @@ class AskGateTest {
         verify(analysisService, never()).query(any());
         verifyNoInteractions(auditService);
         verify(gate).enter(USER_ID, QUESTION, SESSION_ID, OLD_TICKET, false);
+    }
+
+    @Test
+    void streamRejectionStaysJsonWhenClientAcceptsEventStream() throws Exception {
+        AskGate gate = mock(AskGate.class);
+        WorkspaceService workspaceService = mock(WorkspaceService.class);
+        when(workspaceService.requireMember(any(), any())).thenReturn(context());
+        doThrow(new BizException(4292, "今日 Token 额度不足，请提额后再问。"))
+                .when(gate).enter(anyLong(), any(), any(), any(), anyBoolean());
+        ChatV1Controller controller = new ChatV1Controller(
+                workspaceService, mock(ChatService.class), mock(ChatSessionService.class),
+                mock(AuditService.class), gate);
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler(new ObjectMapper()))
+                .setCustomArgumentResolvers(new HandlerMethodArgumentResolver() {
+                    @Override
+                    public boolean supportsParameter(MethodParameter parameter) {
+                        return parameter.hasParameterAnnotation(AuthenticationPrincipal.class);
+                    }
+
+                    @Override
+                    public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
+                                                  NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
+                        return new AuthUser(USER_ID, "ada", 1);
+                    }
+                })
+                .build();
+
+        mockMvc.perform(post("/api/v1/workspaces/{workspaceId}/chat/stream", WORKSPACE_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.TEXT_EVENT_STREAM)
+                        .content("{\"question\":\"今天卖了多少\",\"sessionId\":\"s\",\"admissionTicket\":\"old-ticket\"}"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.code").value(4292));
     }
 
     @Test

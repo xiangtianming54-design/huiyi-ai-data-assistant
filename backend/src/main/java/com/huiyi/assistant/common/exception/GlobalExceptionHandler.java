@@ -1,13 +1,18 @@
 package com.huiyi.assistant.common.exception;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huiyi.assistant.common.result.Result;
 import com.huiyi.assistant.common.result.ResultCode;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
 
 /**
@@ -19,13 +24,21 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private final ObjectMapper objectMapper;
+
+    public GlobalExceptionHandler(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
     /**
-     * 业务异常：按约定返回码返回，不打印堆栈。
+     * 业务异常：按约定返回码写 JSON。直接写响应，这样 {@code Accept: text/event-stream} 的流式入口被拒绝时仍是 {@code Result}。
      */
     @ExceptionHandler(BizException.class)
-    public Result<Void> handleBizException(BizException e) {
+    public void handleBizException(BizException e, HttpServletResponse response) throws IOException {
         log.warn("业务异常: code={}, message={}", e.getCode(), e.getMessage());
-        return Result.error(e.getCode(), e.getMessage());
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.getWriter().write(objectMapper.writeValueAsString(Result.error(e.getCode(), e.getMessage())));
     }
 
     /**

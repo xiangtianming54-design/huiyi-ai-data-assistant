@@ -35,6 +35,15 @@ class FlywayMigrationFilesTest {
         assertTrue(sql.contains("knowledge_spaces"), "V12 must create knowledge_spaces");
         assertTrue(sql.contains("async_tasks"), "V13 must create async_tasks");
         assertTrue(sql.contains("storage_key"), "V13 must add storage_key");
+        assertTrue(sql.contains("user_tier"), "missing user_tier");
+        assertTrue(sql.contains("token_boost_requests"), "missing token_boost_requests");
+        assertTrue(sql.contains("applicant_user_id"), "missing applicant_user_id");
+        assertTrue(sql.contains("quota_date"), "missing quota_date");
+        String v14 = readMigration("V14__user_tier_and_token_boost.sql");
+        assertTrue(sameStatement(v14, "username = 'blank'", "id = 16", "user_tier = 3"),
+                "username = 'blank' and id = 16 must set user_tier = 3");
+        assertTrue(sameStatement(v14, "username = 'limit'", "id = 17", "user_tier = 2"),
+                "username = 'limit' and id = 17 must set user_tier = 2");
         assertFalse(sql.contains("file_hash"), "no file_hash column");
         assertFalse(sql.contains("parse_status"), "no parse_status column");
         assertFalse(sql.contains("doc_version"), "no doc_version column");
@@ -61,14 +70,16 @@ class FlywayMigrationFilesTest {
     }
 
     @Test
-    void noMigrationFilenameStartsWithV14() throws IOException {
+    void v14MigrationIsUserTierAndTokenBoost() throws IOException {
         assertTrue(Files.isDirectory(MODULE), "db/migration directory missing");
         try (Stream<Path> paths = Files.list(MODULE)) {
             List<String> v14 = paths
                     .map(path -> path.getFileName().toString())
                     .filter(name -> name.startsWith("V14"))
+                    .sorted()
                     .collect(Collectors.toList());
-            assertTrue(v14.isEmpty(), "no migration filename may start with V14, found " + v14);
+            assertTrue(v14.equals(List.of("V14__user_tier_and_token_boost.sql")),
+                    "V14 must be user tier and token boost, found " + v14);
         }
     }
 
@@ -83,6 +94,30 @@ class FlywayMigrationFilesTest {
                 "init_mysql.sql must not create chat_session_summaries");
         assertTrue(init.contains("sales_orders"), "business demo tables stay in init_mysql.sql");
         assertTrue(init.contains("huiyi_ro"), "readonly account stays in init_mysql.sql");
+    }
+
+    private String readMigration(String fileName) throws IOException {
+        Path path = MODULE.resolve(fileName);
+        if (!Files.isRegularFile(path)) {
+            return "";
+        }
+        return Files.readString(path, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * One semicolon-separated statement must carry the username predicate, the id predicate, and the tier assignment.
+     * Digit boundaries keep {@code id = 16} from matching {@code id = 160}.
+     */
+    private static boolean sameStatement(String sql, String usernameExpr, String idExpr, String tierExpr) {
+        for (String statement : sql.split(";")) {
+            String compact = statement.replaceAll("\\s+", " ");
+            if (compact.contains(usernameExpr)
+                    && compact.matches("(?s).*\\b" + idExpr + "\\b.*")
+                    && compact.matches("(?s).*\\b" + tierExpr + "\\b.*")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String readAllMigrations() throws IOException {

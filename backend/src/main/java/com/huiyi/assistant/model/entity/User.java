@@ -20,6 +20,7 @@ public class User {
     private String email;
     private String displayName;
     private String status;
+    private Integer userTier;
     private Integer tokenVersion;
     private Integer failedLoginCount;
     private LocalDateTime lockedUntil;

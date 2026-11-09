@@ -82,6 +82,7 @@ public class AuthService {
         user.setPasswordHash(passwordService.hash(request.getPassword()));
         user.setStatus(STATUS_ACTIVE);
         user.setTokenVersion(0);
+        user.setUserTier(1);
         userMapper.insert(user);
 
         Workspace defaultWorkspace = workspaceMapper.selectByCode(properties.getDefaultWorkspaceCode());

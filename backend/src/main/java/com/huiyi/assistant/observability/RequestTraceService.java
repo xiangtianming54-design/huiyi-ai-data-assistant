@@ -1,5 +1,7 @@
 package com.huiyi.assistant.observability;
 
+import com.huiyi.assistant.mapper.LlmCallMapper;
+import com.huiyi.assistant.quota.RunTokenSum;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -9,9 +11,11 @@ import java.util.function.Supplier;
 public class RequestTraceService {
 
     private final AssistantRunRecorder runRecorder;
+    private final LlmCallMapper llmCallMapper;
 
-    public RequestTraceService(AssistantRunRecorder runRecorder) {
+    public RequestTraceService(AssistantRunRecorder runRecorder, LlmCallMapper llmCallMapper) {
         this.runRecorder = runRecorder;
+        this.llmCallMapper = llmCallMapper;
     }
 
     public String start(String entrypoint, String question, String sessionId) {
@@ -60,7 +64,11 @@ public class RequestTraceService {
     }
 
     public void finish(String status, String intent, String error, long startNanos, String errorCode) {
-        runRecorder.finish(status, intent, error, 0, 0, millis(startNanos), errorCode);
+        String runId = ObservabilityContextHolder.runId();
+        RunTokenSum sum = runId == null ? null : llmCallMapper.sumByRun(runId);
+        int promptTokens = sum == null ? 0 : sum.promptTokens();
+        int completionTokens = sum == null ? 0 : sum.completionTokens();
+        runRecorder.finish(status, intent, error, promptTokens, completionTokens, millis(startNanos), errorCode);
     }
 
     public static int millis(long startNanos) {

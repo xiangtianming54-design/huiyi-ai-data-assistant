@@ -46,6 +46,7 @@ public class LlmConfig {
         OpenAiChatOptions defaultOptions = OpenAiChatOptions.builder()
                 .model(model)
                 .temperature(0.2)
+                .streamUsage(true)
                 .build();
 
         RetryTemplate retryTemplate = RetryTemplate.builder()

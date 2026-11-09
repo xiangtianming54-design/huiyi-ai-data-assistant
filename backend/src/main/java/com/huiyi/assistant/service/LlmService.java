@@ -5,15 +5,19 @@ import com.huiyi.assistant.common.result.ResultCode;
 import com.huiyi.assistant.observability.LlmCallRecorder;
 import com.huiyi.assistant.observability.ObservabilityContextHolder;
 import com.huiyi.assistant.observability.ObservabilityMetrics;
+import com.huiyi.assistant.quota.StreamUsage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * LLM 服务：OpenAI 兼容 API 的非流式与流式补全，统一异常包装。
@@ -79,14 +83,35 @@ public class LlmService {
     public Flux<String> chatStream(String prompt) {
         long start = System.nanoTime();
         String purpose = ObservabilityContextHolder.stepType() == null ? "llm_stream" : ObservabilityContextHolder.stepType();
+        AtomicInteger promptTokens = new AtomicInteger();
+        AtomicInteger completionTokens = new AtomicInteger();
+        AtomicBoolean sawUsage = new AtomicBoolean();
         return chatClient.prompt(prompt)
                 .stream()
-                .content()
+                .chatResponse()
                 .timeout(STREAM_TIMEOUT)
+                .doOnNext(response -> {
+                    int[] usage = StreamUsage.from(usageOf(response));
+                    if (usage != null) {
+                        promptTokens.set(usage[0]);
+                        completionTokens.set(usage[1]);
+                        sawUsage.set(true);
+                    }
+                })
+                .map(LlmService::chunkText)
+                .filter(StringUtils::hasLength)
                 .doOnComplete(() -> {
                     int latency = (int) Duration.ofNanos(System.nanoTime() - start).toMillis();
-                    llmCallRecorder.record(purpose, "SUCCESS", 0, 0, latency, null);
-                    observabilityMetrics.llm(true, 0, 0, Duration.ofMillis(latency));
+                    int recordedPrompt = 0;
+                    int recordedCompletion = 0;
+                    if (sawUsage.get()) {
+                        recordedPrompt = promptTokens.get();
+                        recordedCompletion = completionTokens.get();
+                    } else {
+                        log.warn("流式用量缺失，本段记 0 purpose={}", purpose);
+                    }
+                    llmCallRecorder.record(purpose, "SUCCESS", recordedPrompt, recordedCompletion, latency, null);
+                    observabilityMetrics.llm(true, recordedPrompt, recordedCompletion, Duration.ofMillis(latency));
                 })
                 .doOnError(e -> {
                     int latency = (int) Duration.ofNanos(System.nanoTime() - start).toMillis();
@@ -95,6 +120,22 @@ public class LlmService {
                     log.error("LLM 流式调用失败: {}", e.getMessage());
                 })
                 .onErrorMap(e -> new BizException(ResultCode.LLM_SERVICE_ERROR));
+    }
+
+    private static Usage usageOf(ChatResponse response) {
+        if (response == null || response.getMetadata() == null) {
+            return null;
+        }
+        return response.getMetadata().getUsage();
+    }
+
+    /** 与 Spring AI {@code content()} 相同：没有文本时是空串，空串随后被滤掉。 */
+    private static String chunkText(ChatResponse response) {
+        if (response.getResult() == null || response.getResult().getOutput() == null
+                || response.getResult().getOutput().getText() == null) {
+            return "";
+        }
+        return response.getResult().getOutput().getText();
     }
 
     private int tokens(ChatResponse response, boolean prompt) {

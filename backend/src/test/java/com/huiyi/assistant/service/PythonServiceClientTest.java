@@ -5,9 +5,11 @@ import com.huiyi.assistant.config.WebClientConfig;
 import com.huiyi.assistant.model.dto.ParseResultDTO;
 import com.huiyi.assistant.model.dto.SqlValidateResponseDTO;
 import com.huiyi.assistant.model.dto.VectorSearchResponseDTO;
+import com.huiyi.assistant.observability.LlmCallRecorder;
 import com.huiyi.assistant.observability.ObservabilityContextHolder;
 import com.huiyi.assistant.observability.ObservabilityMetrics;
 import com.huiyi.assistant.observability.ObservabilityProperties;
+import com.huiyi.assistant.quota.QueryEmbeddingMeter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -25,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 /**
  * PythonServiceClient 测试：MockWebServer 打桩 Python Sidecar。
@@ -47,7 +50,8 @@ class PythonServiceClientTest {
                 WebClient.builder().baseUrl(mockWebServer.url("/").toString())
                         .filter(WebClientConfig.observabilityHeaders())
                         .build(),
-                new ObservabilityMetrics(properties, new SimpleMeterRegistry()));
+                new ObservabilityMetrics(properties, new SimpleMeterRegistry()),
+                new QueryEmbeddingMeter(mock(LlmCallRecorder.class)));
     }
 
     @AfterEach

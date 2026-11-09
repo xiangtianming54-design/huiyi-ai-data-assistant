@@ -54,7 +54,11 @@ def search(
             request.collection_name,
             knowledge_space_ids=request.knowledge_space_ids,
         )
-    return SearchResponse(success=True, hits=hits)
+    return SearchResponse(
+        success=True,
+        hits=hits,
+        embedding_tokens=getattr(hits, "embedding_tokens", None),
+    )
 
 
 @router.post("/backfill-space-ids", response_model=BackfillSpaceIdsResponse, summary="回填 chunk 的知识空间 id")

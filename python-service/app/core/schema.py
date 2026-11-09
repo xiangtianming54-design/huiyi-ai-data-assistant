@@ -109,6 +109,7 @@ class SearchResponse(BaseModel):
 
     success: bool
     hits: list[SearchHit]
+    embedding_tokens: int | None = None
 
 
 class DeleteRequest(BaseModel):

@@ -24,6 +24,19 @@ BATCH_SIZE = 32
 MAX_RETRIES = 2
 
 
+def usage_tokens(body: dict) -> int | None:
+    """有 usage.total_tokens 时返回该整数，否则返回 None。"""
+    if not isinstance(body, dict):
+        return None
+    usage = body.get("usage")
+    if not isinstance(usage, dict) or "total_tokens" not in usage:
+        return None
+    total = usage["total_tokens"]
+    if isinstance(total, bool) or not isinstance(total, int):
+        return None
+    return total
+
+
 class EmbeddingService:
     """OpenAI 兼容 embedding API 客户端。"""
 
@@ -40,13 +53,21 @@ class EmbeddingService:
         self._check_config()
         vectors: list[list[float]] = []
         for i in range(0, len(texts), BATCH_SIZE):
-            vectors.extend(self._embed_batch(texts[i : i + BATCH_SIZE]))
+            batch, _tokens = self._embed_batch(texts[i : i + BATCH_SIZE])
+            vectors.extend(batch)
         self._check_dimensions(vectors)
         return vectors
 
     def embed_single(self, text: str) -> list[float]:
         """单条取向量。"""
         return self.embed([text])[0]
+
+    def embed_query(self, text: str) -> tuple[list[float], int | None]:
+        """单条查询向量，并带出本次响应的 usage.total_tokens。"""
+        self._check_config()
+        vectors, tokens = self._embed_batch([text])
+        self._check_dimensions(vectors)
+        return vectors[0], tokens
 
     def _check_config(self) -> None:
         if not self._base_url or not self._api_key or not self._model:
@@ -55,7 +76,7 @@ class EmbeddingService:
                 "EMBEDDING_BASE_URL / EMBEDDING_API_KEY（或沿用 LLM_BASE_URL / LLM_API_KEY）"
             )
 
-    def _embed_batch(self, texts: list[str]) -> list[list[float]]:
+    def _embed_batch(self, texts: list[str]) -> tuple[list[list[float]], int | None]:
         payload = {"model": self._model, "input": texts}
         headers = {"Authorization": f"Bearer {self._api_key}"}
         last_error: Exception | None = None
@@ -65,7 +86,8 @@ class EmbeddingService:
                 with httpx.Client(timeout=30) as client:
                     response = client.post(f"{self._base_url}/embeddings", json=payload, headers=headers)
                 if response.status_code == 200:
-                    return self._parse_response(response.json(), expected=len(texts))
+                    body = response.json()
+                    return self._parse_response(body, expected=len(texts)), usage_tokens(body)
                 # 4xx（除 429）属于配置/参数问题，重试无意义
                 if 400 <= response.status_code < 500 and response.status_code != 429:
                     raise EmbeddingError(f"Embedding API 返回 {response.status_code}: {response.text[:200]}")

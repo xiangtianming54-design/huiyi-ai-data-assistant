@@ -13,6 +13,7 @@ import com.huiyi.assistant.model.dto.VectorSearchRequestDTO;
 import com.huiyi.assistant.model.dto.VectorSearchResponseDTO;
 import com.huiyi.assistant.model.dto.VectorUpsertRequestDTO;
 import com.huiyi.assistant.observability.ObservabilityMetrics;
+import com.huiyi.assistant.quota.QueryEmbeddingMeter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
@@ -49,10 +50,13 @@ public class PythonServiceClient {
 
     private final WebClient pythonServiceWebClient;
     private final ObservabilityMetrics observabilityMetrics;
+    private final QueryEmbeddingMeter queryEmbeddingMeter;
 
-    public PythonServiceClient(WebClient pythonServiceWebClient, ObservabilityMetrics observabilityMetrics) {
+    public PythonServiceClient(WebClient pythonServiceWebClient, ObservabilityMetrics observabilityMetrics,
+                               QueryEmbeddingMeter queryEmbeddingMeter) {
         this.pythonServiceWebClient = pythonServiceWebClient;
         this.observabilityMetrics = observabilityMetrics;
+        this.queryEmbeddingMeter = queryEmbeddingMeter;
     }
 
     /**
@@ -182,9 +186,11 @@ public class PythonServiceClient {
                                                  List<Long> knowledgeSpaceIds) {
         VectorSearchRequestDTO request = new VectorSearchRequestDTO(query, topK, collectionName, workspaceId,
                 knowledgeSpaceIds);
-        return post("/api/vector/search",
+        VectorSearchResponseDTO response = post("/api/vector/search",
                 spec -> spec.contentType(MediaType.APPLICATION_JSON).bodyValue(request),
                 VectorSearchResponseDTO.class);
+        queryEmbeddingMeter.record(query, response == null ? null : response.getEmbeddingTokens());
+        return response;
     }
 
     /**

@@ -67,22 +67,22 @@ class VectorStore:
     ) -> list[SearchHit]:
         """知识库 collection 走向量+关键词 RRF；其它 collection 仍只做向量。"""
         if knowledge_space_ids is not None and len(knowledge_space_ids) == 0:
-            return []
+            return _Hits([], None)
         fetch = top_k * 2 if collection_name == settings.chroma_collection else top_k
-        vector_hits = self._vector_search(
+        vector_hits, embedding_tokens = self._vector_search(
             query, fetch, collection_name, workspace_id=workspace_id, knowledge_space_ids=knowledge_space_ids
         )
         if collection_name != settings.chroma_collection:
-            return vector_hits[:top_k]
+            return _Hits(vector_hits[:top_k], embedding_tokens)
         qualified = [hit for hit in vector_hits if hit.score >= VECTOR_SCORE_THRESHOLD]
         try:
             keyword_raw = self._keyword.search(
                 collection_name, query, fetch, workspace_id=workspace_id, knowledge_space_ids=knowledge_space_ids
             )
         except Exception:
-            return qualified[:top_k]
+            return _Hits(qualified[:top_k], embedding_tokens)
         if not keyword_raw:
-            return qualified[:top_k]
+            return _Hits(qualified[:top_k], embedding_tokens)
         merged_ids = rrf_merge(
             [(hit.id, hit.score) for hit in qualified],
             [(item["id"], item["score"]) for item in keyword_raw],
@@ -97,7 +97,8 @@ class VectorStore:
                     metadata=item["metadata"],
                     score=0.0,
                 )
-        return [by_id[doc_id] for doc_id, _ in merged_ids if doc_id in by_id]
+        merged = [by_id[doc_id] for doc_id, _ in merged_ids if doc_id in by_id]
+        return _Hits(merged, embedding_tokens)
 
     def search_by_workspace(
         self,
@@ -254,12 +255,12 @@ class VectorStore:
         collection_name: str,
         workspace_id: int | None = None,
         knowledge_space_ids: list[int] | None = None,
-    ) -> list[SearchHit]:
+    ) -> tuple[list[SearchHit], int | None]:
         """query embed → top_k 检索，score 为 cosine 相似度。知识库必须带 where 过滤。"""
         collection = self._collection(collection_name)
         if collection.count() == 0:
-            return []
-        query_embedding = self._embedding.embed_single(query)
+            return [], None
+        query_embedding, embedding_tokens = self._embed_query(query)
         kwargs: dict = {
             "query_embeddings": [query_embedding],
             "n_results": min(top_k, collection.count()),
@@ -271,9 +272,9 @@ class VectorStore:
         try:
             result = collection.query(**kwargs)
         except Exception:
-            return []
+            return [], embedding_tokens
         if not result or not result.get("ids") or not result["ids"][0]:
-            return []
+            return [], embedding_tokens
         hits = []
         for chunk_id, document, metadata, distance in zip(
             result["ids"][0],
@@ -289,7 +290,22 @@ class VectorStore:
                     score=round(1.0 - distance, 4),
                 )
             )
-        return hits
+        return hits, embedding_tokens
+
+    def _embed_query(self, query: str) -> tuple[list[float], int | None]:
+        """查询向量。测试替身没有 embed_query 时只返回向量，用量为 None。"""
+        embed_query = getattr(self._embedding, "embed_query", None)
+        if embed_query is None:
+            return self._embedding.embed_single(query), None
+        return embed_query(query)
+
+
+class _Hits(list):
+    """检索命中，并带上这次查询向量化的服务商 Token。"""
+
+    def __init__(self, hits: list, embedding_tokens: int | None) -> None:
+        super().__init__(hits)
+        self.embedding_tokens = embedding_tokens
 
 
 # ===== 延迟初始化的模块级单例（测试可通过依赖注入替换） =====

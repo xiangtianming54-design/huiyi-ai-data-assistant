@@ -1,5 +1,6 @@
 package com.huiyi.assistant.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
@@ -18,6 +19,10 @@ public class VectorSearchResponseDTO {
 
     /** 命中列表 */
     private List<Hit> hits;
+
+    /** 查询向量化的服务商 total_tokens；响应没有该字段时为 null */
+    @JsonProperty("embedding_tokens")
+    private Integer embeddingTokens;
 
     /**
      * 单个命中项。

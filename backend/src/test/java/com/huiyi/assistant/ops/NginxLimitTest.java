@@ -52,9 +52,22 @@ class NginxLimitTest {
         String api = locationBlock(conf, "/api/");
         assertTrue(auth.contains(AUTH_BURST), "auth location must limit at burst=5");
         assertTrue(api.contains(API_BURST), "api location must limit at burst=20");
+        assertFalse(auth.contains("deny all"), "refresh and logout stay on the auth prefix without a source deny");
         for (String directive : PROXY_DIRECTIVES) {
             assertTrue(auth.contains(directive), "auth location missing " + directive);
             assertTrue(api.contains(directive), "api location missing " + directive);
+        }
+        for (String path : new String[]{"= /api/v1/auth/register", "= /api/v1/auth/login"}) {
+            String blocked = locationBlock(conf, path);
+            assertTrue(blocked.contains("allow 127.0.0.1;"), path + " must allow loopback");
+            assertTrue(blocked.contains("allow 10.0.0.0/8;"), path + " must allow private 10/8");
+            assertTrue(blocked.contains("allow 172.16.0.0/12;"), path + " must allow private 172.16/12");
+            assertTrue(blocked.contains("allow 192.168.0.0/16;"), path + " must allow private 192.168/16");
+            assertTrue(blocked.contains("deny all;"), path + " must deny other sources");
+            assertTrue(blocked.contains(AUTH_BURST), path + " must keep the auth rate limit");
+            for (String directive : PROXY_DIRECTIVES) {
+                assertTrue(blocked.contains(directive), path + " missing " + directive);
+            }
         }
 
         assertTrue(uncommentedLineEquals(conf, "gzip on;"), "gzip on must be an active directive");

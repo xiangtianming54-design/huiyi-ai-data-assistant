@@ -4,6 +4,7 @@
     <el-aside width="220px" class="app-aside">
       <div class="app-logo">
         <span class="app-logo-title">会意</span>
+        <div class="app-logo-rule"></div>
         <span class="app-logo-sub">企业经营数据智能分析助手</span>
       </div>
       <el-menu :default-active="$route.path" router class="app-menu">
@@ -64,71 +65,90 @@ async function onLogout() {
 </script>
 
 <style>
-html, body, #app {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
-
 .app-layout {
   height: 100%;
+  background: var(--huiyi-paper);
 }
 
 .app-aside {
-  background: #001529;
+  background: var(--huiyi-card);
+  border-right: 1px solid var(--huiyi-line);
   display: flex;
   flex-direction: column;
 }
 
 .app-logo {
-  padding: 20px 16px;
+  padding: 28px 20px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .app-logo-title {
-  color: #fff;
-  font-size: 22px;
-  font-weight: 600;
+  font-family: var(--huiyi-serif);
+  color: var(--huiyi-ink);
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+}
+
+.app-logo-rule {
+  width: 28px;
+  height: 1px;
+  background: var(--huiyi-brass);
 }
 
 .app-logo-sub {
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--huiyi-muted);
   font-size: 12px;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
 }
 
 .app-menu {
   border-right: none;
   background: transparent;
+  --el-menu-bg-color: transparent;
+  --el-menu-text-color: var(--huiyi-muted);
+  --el-menu-hover-bg-color: transparent;
+  --el-menu-hover-text-color: var(--huiyi-ink);
+  --el-menu-active-color: var(--huiyi-ink);
 }
 
 .app-menu .el-menu-item {
-  color: rgba(255, 255, 255, 0.75);
+  border-left: 2px solid transparent;
+  margin: 2px 0;
 }
 
-.app-menu .el-menu-item.is-active,
+.app-menu .el-menu-item.is-active {
+  background: transparent;
+  border-left-color: var(--huiyi-brass);
+}
+
 .app-menu .el-menu-item:hover {
-  background: #1890ff;
-  color: #fff;
+  background: transparent;
 }
 
 .app-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #fff;
-  border-bottom: 1px solid #ebeef5;
+  background: var(--huiyi-paper);
+  border-bottom: 1px solid var(--huiyi-line);
 }
 
 .user-name {
   margin-left: auto;
-  color: #606266;
+  color: var(--huiyi-muted);
+  letter-spacing: 0.04em;
 }
 
 .app-main {
-  background: #f5f7fa;
-  padding: 20px;
-  overflow-y: auto;
+  background: var(--huiyi-paper);
+  padding: 24px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 </style>

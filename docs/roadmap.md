@@ -28,7 +28,8 @@
 | **v1.2.0** | Enterprise Knowledge Plane | 3–4 周 | 知识空间、检索权限过滤（异步/OSS 延后） |
 | **v1.3.0** | Async Ingestion | 3–4 周 | 上传立刻返回、本地落盘、`DOC_PARSE`、失败重试 |
 | **v1.4.0** | Production Ready | 3–4 周 | staging/prod、备份、限流、压测、告警 |
-| **v1.5.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
+| **v1.5.0** | Token Metering & User Tiers | 2–3 周 | 按人 Token 额度、用户等级、当日提额、内网注册登录 |
+| **v1.6.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
 
 ## 已发布：v1.4.0 Production Ready
 
@@ -40,7 +41,7 @@
 
 ## 当前开发：无进行中的版本
 
-v1.4.1 按人计量和用户等级只有需求整理，尚未实施，不在标签 `v1.4.0` 里。见 [2026-11-04-v141-token-metering-design.md](superpowers/specs/2026-11-04-v141-token-metering-design.md)。v1.5.0 及以后仍按上面的版本表，没有开工。
+v1.5.0 按人计量和用户等级只有需求整理，尚未实施，不在标签 `v1.4.0` 里。2026-11-04 曾记为 v1.4.1，现改为 v1.5.0；原先的平台化范围顺延为 v1.6.0+。见 [2026-11-09-v15-token-metering-and-user-tiers.md](superpowers/specs/2026-11-09-v15-token-metering-and-user-tiers.md)。v1.6.0 及以后没有开工。
 
 ## 后续版本（摘要）
 
@@ -56,7 +57,8 @@ v1.4.1 按人计量和用户等级只有需求整理，尚未实施，不在标�
 | **v1.2.0** | 知识空间、检索权限过滤 | 异步解析、对象存储、前端空间 UI |
 | **v1.3.0** | 上传立刻返回、本地落盘、`DOC_PARSE`、失败重试 | MinIO、hash、任务列表、前端轮询 |
 | **v1.4.0** | local/dev/staging/prod、备份、限流、压测、告警 | 平台级插件市场 |
-| **v1.5.0+** | 语义层、MCP、多模型路由、插件化 | — |
+| **v1.5.0** | 按人 Token 额度、用户等级、当日提额、内网注册登录 | 充值、多租户、按等级区分每秒次数 |
+| **v1.6.0+** | 语义层、MCP、多模型路由、插件化 | — |
 
 ## 分支与发布（文档 §5）
 

@@ -3,7 +3,7 @@
     <el-card class="chat-card" shadow="never">
       <template #header>
         <div class="chat-header">
-          <span>智能助手</span>
+          <span class="page-title">智能助手</span>
           <el-button size="small" text type="primary" @click="store.reset()">新会话</el-button>
         </div>
       </template>
@@ -93,14 +93,24 @@ watch(
 <style scoped>
 .chat-view {
   max-width: 960px;
+  width: 100%;
   margin: 0 auto;
-  height: calc(100vh - 40px);
+  flex: 1;
+  min-height: 0;
 }
 
 .chat-card {
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: transparent;
+  border: none;
+}
+
+.chat-card :deep(.el-card__header) {
+  border-bottom: 1px solid var(--huiyi-line);
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .chat-card :deep(.el-card__body) {
@@ -131,8 +141,13 @@ watch(
 }
 
 .chat-input {
-  border-top: 1px solid #e4e7ed;
+  border-top: 1px solid var(--huiyi-line);
   padding-top: 12px;
+}
+
+.chat-input :deep(.el-textarea__inner) {
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--huiyi-line) inset;
 }
 
 .chat-actions {

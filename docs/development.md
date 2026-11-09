@@ -59,7 +59,7 @@ node scripts/e2e-m5.js
 ```text
 main            —— 稳定发布，里程碑打 tag
 dev             —— 当前 GitHub 日常集成（CI 监听 main / dev）
-feature/*       —— 功能分支；下一版：feature/v1.5-* 或 feature/v1.4.1-*
+feature/*       —— 功能分支；下一版：feature/v1.5-*
 提交规范        —— feat:/fix:/test:/docs:/chore: + 中文摘要
 ```
 
@@ -216,10 +216,11 @@ Eval 评测集与回归 P0：`testdata/eval/` 金标 + Java `EvalGoldenRunner` +
 
 ## 待完善：用户等级
 
-用户等级放进计量小版本 v1.4.1，不放进已打本地标签的 v1.4.0。需求：[v1.4.1 计量与用户等级](superpowers/specs/2026-11-04-v141-token-metering-design.md)。工作区角色 `OWNER` / `ADMIN` / `EDITOR` / `VIEWER` 继续管权限，不当作一级、二级、三级。
+用户等级放进 v1.5.0，不放进已打本地标签的 v1.4.0。2026-11-04 曾整理为 v1.4.1，现改为 v1.5.0；原先的平台化范围顺延为 v1.6.0+。需求：[v1.5.0 计量与用户等级](superpowers/specs/2026-11-09-v15-token-metering-and-user-tiers.md)。工作区角色 `OWNER` / `ADMIN` / `EDITOR` / `VIEWER` 继续管权限，不当作一级、二级、三级。
 
 - 已拍板：自己注册固定第一级，每天 50 万 Token，不能申请升级，也不能把已有第一级改成更高一级。第二级每天 150 万，第三级每天 500 万。第二级、第三级只能由第三级新建账号再交给员工。第二级审评第一级的提额；第二级自己的提额交给第三级；第三级不能提额，负责开账号。额度按人计。第一个第三级是 `blank`（用户编号 16）。`limit`（用户编号 17）准备当作第二级。两人目前都是工作区 1 的 `VIEWER`。
-- 未做：`users` 还没有等级列。等级列加上时，把 `blank` 标成第三级、`limit` 标成第二级，这是给已指定账号补记，不是事后改级。注册默认第一级、第三级创建账号、按等级扣每日 Token，都还没写。
+- 已拍板：注册和登录只接受内网来源，挡在 Nginx 的 `$remote_addr`。页面仍保留注册。刷新、退出、改密不套这道限制。`REGISTER_ENABLED` 仍是全局开关。staging / prod 不映射后端 `8080`。允许网段部署时再填。
+- 未做：`users` 还没有等级列。等级列加上时，把 `blank` 标成第三级、`limit` 标成第二级，这是给已指定账号补记，不是事后改级。注册默认第一级、第三级创建账号、按等级扣每日 Token，都还没写。注册和登录的来源限制已经写在 `frontend/nginx.conf`：默认放行回环和私网，其余 403。
 
 ## 常见坑（本仓库已踩过）
 

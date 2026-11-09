@@ -1,9 +1,9 @@
 <template>
   <div class="knowledge-view">
-    <el-card shadow="never">
+    <el-card class="knowledge-card" shadow="never">
       <template #header>
         <div class="view-header">
-          <span>知识库管理</span>
+          <span class="page-title">知识库</span>
           <el-upload
             :show-file-list="false"
             accept=".md,.txt,.pdf,.docx"
@@ -14,12 +14,7 @@
         </div>
       </template>
 
-      <el-alert
-        type="info"
-        :closable="false"
-        title="支持 Markdown / TXT / PDF / Word，单文件不超过 10MB；上传后自动解析分块并写入向量库。"
-        class="tip"
-      />
+      <p class="tip">支持 Markdown / TXT / PDF / Word，单文件不超过 10MB；上传后自动解析分块并写入向量库。</p>
 
       <el-table v-loading="loading" :data="docs" empty-text="暂无文档，请先上传">
         <el-table-column prop="docName" label="文档名称" min-width="220" show-overflow-tooltip />
@@ -141,14 +136,36 @@ function statusTagType(status: string): 'success' | 'warning' | 'danger' | 'info
 </script>
 
 <style scoped>
+.knowledge-card {
+  background: transparent;
+  border: none;
+}
+
+.knowledge-card :deep(.el-card__header) {
+  border-bottom: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .view-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: 600;
 }
 
 .tip {
-  margin-bottom: 12px;
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--huiyi-line);
+  border-radius: 6px;
+  background: var(--huiyi-card);
+  color: var(--huiyi-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.knowledge-card :deep(.el-table) {
+  border: 1px solid var(--huiyi-line);
+  border-radius: 8px;
 }
 </style>

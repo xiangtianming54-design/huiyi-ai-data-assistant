@@ -1,0 +1,62 @@
+:root {
+  --huiyi-paper: #f6f1e7;
+  --huiyi-card: #fbf8f2;
+  --huiyi-ink: #2c2416;
+  --huiyi-muted: #8a7b68;
+  --huiyi-line: #e4d7c3;
+  --huiyi-brass: #9a7844;
+  --huiyi-brass-ink: #fbf8f2;
+  --huiyi-serif: "Songti SC", "SimSun", serif;
+
+  --el-color-primary: #9a7844;
+  --el-color-primary-light-3: #b89a6c;
+  --el-color-primary-light-5: #ccb896;
+  --el-color-primary-light-7: #e4d7c3;
+  --el-color-primary-light-8: #efe4d4;
+  --el-color-primary-light-9: #f7f1e8;
+  --el-color-primary-dark-2: #7c6136;
+  --el-bg-color: #fbf8f2;
+  --el-bg-color-page: #f6f1e7;
+  --el-text-color-primary: #2c2416;
+  --el-text-color-regular: #2c2416;
+  --el-text-color-secondary: #8a7b68;
+  --el-text-color-placeholder: #b3a38e;
+  --el-border-color: #e4d7c3;
+  --el-border-color-light: #e4d7c3;
+  --el-border-color-lighter: #efe4d4;
+  --el-border-color-extra-light: #f3ebdf;
+  --el-fill-color-blank: #ffffff;
+  --el-font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  --el-border-radius-base: 6px;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--huiyi-paper);
+  color: var(--huiyi-ink);
+  font-family: var(--el-font-family);
+}
+
+.page-title {
+  font-family: var(--huiyi-serif);
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  font-size: 18px;
+  color: var(--huiyi-ink);
+}
+
+.el-button--primary {
+  --el-button-text-color: var(--huiyi-brass-ink);
+  --el-button-bg-color: var(--huiyi-brass);
+  --el-button-border-color: var(--huiyi-brass);
+  --el-button-hover-text-color: var(--huiyi-brass-ink);
+  --el-button-hover-bg-color: var(--el-color-primary-dark-2);
+  --el-button-hover-border-color: var(--el-color-primary-dark-2);
+  --el-button-active-text-color: var(--huiyi-brass-ink);
+  --el-button-active-bg-color: #6d552f;
+  --el-button-active-border-color: #6d552f;
+}

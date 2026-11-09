@@ -165,7 +165,7 @@ huiyi-ai-data-assistant/
 - [x] **v1.3.0 Async Ingestion**：上传立刻返回、本地落盘、`DOC_PARSE` 异步、失败重试、Flyway V13（[规格](docs/superpowers/specs/2026-10-20-v13-async-ingestion.md)；MinIO / hash / 前端轮询不在本版）
 - [x] **v1.4.0 Production Ready**：单机 staging/prod、备份恢复、Nginx 限流、k6、最小告警、可回滚发布（[规格](docs/superpowers/specs/2026-10-31-v14-production-ready.md)，[计划](docs/superpowers/plans/2026-10-31-v14-production-ready.md)；K8s / Vault / Grafana / HTTPS / MinIO 不在本版）。GitHub Release 未做。
 
-按企业迭代文档演进：下一档是 **v1.5.0+**。v1.4.1 计量与用户等级尚未实施。不把未做能力写成当前功能。
+按企业迭代文档演进：下一档是 **v1.5.0**（按人计量 Token、用户等级、内网注册登录，尚未实施）。原先的平台化范围顺延为 **v1.6.0+**。不把未做能力写成当前功能。
 
 ## License
 

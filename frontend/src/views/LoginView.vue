@@ -1,7 +1,11 @@
 <template>
   <div class="login-page">
-    <el-card class="login-card">
-      <h2>会意 · 登录</h2>
+    <el-card class="login-card" shadow="never">
+      <div class="login-brand">
+        <h2>会意</h2>
+        <div class="login-rule"></div>
+        <p>企业经营数据智能分析助手</p>
+      </div>
       <el-tabs v-model="mode">
         <el-tab-pane label="登录" name="login" />
         <el-tab-pane label="注册" name="register" />
@@ -58,13 +62,36 @@ async function submit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f7fa;
+  background: var(--huiyi-paper);
 }
 .login-card {
   width: 380px;
+  background: var(--huiyi-card);
+  border: 1px solid var(--huiyi-line);
+  box-shadow: 0 16px 40px rgba(80, 60, 30, 0.06);
+}
+.login-brand {
+  text-align: center;
+  margin-bottom: 8px;
 }
 h2 {
-  margin: 0 0 12px;
-  text-align: center;
+  margin: 0;
+  font-family: var(--huiyi-serif);
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  color: var(--huiyi-ink);
+}
+.login-rule {
+  width: 36px;
+  height: 1px;
+  background: var(--huiyi-brass);
+  margin: 12px auto 8px;
+}
+.login-brand p {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--huiyi-muted);
 }
 </style>

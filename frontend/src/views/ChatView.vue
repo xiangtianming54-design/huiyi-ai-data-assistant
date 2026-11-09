@@ -26,6 +26,15 @@
       </div>
 
       <div class="chat-input">
+        <div class="today-quota">
+          <div class="today-quota-head">
+            <span>今日额度</span>
+            <span>{{ todayPercent }}%</span>
+          </div>
+          <div class="today-quota-track">
+            <div class="today-quota-fill" :style="{ width: todayPercent + '%' }"></div>
+          </div>
+        </div>
         <el-input
           v-model="question"
           type="textarea"
@@ -45,19 +54,41 @@
             发送
           </el-button>
         </div>
+        <el-button
+          v-if="store.quotaBlock === 'quota'"
+          class="quota-boost"
+          text
+          type="primary"
+          tag="router-link"
+          to="/boost"
+          :auto-insert-space="false"
+        >
+          提额
+        </el-button>
       </div>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import MessageList from '../components/MessageList.vue'
+import { quotaPercent } from '../quota/quotaView'
 import { useChatStore } from '../stores/chat'
 
 const store = useChatStore()
 const question = ref('')
 const scrollRef = ref<HTMLElement>()
+
+const todayPercent = computed(() => {
+  const snapshot = store.quota
+  if (!snapshot) return 0
+  return quotaPercent(snapshot.remainingTokens, snapshot.limitTokens)
+})
+
+onMounted(() => {
+  void store.refreshQuota()
+})
 
 const exampleQuestions = [
   '什么是有效订单？',
@@ -150,9 +181,42 @@ watch(
   box-shadow: 0 0 0 1px var(--huiyi-line) inset;
 }
 
+.today-quota {
+  width: 240px;
+  margin-bottom: 8px;
+}
+
+.today-quota-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--huiyi-ink);
+}
+
+.today-quota-track {
+  width: 240px;
+  height: 2px;
+  background: var(--huiyi-line);
+  overflow: hidden;
+}
+
+.today-quota-fill {
+  height: 2px;
+  background: var(--huiyi-brass);
+}
+
 .chat-actions {
   margin-top: 8px;
   display: flex;
   justify-content: flex-end;
+}
+
+.quota-boost {
+  margin-top: 4px;
+  padding-left: 0;
+  justify-content: flex-start;
 }
 </style>

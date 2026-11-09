@@ -55,6 +55,7 @@ export const knowledgeApi = {
 export interface IntentResult {
   intent: string
   questions?: string[]
+  admissionTicket?: string
 }
 
 export interface ChatPart {
@@ -74,14 +75,29 @@ export const chatApi = {
   intent(question: string) {
     return http.post<Result<IntentResult>>(workspacePath('/chat/intent'), { question })
   },
-  ask(question: string, sessionId?: string) {
-    return http.post<Result<ChatAskResult>>(workspacePath('/chat/ask'), { question, sessionId })
+  ask(question: string, sessionId?: string, admissionTicket?: string) {
+    return http.post<Result<ChatAskResult>>(workspacePath('/chat/ask'), { question, sessionId, admissionTicket })
   }
 }
 
 export const analysisApi = {
-  query(question: string, sessionId?: string) {
-    return http.post<Result<AnalysisResult>>(workspacePath('/analysis/query'), { question, sessionId })
+  query(question: string, sessionId?: string, admissionTicket?: string) {
+    return http.post<Result<AnalysisResult>>(workspacePath('/analysis/query'), { question, sessionId, admissionTicket })
+  }
+}
+
+export interface QuotaSnapshot {
+  tier: number
+  usedTokens: number
+  limitTokens: number
+  remainingTokens: number
+  remainingPercent: number
+  boostAllowed: boolean
+}
+
+export const quotaApi = {
+  mine() {
+    return http.get<Result<QuotaSnapshot>>('/v1/me/quota')
   }
 }
 

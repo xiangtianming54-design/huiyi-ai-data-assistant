@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { streamChat } from '../api/chatStream'
-import { analysisApi, chatApi, type AnalysisResult, type Reference } from '../api'
+import { analysisApi, chatApi, quotaApi, type AnalysisResult, type QuotaSnapshot, type Reference } from '../api'
+import { quotaErrorKind } from '../quota/quotaView'
 
 /** 聊天消息：analysis 存在时表示数据查询富结果 */
 export interface ChatMessage {
@@ -18,35 +19,61 @@ export const useChatStore = defineStore('chat', {
   state: () => ({
     messages: [] as ChatMessage[],
     sessionId: undefined as string | undefined,
-    streaming: false
+    streaming: false,
+    quota: null as QuotaSnapshot | null,
+    quotaBlock: null as 'rate' | 'quota' | 'tier3' | null
   }),
   actions: {
     /** 发送问题：先意图预检，知识问答走 SSE 流式，数据查询走分析接口，复合问题走统一问答 */
     async ask(question: string) {
       let intent = 'knowledge_qa'
+      let admissionTicket: string | undefined
       try {
         const response = await chatApi.intent(question)
         intent = response.data.data.intent
-      } catch {
-        // 预检失败时按知识问答处理（错误提示已由拦截器统一处理）
+        const ticket = response.data.data.admissionTicket
+        if (typeof ticket === 'string') {
+          admissionTicket = ticket
+        }
+      } catch (error) {
+        const code = (error as { code?: unknown }).code
+        if (typeof code === 'number') {
+          const kind = quotaErrorKind(code)
+          if (kind === 'rate' || kind === 'quota' || kind === 'tier3') {
+            this.quotaBlock = kind
+            return
+          }
+        }
+        // 其他预检失败仍按知识问答处理（错误提示已由拦截器统一处理）
       }
 
+      this.quotaBlock = null
       this.messages.push({ role: 'user', content: question })
       if (intent === 'compound') {
-        await this.askCompound(question)
+        await this.askCompound(question, admissionTicket)
       } else if (intent === 'data_query') {
-        await this.askAnalysis(question)
+        await this.askAnalysis(question, admissionTicket)
       } else {
-        this.askKnowledge(question)
+        this.askKnowledge(question, admissionTicket)
+      }
+    },
+
+    /** 进入聊天页，或一问结束后，拉一次今日额度。不在吐字时调用。 */
+    async refreshQuota() {
+      try {
+        const response = await quotaApi.mine()
+        this.quota = response.data.data
+      } catch {
+        // 拦截器已提示；额度条保持上一次的数
       }
     },
 
     /** 复合问题：统一问答接口，每个子问题一个气泡（知识→Markdown，数据→富结果卡片） */
-    async askCompound(question: string) {
+    async askCompound(question: string, admissionTicket: string | undefined) {
       this.streaming = true
       const markerIndex = this.messages.push({ role: 'assistant', content: '正在分解并并行回答多个问题…', streaming: true }) - 1
       try {
-        const response = await chatApi.ask(question, this.sessionId)
+        const response = await chatApi.ask(question, this.sessionId, admissionTicket)
         const result = response.data.data
         this.sessionId = result.sessionId
         // 移除占位气泡，按子问题逐个渲染
@@ -65,16 +92,17 @@ export const useChatStore = defineStore('chat', {
           this.messages[markerIndex].streaming = false
         }
         this.streaming = false
+        void this.refreshQuota()
       }
     },
 
     /** 知识问答：SSE 流式 */
-    askKnowledge(question: string) {
+    askKnowledge(question: string, admissionTicket: string | undefined) {
       this.messages.push({ role: 'assistant', content: '', streaming: true })
       const index = this.messages.length - 1
       this.streaming = true
 
-      stopFn = streamChat(question, this.sessionId, {
+      stopFn = streamChat(question, this.sessionId, admissionTicket, {
         onSession: (id) => {
           this.sessionId = id
         },
@@ -93,17 +121,18 @@ export const useChatStore = defineStore('chat', {
           this.messages[index].streaming = false
           this.streaming = false
           stopFn = undefined
+          void this.refreshQuota()
         }
       })
     },
 
     /** 数据查询：分析接口，富结果卡片 */
-    async askAnalysis(question: string) {
+    async askAnalysis(question: string, admissionTicket: string | undefined) {
       this.messages.push({ role: 'assistant', content: '', streaming: true })
       const index = this.messages.length - 1
       this.streaming = true
       try {
-        const response = await analysisApi.query(question, this.sessionId)
+        const response = await analysisApi.query(question, this.sessionId, admissionTicket)
         const result = response.data.data
         this.sessionId = result.sessionId
         this.messages[index].analysis = result
@@ -112,6 +141,7 @@ export const useChatStore = defineStore('chat', {
       } finally {
         this.messages[index].streaming = false
         this.streaming = false
+        void this.refreshQuota()
       }
     },
 

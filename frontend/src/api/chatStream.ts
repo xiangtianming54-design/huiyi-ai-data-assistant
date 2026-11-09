@@ -10,7 +10,12 @@ export interface StreamCallbacks {
   onDone?: () => void
 }
 
-export function streamChat(question: string, sessionId: string | undefined, callbacks: StreamCallbacks): () => void {
+export function streamChat(
+  question: string,
+  sessionId: string | undefined,
+  admissionTicket: string | undefined,
+  callbacks: StreamCallbacks
+): () => void {
   const controller = new AbortController()
 
   void (async () => {
@@ -24,10 +29,13 @@ export function streamChat(question: string, sessionId: string | undefined, call
       if (token) {
         headers.Authorization = `Bearer ${token}`
       }
+      const payload: { question: string; sessionId?: string; admissionTicket?: string } = { question }
+      if (sessionId) payload.sessionId = sessionId
+      if (admissionTicket !== undefined) payload.admissionTicket = admissionTicket
       const response = await fetch(`/api/v1/workspaces/${workspaceId}/chat/stream`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(sessionId ? { question, sessionId } : { question }),
+        body: JSON.stringify(payload),
         signal: controller.signal
       })
       saveObservabilityIds(response.headers)

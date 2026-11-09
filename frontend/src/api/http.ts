@@ -30,7 +30,11 @@ http.interceptors.response.use(
     const result = response.data as Result<unknown>
     if (result && typeof result.code === 'number' && result.code !== 0) {
       ElMessage.error(result.message || '请求失败')
-      return Promise.reject(new Error(result.message))
+      const error = new Error(result.message) as Error & { code?: number }
+      if (result.code === 4291 || result.code === 4292 || result.code === 4293) {
+        error.code = result.code
+      }
+      return Promise.reject(error)
     }
     return response
   },

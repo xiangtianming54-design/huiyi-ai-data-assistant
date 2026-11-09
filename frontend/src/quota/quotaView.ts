@@ -6,6 +6,11 @@ export function quotaPercent(remaining: number, limit: number): number {
   return Math.round(remaining * 100 / limit)
 }
 
+/** 新建账号的等级只能是 2 或 3。 */
+export function tierChoiceAllowed(tier: number): boolean {
+  return tier === 2 || tier === 3
+}
+
 /** 4291 限流、4292 可提额、4293 第三级额度用尽。其他码不是这三种。 */
 export function quotaErrorKind(code: number): 'rate' | 'quota' | 'tier3' | null {
   if (code === 4291) return 'rate'

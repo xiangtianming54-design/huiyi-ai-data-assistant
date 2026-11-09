@@ -95,9 +95,48 @@ export interface QuotaSnapshot {
   boostAllowed: boolean
 }
 
+export interface SentenceUsage {
+  runId: string
+  question: string
+  totalTokens: number
+  heaviest: boolean
+}
+
+export interface BoostReview {
+  id: number
+  applicant: string
+  reason: string
+  stepName: string
+  stepTokens: number
+}
+
+export interface CreatedUser {
+  id: number
+  username: string
+  tier: number
+}
+
 export const quotaApi = {
   mine() {
     return http.get<Result<QuotaSnapshot>>('/v1/me/quota')
+  },
+  sentences() {
+    return http.get<Result<SentenceUsage[]>>('/v1/me/quota/sentences')
+  },
+  submitBoost(runId: string) {
+    return http.post<Result<void>>('/v1/me/quota/boosts', { runId })
+  },
+  pendingBoosts() {
+    return http.get<Result<BoostReview[]>>('/v1/quota/boosts')
+  },
+  decideBoost(id: number, decision: 'APPROVED' | 'REJECTED') {
+    return http.post<Result<void>>(`/v1/quota/boosts/${id}/decision`, { decision })
+  }
+}
+
+export const tierAccountApi = {
+  create(workspaceId: string, body: { username: string; password: string; displayName: string | null; tier: number }) {
+    return http.post<Result<CreatedUser>>(`/v1/workspaces/${workspaceId}/users`, body)
   }
 }
 

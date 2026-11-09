@@ -16,6 +16,14 @@
           <el-icon><FolderOpened /></el-icon>
           <span>知识库管理</span>
         </el-menu-item>
+        <el-menu-item v-if="tier === 2 || tier === 3" index="/boost/review">
+          <el-icon><Stamp /></el-icon>
+          <span>审评</span>
+        </el-menu-item>
+        <el-menu-item v-if="tier === 3" index="/users/new">
+          <el-icon><User /></el-icon>
+          <span>新建账号</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>
@@ -44,15 +52,43 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ChatDotRound, FolderOpened } from '@element-plus/icons-vue'
+import { ChatDotRound, FolderOpened, Stamp, User } from '@element-plus/icons-vue'
+import { quotaApi } from './api'
+import { getAccessToken, getRefreshToken } from './auth/token'
 import { useAuthStore } from './stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const isLogin = computed(() => route.path === '/login')
+const tier = ref<number | null>(null)
+let tierTicket = 0
+
+watch(isLogin, (login) => {
+  if (login) {
+    tierTicket += 1
+    tier.value = null
+    return
+  }
+  void loadTier()
+}, { immediate: true })
+
+async function loadTier() {
+  if (route.path === '/login' || (!getAccessToken() && !getRefreshToken())) {
+    tier.value = null
+    return
+  }
+  const current = ++tierTicket
+  try {
+    const response = await quotaApi.mine()
+    if (current !== tierTicket || route.path === '/login') return
+    tier.value = response.data.data?.tier ?? null
+  } catch {
+    if (current === tierTicket) tier.value = null
+  }
+}
 
 function onWorkspaceChange(id: string) {
   auth.switchWorkspace(Number(id))

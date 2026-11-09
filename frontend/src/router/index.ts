@@ -9,6 +9,9 @@ const router = createRouter({
     { path: '/', redirect: '/chat' },
     { path: '/chat', name: 'chat', component: () => import('../views/ChatView.vue'), meta: { title: '智能助手' } },
     { path: '/knowledge', name: 'knowledge', component: () => import('../views/KnowledgeView.vue'), meta: { title: '知识库管理' } },
+    { path: '/boost', name: 'boost', component: () => import('../views/BoostView.vue'), meta: { title: '提额' } },
+    { path: '/boost/review', name: 'boost-review', component: () => import('../views/BoostReviewView.vue'), meta: { title: '审评' } },
+    { path: '/users/new', name: 'create-tier-user', component: () => import('../views/CreateTierUserView.vue'), meta: { title: '新建账号' } },
     { path: '/analysis', redirect: '/chat' }
   ]
 })

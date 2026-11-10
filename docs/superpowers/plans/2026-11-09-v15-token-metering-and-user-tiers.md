@@ -1,6 +1,6 @@
 # v1.5.0 Token Metering & User Tiers Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 按人、按上海自然日限制每日 Token；第一级 50 万、第二级 150 万、第三级 500 万；开跑前不够则这一问不开始；聊天页显示今日额度；当天可加 50 万到晚上 12 点；流式用量、运行合计和提问时检索向量化计入本人。
 
@@ -9,6 +9,8 @@
 **Tech Stack:** Java 17、Spring Boot 3、MyBatis-Plus、Flyway、JUnit 5、Mockito；Python FastAPI 只给检索响应补用量字段；Vue 3 + Element Plus。无新 Maven 依赖。
 
 **Spec:** `docs/superpowers/specs/2026-11-09-v15-token-metering-and-user-tiers.md`
+
+**状态（2026-11-10）：** Task 1–12 已落在 `main`，自 `0d3a644` 至 `333939d`。下面的步骤框按已落地勾选。规格第 9 节的运行环境点验不在这些步骤里。
 
 ## Global Constraints
 
@@ -68,7 +70,7 @@
 - Consumes: 无
 - Produces: `public final class LocalTokenCounter`，`public static int count(String text)`。`null` 和空串为 0。同一字符串每次结果相同。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```java
 @Test
@@ -86,21 +88,21 @@ void asciiGroupsByFourAndCjkIsOneEach() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -q -Dtest=LocalTokenCounterTest test`  
 Expected: 编译失败，找不到 `LocalTokenCounter`。
 
-- [ ] **Step 3: Implement `LocalTokenCounter.count`**
+- [x] **Step 3: Implement `LocalTokenCounter.count`**
 
 按「实施口径」的 ASCII / 非 ASCII 规则实现。不要调用 HTTP 或模型。
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -q -Dtest=LocalTokenCounterTest test`  
 Expected: 退出码 0。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `feat: count tokens locally without calling a model`
 
@@ -119,25 +121,25 @@ Expected: 退出码 0。
 - Consumes: 无
 - Produces: 列 `users.user_tier`。表 `token_boost_requests`，列：`id`，`applicant_user_id`，`reviewer_user_id`（可空），`status`，`reason`，`step_name`，`step_tokens`，`quota_date`，`created_at`，`reviewed_at`。实体字段与列一一对应，驼峰。`TokenBoostRequestMapper extends BaseMapper<TokenBoostRequest>`。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 在 `FlywayMigrationFilesTest` 增加断言：全部迁移文本包含 `user_tier`、`token_boost_requests`、`applicant_user_id`、`quota_date`；V14 文件里有 `username = 'blank'` 且 `id = 16` 时 `user_tier = 3`，`username = 'limit'` 且 `id = 17` 时 `user_tier = 2`；仍断言没有 `FOREIGN KEY`。不要改「没有 file_hash」等旧断言。
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -q -Dtest=FlywayMigrationFilesTest test`  
 Expected: 失败，缺少 `user_tier` 或 `token_boost_requests`。
 
-- [ ] **Step 3: Add V14 and the two types**
+- [x] **Step 3: Add V14 and the two types**
 
 `user_tier TINYINT NOT NULL DEFAULT 1`。两条 UPDATE 必须同时匹配 id 和 username。`token_boost_requests.status` 用 `VARCHAR(16)`。索引 `(applicant_user_id, quota_date)` 和 `llm_calls` 的 `(user_id, created_at)`。不写外键。`User` 增加 `Integer userTier`。
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -q -Dtest=FlywayMigrationFilesTest test`  
 Expected: 退出码 0。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `feat: add user tier and token boost tables`
 
@@ -153,25 +155,25 @@ Expected: 退出码 0。
 - Consumes: `User.userTier`
 - Produces: 自助注册插入的用户 `userTier == 1`。仓库里不新增修改已有用户等级的方法。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 用 Mockito 构造 `AuthService` 的依赖。`register` 一个新用户名后，`ArgumentCaptor<User>` 捕获 `userMapper.insert` 的参数，断言 `getUserTier()` 为 1。再断言 `AuthService` 的公开方法名里没有 `updateTier`、`changeTier`、`promote`。
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -q -Dtest=UserTierAssignmentTest test`  
 Expected: 失败，`getUserTier()` 为 null。
 
-- [ ] **Step 3: Set tier 1 in `register`**
+- [x] **Step 3: Set tier 1 in `register`**
 
 只在插入前 `user.setUserTier(1)`。不改工作区角色，不改登录。
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -q -Dtest=UserTierAssignmentTest test`  
 Expected: 退出码 0。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `feat: register new users at tier 1`
 
@@ -200,25 +202,25 @@ Expected: 退出码 0。
 
 `snapshot`：上海日的起止是 `[当日 00:00, 次日 00:00)`，时区 `Asia/Shanghai`。已用是该窗口内 `llm_calls.status = SUCCESS` 的 `total_tokens` 之和，只按 `user_id`，不按工作区。上限 = 等级原值；若该日有 `status = APPROVED` 的提额，再加 500_000。剩余 = 上限 − 已用，可以为负。剩余百分比：剩余 &lt; 0 时为 0，否则 `Math.round(remaining * 100.0 / limit)`。`boostAllowed` 仅在等级不是 3 时为 true。`estimate` 把问题和近期原文各 `count` 后相加，不调用模型。`assertCanStart` 在剩余 &lt; 预估时抛 `BizException`：等级 1 和 2 的码 `4292`、文案 `今日 Token 额度不足，请提额后再问。`；等级 3 的码 `4293`、文案 `今日 Token 额度不足。`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 固定 `Clock` 在 `2026-11-09T00:30+08:00`。用户等级 1，已用 400_000，无通过记录：剩余 100_000，百分比 20，`boostAllowed` true。同一用户已用 600_000：剩余 −100_000，百分比 0。等级 3 的 `boostAllowed` 为 false，上限 5_000_000。该日有一条 APPROVED：等级 1 上限 1_000_000。`estimate("订单", List.of("abcd"))` 等于两次 `count` 之和。剩余 1、预估大于 1 时 `assertCanStart` 抛码 4292；等级 3 抛码 4293。另一个 userId 的已用不改变这个人的剩余。
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -q -Dtest=TokenQuotaServiceTest test`  
 Expected: 编译失败，找不到 `TokenQuotaService`。
 
-- [ ] **Step 3: Implement the quota service**
+- [x] **Step 3: Implement the quota service**
 
 `sumSuccessTokens` 用 `@Select`，`COALESCE(SUM(total_tokens),0)`，条件是 `user_id`、`status = 'SUCCESS'`、`created_at >=` 与 `<`。不要按工作区过滤。
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -q -Dtest=TokenQuotaServiceTest test`  
 Expected: 退出码 0。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `feat: compute a person's Shanghai-day token quota`
 
@@ -234,25 +236,25 @@ Expected: 退出码 0。
 - Consumes: 无
 - Produces: `AskAdmission(Clock clock)`。`String begin(long userId)`：过去 1000ms 内该用户已有 2 次 `begin` 时抛 `BizException(4291, "请求过于频繁，请稍后再试")`，否则记一次并返回票。`void follow(long userId, String ticket)`：票属于该用户、未使用、签发不超过 1000ms，则标记已用并返回；否则当作 `begin`。票不能给另一个用户用。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 同一时钟：第 1、2 次 `begin` 成功，第 3 次抛 4291，且异常文案就是那句冻结文案。时钟前进 1001ms 后可以再 `begin`。`follow` 使用刚签发的票不增加次数，因此两次 `begin` 加一次合法 `follow` 后仍能再 `begin` 一次。用过的票、别人的票、空票都走 `begin`。
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -q -Dtest=AskAdmissionTest test`  
 Expected: 编译失败，找不到 `AskAdmission`。
 
-- [ ] **Step 3: Implement `AskAdmission`**
+- [x] **Step 3: Implement `AskAdmission`**
 
 内存滑动窗口即可。三个等级共用这一套，不要按等级分支。
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -q -Dtest=AskAdmissionTest test`  
 Expected: 退出码 0。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `feat: admit two questions per second per user`
 
@@ -279,25 +281,25 @@ Expected: 退出码 0。
 
 控制器先 `enter`，再审计，再调用服务。`/chat/intent` 的 `issuing` 为 true，其余四个为 false：`POST .../chat`、`POST .../chat/ask`、`POST .../chat/stream`、`POST .../analysis/query`。闸门抛错时不调用 `auditAsked`、`requestTraceService.start`、`saveUserMessage`。`AgentRunner` 和各服务方法内部不再调用 `AskGate` 或 `assertCanStart`。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `AskGate` 用假的 admission、quota、session。`begin` 抛 4291 时，quota 的 `assertCanStart` 调用次数为 0。quota 抛 4292 时异常码仍是 4292。通过时 `issuing=true` 返回新票。近期条数使用 `QueryRewriteService.HISTORY_LIMIT`，断言该常量是 20。再用 Mockito 构造 `ChatV1Controller`：`enter` 抛 4292 时，`chatService.precheck`、`chat`、`ask`、`chatStream` 的调用次数都是 0。
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -q -Dtest=AskGateTest test`  
 Expected: 编译失败，找不到 `AskGate`。
 
-- [ ] **Step 3: Implement the gate and call it first**
+- [x] **Step 3: Implement the gate and call it first**
 
 五个入口都走闸门。`chatStream` 在创建 `SseEmitter` 之前就可能抛 `BizException`，这样响应仍是 JSON `Result`。不要在闸门里调用意图、改写、检索或查数。
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -q "-Dtest=AskGateTest,QueryRewriteServiceTest" test`  
 Expected: 退出码 0。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `feat: stop a question before it starts when quota or rate is exceeded`
 
@@ -324,25 +326,25 @@ Expected: 退出码 0。
 
 `LlmService.chatStream` 改为消费 `chatResponse()` 流，向外仍只发出文本。完成时若 `StreamUsage.from` 至少成功过一次，用最后一次的数记账；一次都没有则记 0, 0，并 `log.warn("流式用量缺失，本段记 0 purpose={}", purpose)`。非流式路径保持现在的 `tokens(response, prompt)`。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `StreamUsage.from(null)` 为 null。两侧都有数时返回该数组。`RequestTraceService.finish` 在 mapper 返回 prompt 3、completion 4 时，传给 `runRecorder.finish` 的就是 3 和 4，不是 0 和 0。
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -q "-Dtest=StreamUsageTest,RequestTraceServiceTest" test`  
 Expected: 失败。`finish` 仍把 0, 0 传给 recorder，或 `StreamUsage` 不存在。
 
-- [ ] **Step 3: Implement usage capture and the run sum**
+- [x] **Step 3: Implement usage capture and the run sum**
 
 `OpenAiChatOptions.builder()` 增加 `.streamUsage(true)`。合计只加 `SUCCESS` 行，这样缺用量而记 0 的步骤不构成「最多的一步」，但运行合计仍包含真正记上的检索和补全。
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -q "-Dtest=StreamUsageTest,RequestTraceServiceTest" test`  
 Expected: 退出码 0。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `feat: record stream usage and roll it onto the run`
 
@@ -367,25 +369,25 @@ Expected: 退出码 0。
 
 Python：解析 embedding 响应里的 `usage.total_tokens`；没有这个字段则为 `None`。只放到 search 响应。upsert 和 similarity 的响应不加这个字段，Java 也不在这两处调用 meter。
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Python：给定带 `usage.total_tokens = 12` 的响应体，解析结果为 12；没有 `usage` 时为 `None`。Java：有用户且 provider 为 null 时，recorder 收到的 prompt 等于 `LocalTokenCounter.count("订单")`。provider 为 12 时记下 12。`WorkspaceContextHolder` 为空时 recorder 调用次数为 0。
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: 工作目录 `python-service`，`python -m pytest app/tests/test_embedding_usage.py`。  
 Run: `mvn -q -Dtest=QueryEmbeddingMeterTest test`。  
 Expected: 失败，`usage_tokens` 或 `QueryEmbeddingMeter` 不存在。
 
-- [ ] **Step 3: Implement the meter and the search-only wiring**
+- [x] **Step 3: Implement the meter and the search-only wiring**
 
 `upsertChunks`、文档上传用的 upsert、`backfillSpaceIds`、similarity 方法体里不出现 `QueryEmbeddingMeter`。
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 两条命令都退出码 0。再跑与 vector search DTO 相关的现有 Java 测试，确认多出来的可空字段不破坏旧断言。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `feat: bill query embedding tokens to the asker`
 
@@ -415,25 +417,25 @@ Expected: 失败，`usage_tokens` 或 `QueryEmbeddingMeter` 不存在。
 
 规则：等级 3 提交抛 `BizException(400, "第三级不能提额")`。该日已有 APPROVED 再提交抛 `BizException(400, "今日提额已通过")`。REJECTED 之后可以再提交。通过时写入 `reviewer_user_id`、`reviewed_at`、`status=APPROVED`。第一级的申请只有用户名 `limit` 的第二级能审。第二级的申请任一第三级都能审。审评人等级不对抛 `BizException(403, "没有权限执行该操作")`。通过不触发问答。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 等级 3 不能提交。第一级被拒绝后可以再交；通过后再交得到 `今日提额已通过`。通过后 `TokenQuotaService` 在同一上海日的上限是等级原值 + 500_000。时钟拨到次日 00:00 上海时间，上限回到等级原值。列表里 Token 最多的一句被标出。申请人的句子 DTO 没有步骤字段；审评 DTO 有。第二级不能审另一名第一级以外的伪造单，第三级不能审第一级的单。
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -q -Dtest=TokenBoostServiceTest test`  
 Expected: 编译失败，找不到 `TokenBoostService`。
 
-- [ ] **Step 3: Implement submit, decide, and the five routes**
+- [x] **Step 3: Implement submit, decide, and the five routes**
 
 控制器只取登录用户，再调用服务。不要在通过时调用 `ChatService`。
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -q "-Dtest=TokenBoostServiceTest,TokenQuotaServiceTest" test`  
 Expected: 退出码 0。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `feat: let a tier ask for today's token boost`
 
@@ -454,25 +456,25 @@ Expected: 退出码 0。
 
 `create(AuthUser creator, long workspaceId, CreateTierAccountRequest request)`：创建者等级不是 3 时抛 `BizException(403, "只有第三级可以新建账号")`。`tier` 不是 2 或 3 时抛 `BizException(400, "等级只能是第二级或第三级")`。口令走现有 `PasswordService`。用户名规则与 `register` 相同：至少 3 位、不可重复。显示名为空时用用户名。新用户 `userTier` 为请求的等级，`status` 为 ACTIVE。成员行的 `roleCode` 为 `VIEWER`，工作区是路径上的 `workspaceId`，且创建者必须已是该工作区成员。不修改创建者或 `blank` / `limit` 的角色。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 等级 2 调用得到 403。等级 3 请求等级 1 得到 400。等级 3 请求等级 2：插入用户的 `userTier` 为 2，成员角色为 `VIEWER`，创建者自己的角色更新次数为 0。短密码得到 `密码至少 10 位`。
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -q -Dtest=CreateTierAccountServiceTest test`  
 Expected: 编译失败，找不到该类。
 
-- [ ] **Step 3: Implement create-account**
+- [x] **Step 3: Implement create-account**
 
 不要提供修改已有 `user_tier` 的方法。
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -q "-Dtest=CreateTierAccountServiceTest,UserTierAssignmentTest" test`  
 Expected: 退出码 0。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `feat: let tier 3 create a tier 2 or tier 3 account`
 
@@ -497,7 +499,7 @@ Expected: 退出码 0。
 
 `chat.ts` 的 `ask`：预检失败且种类是 rate、quota、tier3 时，不推用户气泡，不调用 stream / analysis / ask。rate 只保留拦截器已弹出的那句「请求过于频繁，请稍后再试」，页面不放提额按钮。quota 在输入区下方放一个文字按钮「提额」，链到 `/boost`。tier3 不放这个按钮。预检成功时把返回的 `admissionTicket` 放进随后的 ask、stream 或 analysis 请求。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```js
 test('negative remaining shows 0 percent', () => {
@@ -510,20 +512,20 @@ test('rate limit is not a boost', () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `node --experimental-strip-types --test src/quota/quotaView.test.ts`，工作目录 `frontend`。  
 Expected: 找不到模块。
 
-- [ ] **Step 3: Implement the bar and the send abort**
+- [x] **Step 3: Implement the bar and the send abort**
 
 预检以外的错误仍按现在的方式落到知识问答。不要改登录、上传、发送按钮文案。
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 同一条 `node` 命令退出码 0。再跑 `node --experimental-strip-types --test src/components/assistantWaitHint.test.ts`，确认等待文案测试仍过。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `feat: show today's quota above the chat input`
 
@@ -544,26 +546,26 @@ Expected: 找不到模块。
 - Consumes: Task 9 和 Task 10 的路径与字段
 - Produces: 路由 `/boost`、`/boost/review`、`/users/new`，都不是 `public`。申请页列出句子，最多的一句标明「最多」。确认后把该 `runId` 提交，不让用户填步骤。审评页能看见申请人、理由、步骤名、步骤 Token，以及通过、拒绝。建号页字段只有用户名、口令、等级（只能选 2 或 3）、可空显示名。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 在 `quotaView.test.ts` 追加：等级选择只接受 2 和 3，`tierChoiceAllowed(1)` 为 false，`tierChoiceAllowed(2)` 与 `tierChoiceAllowed(3)` 为 true。
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `node --experimental-strip-types --test src/quota/quotaView.test.ts`  
 Expected: `tierChoiceAllowed` 未定义。
 
-- [ ] **Step 3: Implement the three pages**
+- [x] **Step 3: Implement the three pages**
 
 沿用现有象牙底和铜按钮，不新增第二种强调色。菜单按 `GET /api/v1/me/quota` 的 `tier` 显示。文档把「未做」里已经落地的等级列、补记、默认第一级、第三级建号、每日扣减改成指向这些类；规格状态改为「实施中」，不要写成已经验收。
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 `node --experimental-strip-types --test src/quota/quotaView.test.ts` 退出码 0。  
 `mvn -q -Dtest=NginxLimitTest test` 退出码 0，确认来源限制测试仍在。  
 然后跑 `mvn -q test`。失败的测试按名字记下来，属于本计划改坏的就修，属于分支带入前就失败的不要混进本版修复。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 `feat: add boost review and tier account pages`
 

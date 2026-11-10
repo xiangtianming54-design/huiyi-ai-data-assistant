@@ -59,7 +59,7 @@ node scripts/e2e-m5.js
 ```text
 main            —— 稳定发布，里程碑打 tag
 dev             —— 当前 GitHub 日常集成（CI 监听 main / dev）
-feature/*       —— 功能分支；下一版：feature/v1.5-*
+feature/*       —— 功能分支；下一版：feature/v1.6-*
 提交规范        —— feat:/fix:/test:/docs:/chore: + 中文摘要
 ```
 
@@ -214,13 +214,32 @@ Eval 评测集与回归 P0：`testdata/eval/` 金标 + Java `EvalGoldenRunner` +
 
 **回滚：** 重新执行 `deploy.sh <env> <上一 tag>`。因为没有新迁移，回滚不必还原 schema。
 
-## 待完善：用户等级
+## v1.5 变更（2026-11-10，本地标签 v1.5.0）
 
-用户等级放进 v1.5.0，不放进已打本地标签的 v1.4.0。2026-11-04 曾整理为 v1.4.1，现改为 v1.5.0；原先的平台化范围顺延为 v1.6.0+。需求：[v1.5.0 计量与用户等级](superpowers/specs/2026-11-09-v15-token-metering-and-user-tiers.md)。工作区角色 `OWNER` / `ADMIN` / `EDITOR` / `VIEWER` 继续管权限，不当作一级、二级、三级。
+按人计量 Token 与用户等级。功能代码在 `333939d`（2026-11-09）。本段是发布记录，本地标签打在这一笔上。规格：[v1.5 计量与用户等级](superpowers/specs/2026-11-09-v15-token-metering-and-user-tiers.md)。计划：[v1.5 实施计划](superpowers/plans/2026-11-09-v15-token-metering-and-user-tiers.md)。2026-11-04 曾整理为 v1.4.1，现改为 v1.5.0；原先的平台化范围仍是 v1.6.0+。GitHub Release 未做，标签尚未推送。规格第 9 节还没有在运行环境里点过。真实 MySQL 上的 V14 没有单独演练。
 
-- 已拍板：自己注册固定第一级，每天 50 万 Token，不能申请升级，也不能把已有第一级改成更高一级。第二级每天 150 万，第三级每天 500 万。第二级、第三级只能由第三级新建账号再交给员工。第二级审评第一级的提额；第二级自己的提额交给第三级；第三级不能提额，负责开账号。额度按人计。第一个第三级是 `blank`（用户编号 16）。`limit`（用户编号 17）准备当作第二级。两人目前都是工作区 1 的 `VIEWER`。
-- 已拍板：注册和登录只接受内网来源，挡在 Nginx 的 `$remote_addr`。页面仍保留注册。刷新、退出、改密不套这道限制。`REGISTER_ENABLED` 仍是全局开关。staging / prod 不映射后端 `8080`。允许网段部署时再填。
-- 等级列在 `User.userTier`。把 `blank` 标成第三级、`limit` 标成第二级的补记在 `V14__user_tier_and_token_boost.sql`，同时匹配用户编号和用户名，不是事后改级。注册默认第一级在 `AuthService`。第三级建号在 `CreateTierAccountService`。按等级扣每日 Token 在 `TokenQuotaService`，每日上限在 `UserTierLimits`。注册和登录的来源限制已经写在 `frontend/nginx.conf`：默认放行回环和私网，其余 403。
+工作区角色 `OWNER` / `ADMIN` / `EDITOR` / `VIEWER` 继续管权限，不当作一级、二级、三级。
+
+**做了什么：**
+
+- Flyway `V14__user_tier_and_token_boost.sql` 给用户加等级列，并新建提额申请表。`blank`（用户编号 16）补记第三级，`limit`（用户编号 17）补记第二级，其余当时已有的用户记为第一级。补记同时匹配用户编号和用户名，不是事后改级，也不改这两人在工作区 1 的 `VIEWER`。
+- 自己注册固定第一级，入口在 `AuthService`。没有把已有第一级改成更高一级的接口。第二级、第三级只能由第三级新建，入口在 `CreateTierAccountService`。第二级不能新建账号。
+- 每天上限在 `UserTierLimits`：第一级 50 万、第二级 150 万、第三级 500 万。按人、按上海时间自然日计已用，在 `TokenQuotaService`。开跑前的本地预估在 `LocalTokenCounter`，不发起模型请求。
+- 每个用户每秒最多两次发问。额度或频率在开跑前不够，这一问不开始，不写运行，不写改写或意图步骤。已经开始的一问说完再记账。
+- 流式用量计入提问人，并滚进这次运行的合计。提问时的检索向量化计入这个人当天已用。上传文档到知识库、被频率拦住的一次、开跑前余额不够的一次，都不进个人额度。
+- 当天可申请再加 50 万，上海时间晚上 12 点失效。第一级的申请由 `limit` 审，第二级的申请由第三级审。第三级没有提额入口。拒绝后可以再交。通过后当天不能再交。
+- 聊天页在输入框上方显示「今日额度」和剩余百分比。提额页 `/boost`，审评页 `/boost/review`，建号页 `/users/new`。外观沿用象牙底和铜线。
+- 注册和登录只接受 Nginx 看见的来源。`frontend/nginx.conf` 默认放行回环和私网，其余 403。页面仍保留注册。刷新、退出、改密不套这道限制。`REGISTER_ENABLED` 仍是全局开关。staging / prod 不映射后端 `8080`。
+- 2026-11-10 在干净检出 `333939d` 上 `mvn -B test` 283、`pytest -q` 122、`npm run build` 退出码 0，均通过。
+
+**没做什么：**
+
+- 不改 v1.4.0 的备份、压测、告警、发布验收。
+- 不做每天提问次数上限，不按等级区分每秒次数。
+- 不做自己申请升级、多个第二级、多租户、充值、支付。
+- 不做语义层、MCP、多模型路由、插件化、Multi-Agent。这些仍是 v1.6.0+。
+
+**回滚：** 切回标签 `v1.4.0`，恢复发版前 MySQL 备份后再起服务。V14 已改 schema，不能只换镜像不还原库。
 
 ## 常见坑（本仓库已踩过）
 

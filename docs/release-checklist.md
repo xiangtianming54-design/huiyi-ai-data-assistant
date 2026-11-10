@@ -4,12 +4,12 @@
 
 ## 代码与测试
 
-- [x] 目标分支已合并（`main` 含 v1.4 验收 `e6bb834`）
-- [x] `backend`：`mvn -B test` 通过（干净检出 `e6bb834`，2026-11-08，212 tests）
-- [x] `python-service`：`pytest -q` 通过（同一检出，项目虚拟环境，2026-11-08，120 passed）
-- [x] `frontend`：相对 `v1.3.0` 只有 `frontend/nginx.conf`
-- [ ] GitHub Actions 对应 commit 四条 job 均为成功（含 `eval-goldens`；push `main` 后在网页确认。本机当时连不上 `github.com:443`）
-- [x] 本版评测金标：不加新金标；现有 `EvalGoldenRunner` 仍绿（1 个测试，16 条金标）
+- [x] 目标分支已合并（`main` 含 v1.5 功能 `333939d`）
+- [x] `backend`：`mvn -B test` 通过（干净检出 `333939d`，2026-11-10，283 tests，Failures 0）
+- [x] `python-service`：`pytest -q` 通过（同一检出，项目虚拟环境，2026-11-10，122 passed）
+- [x] `frontend`：`npm run build` 通过（2026-11-10，退出码 0）
+- [ ] GitHub Actions 对应 commit 四条 job 均为成功（含 `eval-goldens`；push `main` 后在网页确认）
+- [x] 本版评测金标：不加新金标。`EvalGoldenRunner` 在干净检出 `333939d` 上仍是 1 个测试，2026-11-10 通过
 
 ## 安全与仓库卫生
 
@@ -20,23 +20,50 @@
 
 ## 文档
 
-- [x] [baseline.md](baseline.md) 已标注 v1.4 单机 staging/prod
-- [x] [roadmap.md](roadmap.md) 当前发布为本地标签 `v1.4.0`；GitHub Release 未做
+- [x] [baseline.md](baseline.md) 已写明 v1.5 按人额度已交付，多租户仍未做
+- [x] [roadmap.md](roadmap.md) 当前发布为本地标签 `v1.5.0`；GitHub Release 未做
 - [x] README 版本说明与本版一致
-- [x] [development.md](development.md) 已写 v1.4 变更与回滚
-- [x] [v14-release-issues.md](v14-release-issues.md) 记下这次发布里会再犯的问题
+- [x] [development.md](development.md) 已写 v1.5 变更与回滚
 
 ## 运行与演示
 
-- [x] staging 备份、恢复、登录、RAG、Text-to-SQL、429、告警和发布回滚已写入 `docs/ops/`
-- [ ] `run_local.sh` 与五场景 `e2e-m5.js` 这次没有重跑（staging 栈还在，不与 dev 同时起）
+- [ ] 规格第 9 节还没有在运行环境里点过：聊天页额度条、`/boost`、`/boost/review`、`/users/new`
+- [ ] 真实 MySQL 上的 V14 没有单独演练
 
 ## 发布动作
 
-- [x] 语义化标签：`v1.4.0` → `e6bb834`（附注标签，说明 `v1.4.0 Production Ready`）
-- [ ] `git push origin main` 与 `git push origin v1.4.0`（本机当时连不上 GitHub）
+- [x] 语义化标签：`v1.5.0` 打在包含本清单的发布记录提交上（附注标签，说明 `v1.5.0 按人计量 Token 与用户等级`）
+- [ ] `git push origin main` 与 `git push origin v1.5.0`
 - [ ] GitHub Release 写清：新增 / 修复 / 不包含
 - [ ] 若本版是公开里程碑：确认仓库可见性仍符合预期
+
+## v1.5.0 特别项（仅本版）
+
+- [x] Flyway V14：`V14__user_tier_and_token_boost.sql`（用户等级列 + 提额申请表；无 FOREIGN KEY）
+- [x] 不做充值、支付、多租户、多个第二级、按等级区分每秒次数、每天提问次数上限
+- [x] 回滚路径：`v1.4.0` + 发版前 MySQL 备份（见 development.md）。不能只换镜像不还原库
+- [x] 与计量无关的未提交工作区改动不进发布记录这一笔
+- [ ] 规格第 9 节运行环境点验
+- [ ] 真实 MySQL 上单独演练 V14
+
+## v1.4.0 代码与测试记录（收尾时的快照，不随 v1.5 改写）
+
+- [x] 目标分支已合并（`main` 含 v1.4 验收 `e6bb834`）
+- [x] `backend`：`mvn -B test` 通过（干净检出 `e6bb834`，2026-11-08，212 tests）
+- [x] `python-service`：`pytest -q` 通过（同一检出，项目虚拟环境，2026-11-08，120 passed）
+- [x] `frontend`：相对 `v1.3.0` 只有 `frontend/nginx.conf`
+- [ ] GitHub Actions 对应 commit 四条 job 均为成功（含 `eval-goldens`；push `main` 后在网页确认。本机当时连不上 `github.com:443`）
+- [x] 本版评测金标：不加新金标；现有 `EvalGoldenRunner` 仍绿（1 个测试，16 条金标）
+
+## v1.4.0 收尾时的清单快照（不随 v1.5 改写）
+
+- [x] 未提交 `.env`、密钥、本地数据库文件。`.gitignore` 仍包含 `.env` / `.env.local`；`.env.staging` 与 `.env.prod` 不入库
+- [x] [baseline.md](baseline.md) 已标注 v1.4 单机 staging/prod；[roadmap.md](roadmap.md) 当时的当前发布是本地标签 `v1.4.0`
+- [x] README 与 [development.md](development.md) 已写 v1.4；[v14-release-issues.md](v14-release-issues.md) 记下那次发布里会再犯的问题
+- [x] staging 备份、恢复、登录、RAG、Text-to-SQL、429、告警和发布回滚已写入 `docs/ops/`
+- [ ] `run_local.sh` 与五场景 `e2e-m5.js` 那次没有重跑（staging 栈还在，不与 dev 同时起）
+- [x] 语义化标签：`v1.4.0` → `e6bb834`（附注标签，说明 `v1.4.0 Production Ready`）
+- [ ] `git push origin v1.4.0` 那次没做成（本机当时连不上 GitHub）。GitHub Release 未做
 
 ## v1.4.0 特别项（仅本版）
 

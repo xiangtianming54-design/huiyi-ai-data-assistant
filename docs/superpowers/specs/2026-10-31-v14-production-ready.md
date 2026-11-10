@@ -8,7 +8,7 @@
 > 路线图名称：桌面 §14 Production Ready。本版 **P0 只做单机 Compose 多环境、配置治理、备份恢复、Nginx 限流、k6 压测、最小告警、发布回滚**。  
 > 对照：桌面《HuiYi-Enterprise-Agent-Version-Iteration-Development-Plan》§14；[roadmap.md](../../roadmap.md)。  
 > 拍板：D01–D13，见 §12。改写或实施时 **不得推翻** 该表。  
-> 剩下来的：K8s / Swarm、Vault、Grafana、HTTPS、MinIO、异地容灾，进 **v1.6+** 或有域名之后的小步骤。按人计量和用户等级是 **v1.5.0**。
+> 剩下来的：K8s / Swarm、Vault、Grafana、HTTPS、MinIO、异地容灾，进 **v1.6+** 或有域名之后的小步骤。按人计量和用户等级是 **v1.5.0**（功能在 `333939d`，不在本标签里）。
 
 **改写原则（已拍板）：** 方向跟桌面 §14 走。单机 Docker Compose 承载全部目标。K8s、Vault、Grafana 大盘、多机高可用、model/prompt 热更新 **不按桌面 §14 全文一次做完**。
 

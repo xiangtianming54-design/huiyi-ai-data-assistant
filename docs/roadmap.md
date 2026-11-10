@@ -31,6 +31,14 @@
 | **v1.5.0** | Token Metering & User Tiers | 2–3 周 | 按人 Token 额度、用户等级、当日提额、内网注册登录 |
 | **v1.6.0+** | Platform & Advanced Agent | 4 周以上 | 语义层、MCP、多模型路由、插件化 |
 
+## 已发布：v1.5.0 Token Metering & User Tiers
+
+功能代码在 `333939d`。本地标签 `v1.5.0` 打在包含本段的发布记录提交上。规格：[2026-11-09-v15-token-metering-and-user-tiers.md](superpowers/specs/2026-11-09-v15-token-metering-and-user-tiers.md)。计划：[2026-11-09-v15-token-metering-and-user-tiers.md](superpowers/plans/2026-11-09-v15-token-metering-and-user-tiers.md)。本版是按人、按上海时间自然日的 Token 额度，第一级 / 第二级 / 第三级，当天提额 50 万，以及第三级新建账号。Flyway 新增 `V14__user_tier_and_token_boost.sql`。回滚要回到 `v1.4.0` 并恢复发版前的 MySQL 备份。规格第 9 节还没有在运行环境里点过，真实 MySQL 上的 V14 也没有单独演练。标签尚未推送。GitHub Release 未做。
+
+未纳入本版：充值、支付、多租户、多个第二级、按等级区分每秒次数、每天提问次数上限、语义层、MCP、多模型路由、插件化。
+
+上一发布：`v1.4.0` Production Ready。
+
 ## 已发布：v1.4.0 Production Ready
 
 本地标签 `v1.4.0` 指向 `e6bb834`。规格：[2026-10-31-v14-production-ready.md](superpowers/specs/2026-10-31-v14-production-ready.md)。计划：[2026-10-31-v14-production-ready.md](superpowers/plans/2026-10-31-v14-production-ready.md)。本版是单机 Compose 的 staging/prod、备份恢复、Nginx 限流、k6、最小告警、`deploy.sh` 与 runbook。无新 Flyway。演练和压测记录在 `docs/ops/`。LLM 延迟按降级声明记录。发布中的问题见 [v14-release-issues.md](v14-release-issues.md)。标签尚未推送。GitHub Release 未做。
@@ -41,7 +49,7 @@
 
 ## 当前开发：无进行中的版本
 
-v1.5.0 按人计量和用户等级只有需求整理，尚未实施，不在标签 `v1.4.0` 里。2026-11-04 曾记为 v1.4.1，现改为 v1.5.0；原先的平台化范围顺延为 v1.6.0+。见 [2026-11-09-v15-token-metering-and-user-tiers.md](superpowers/specs/2026-11-09-v15-token-metering-and-user-tiers.md)。v1.6.0 及以后没有开工。
+v1.6.0 及以后没有开工。2026-11-04 曾把计量记为 v1.4.1，现已作为 v1.5.0 落地；原先的平台化范围仍是 v1.6.0+。
 
 ## 后续版本（摘要）
 

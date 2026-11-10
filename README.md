@@ -164,8 +164,9 @@ huiyi-ai-data-assistant/
 - [x] **v1.2.0 Enterprise Knowledge Plane**：工作区内知识空间、文档归属、RAG 按空间过滤、Flyway V12（[规格](docs/superpowers/specs/2026-10-19-v12-enterprise-knowledge-plane.md)；异步解析 / OSS / 细权限 / 前端空间 UI 不在本版）
 - [x] **v1.3.0 Async Ingestion**：上传立刻返回、本地落盘、`DOC_PARSE` 异步、失败重试、Flyway V13（[规格](docs/superpowers/specs/2026-10-20-v13-async-ingestion.md)；MinIO / hash / 前端轮询不在本版）
 - [x] **v1.4.0 Production Ready**：单机 staging/prod、备份恢复、Nginx 限流、k6、最小告警、可回滚发布（[规格](docs/superpowers/specs/2026-10-31-v14-production-ready.md)，[计划](docs/superpowers/plans/2026-10-31-v14-production-ready.md)；K8s / Vault / Grafana / HTTPS / MinIO 不在本版）。GitHub Release 未做。
+- [x] **v1.5.0 Token Metering & User Tiers**：按人每日 Token、用户等级、当日提额、第三级建号、内网注册登录（[规格](docs/superpowers/specs/2026-11-09-v15-token-metering-and-user-tiers.md)，[计划](docs/superpowers/plans/2026-11-09-v15-token-metering-and-user-tiers.md)；充值 / 多租户 / 按等级区分每秒次数不在本版）。功能代码在 `333939d`。规格第 9 节还没有在运行环境里点过。GitHub Release 未做。
 
-按企业迭代文档演进：下一档是 **v1.5.0**（按人计量 Token、用户等级、内网注册登录，尚未实施）。原先的平台化范围顺延为 **v1.6.0+**。不把未做能力写成当前功能。
+按企业迭代文档演进：下一档是 **v1.6.0+**（语义层、MCP、多模型路由、插件化，尚未实施）。不把未做能力写成当前功能。
 
 ## License
 
